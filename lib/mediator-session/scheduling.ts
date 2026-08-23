@@ -78,7 +78,7 @@ export async function scheduleMediatorSession(params: {
     throw new Error("Scheduled time must be in the future.");
   }
   if (!isScheduleMinuteOption(params.scheduledStartAt.getUTCMinutes())) {
-    throw new Error("Start minutes must be 00, 15, 30, or 45.");
+    throw new Error("Start minutes must be a multiple of 5.");
   }
   if (!isScheduleDurationOption(params.durationMinutes)) {
     throw new Error("Invalid session duration.");

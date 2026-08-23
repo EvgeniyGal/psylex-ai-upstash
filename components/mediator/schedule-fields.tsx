@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useLocale } from "@/components/locale-provider";
 import {
   SCHEDULE_DURATION_OPTIONS,
-  SCHEDULE_MINUTE_OPTIONS,
+  SCHEDULE_MINUTE_STEP,
   pad2,
   type ScheduleDurationOption,
   type ScheduleMinuteOption,
@@ -40,6 +40,10 @@ export function ScheduleFields({
 }: ScheduleFieldsProps) {
   const { admin } = useLocale();
   const hourOptions = useMemo(() => Array.from({ length: 24 }, (_, i) => pad2(i)), []);
+  const minuteOptions = useMemo(
+    () => Array.from({ length: 60 / SCHEDULE_MINUTE_STEP }, (_, i) => i * SCHEDULE_MINUTE_STEP),
+    [],
+  );
 
   return (
     <div className="space-y-3">
@@ -89,7 +93,7 @@ export function ScheduleFields({
             onChange={(event) => onMinuteChange(Number(event.target.value) as ScheduleMinuteOption)}
             value={minute}
           >
-            {SCHEDULE_MINUTE_OPTIONS.map((value) => (
+            {minuteOptions.map((value) => (
               <option key={value} value={value}>
                 {pad2(value)}
               </option>
