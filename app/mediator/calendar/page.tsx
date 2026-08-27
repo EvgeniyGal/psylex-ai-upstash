@@ -18,6 +18,7 @@ export default async function MediatorCalendarPage() {
       scheduledStartAt: rooms.scheduledStartAt,
       mediationDurationMinutes: rooms.mediationDurationMinutes,
       mediationStartedAt: rooms.mediationStartedAt,
+      mediationPhase: rooms.mediationPhase,
     })
     .from(rooms)
     .where(eq(rooms.createdByUserId, userId))
@@ -31,6 +32,7 @@ export default async function MediatorCalendarPage() {
       scheduledStartAt: room.scheduledStartAt!.toISOString(),
       mediationDurationMinutes: room.mediationDurationMinutes,
       mediationStartedAt: room.mediationStartedAt?.toISOString() ?? null,
+      mediationPhase: room.mediationPhase ?? null,
     }));
 
   const unscheduledRooms: UnscheduledRoom[] = roomRows

@@ -226,6 +226,7 @@ export type AdminCopy = {
   mediatorPublishCompromise: string;
   mediatorQuestionCandidates: string;
   mediatorOwnQuestion: string;
+  mediatorSessionFinished: string;
   mediatorSelectCandidate: string;
   mediatorCompromiseDraft: string;
   mediatorCompromiseCanonical: string;
@@ -492,6 +493,7 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     mediatorPublishCompromise: "Publish compromise",
     mediatorQuestionCandidates: "Question candidates",
     mediatorOwnQuestion: "Your question",
+    mediatorSessionFinished: "Session finished. Returning to room details…",
     mediatorSelectCandidate: "Select a question",
     mediatorCompromiseDraft: "Compromise draft",
     mediatorCompromiseCanonical: "Canonical description (mediator view)",
@@ -830,6 +832,7 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     mediatorPublishCompromise: "Опублікувати компроміс",
     mediatorQuestionCandidates: "Варіанти запитань",
     mediatorOwnQuestion: "Ваше запитання",
+    mediatorSessionFinished: "Сесію завершено. Повертаємо до деталей кімнати…",
     mediatorSelectCandidate: "Оберіть запитання",
     mediatorCompromiseDraft: "Чернетка компромісу",
     mediatorCompromiseCanonical: "Канонічний опис (для медіатора)",

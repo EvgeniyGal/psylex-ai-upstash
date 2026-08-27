@@ -35,6 +35,7 @@ import {
   type ScheduleMinuteOption,
 } from "@/lib/mediator-session/schedule-options";
 import { cn } from "@/lib/utils";
+import { isMediatorSessionEnded } from "@/lib/mediator-session/room-mode";
 import "./mediator-calendar.css";
 
 export type CalendarSession = {
@@ -43,6 +44,7 @@ export type CalendarSession = {
   scheduledStartAt: string;
   mediationDurationMinutes: number;
   mediationStartedAt: string | null;
+  mediationPhase: string | null;
 };
 
 export type UnscheduledRoom = {
@@ -380,7 +382,11 @@ export function MediatorCalendarContent({
                   ) : (
                     <Link
                       className="inline-flex items-center gap-1 text-body-sm font-semibold text-tertiary hover:underline"
-                      href={`/mediator/rooms/${selectedSession.id}/session`}
+                      href={
+                        isMediatorSessionEnded(selectedSession.mediationPhase)
+                          ? `/mediator/rooms/${selectedSession.id}`
+                          : `/mediator/rooms/${selectedSession.id}/session`
+                      }
                     >
                       {admin.scheduleOpenSession}
                     </Link>

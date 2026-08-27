@@ -8,6 +8,7 @@ import {
   getMediatorHandshakeForMediator,
   tryFinalizeMediatorSession,
 } from "@/lib/mediator-session/handshake";
+import { isMediatorSessionEnded } from "@/lib/mediator-session/room-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,9 @@ export default async function MediatorRoomLobbyPage({
   if (!room) redirect("/mediator/rooms");
 
   await tryFinalizeMediatorSession(roomId);
+  if (isMediatorSessionEnded(room.mediationPhase)) {
+    redirect(`/mediator/rooms/${roomId}`);
+  }
   const handshake = await getMediatorHandshakeForMediator(userId, roomId);
   if (!handshake) redirect(`/mediator/rooms/${roomId}`);
 

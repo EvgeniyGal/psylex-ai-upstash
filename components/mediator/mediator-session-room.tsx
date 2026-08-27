@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   fetchMediatorSessionState,
@@ -15,6 +16,8 @@ import { SessionElapsedTimer } from "@/components/mediator/session-elapsed-timer
 import { Spinner } from "@/components/ui/spinner";
 import { useLocale } from "@/components/locale-provider";
 import { useRoomRealtime } from "@/hooks/use-room-realtime";
+import { SESSION_END_REDIRECT_MS } from "@/lib/mediator-session/constants";
+import { isMediatorSessionEnded } from "@/lib/mediator-session/room-mode";
 import type { MediatorSessionRoomState } from "@/lib/mediator-session/orchestrator";
 import type { PartyRole } from "@/lib/participant-roles";
 import type { MediationOption } from "@/lib/mediation/types";
@@ -83,6 +86,7 @@ function formatMessageMeta(
 
 export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoomProps) {
   const { admin, portal: t, locale } = useLocale();
+  const router = useRouter();
   const [state, setState] = useState(initialState);
   const [pending, startTransition] = useTransition();
   const [selectedParty, setSelectedParty] = useState<PartyRole>("party_a");
@@ -90,6 +94,8 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
   const [editText, setEditText] = useState("");
   const [customText, setCustomText] = useState("");
   const [compromiseEdit, setCompromiseEdit] = useState<MediationOption | null>(null);
+
+  const sessionEnded = isMediatorSessionEnded(state.room.phase);
 
   const refresh = useCallback(async () => {
     try {
@@ -124,6 +130,14 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
       };
     });
   }, [state.compromiseDraft, state.compromisePublished]);
+
+  useEffect(() => {
+    if (!sessionEnded) return;
+    const timeoutId = window.setTimeout(() => {
+      router.push(`/mediator/rooms/${roomId}`);
+    }, SESSION_END_REDIRECT_MS);
+    return () => window.clearTimeout(timeoutId);
+  }, [sessionEnded, roomId, router]);
 
   const canGenerateQuestions =
     (state.room.phase === "opening" || state.room.phase === "dialogue") &&
@@ -232,6 +246,12 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
         </Link>
         <SessionElapsedTimer startedAt={state.room.mediationStartedAt} />
       </div>
+
+      {sessionEnded ? (
+        <p className="rounded-xl border border-law/30 bg-law/10 px-4 py-3 text-body-sm font-semibold text-on-surface">
+          {admin.mediatorSessionFinished}
+        </p>
+      ) : null}
 
       <div className="grid gap-4 xl:grid-cols-[240px_minmax(0,1.4fr)_320px]">
         <aside className="glass-panel space-y-4 rounded-xl p-4">
