@@ -27,7 +27,12 @@ import {
   mediationQuestionCandidatesSchema,
 } from "@/lib/mediation/schemas";
 import { buildMediationResultsSummary } from "@/lib/mediation/results-summary";
-import type { DraftAgreement, MediationOption, MediationPhase } from "@/lib/mediation/types";
+import type {
+  DraftAgreement,
+  MediationOption,
+  MediationPhase,
+  PartyAdaptations,
+} from "@/lib/mediation/types";
 import { setPartyNotification } from "@/lib/mediator-session/notifications";
 import { isMediatorFacilitatedRoom } from "@/lib/mediator-session/room-mode";
 import type {
@@ -168,6 +173,46 @@ export async function generateQuestionCandidates(roomId: string, mediatorUserId:
   }
 }
 
+async function deliverMediatorQuestion(params: {
+  roomId: string;
+  partyRole: PartyRole;
+  canonicalContent: string;
+  adaptations: PartyAdaptations;
+}) {
+  const { partyA, partyB } = await getRoomPartiesForPipeline(params.roomId);
+  const addressee = params.partyRole === "party_a" ? partyA : partyB;
+  if (!addressee) throw new Error("Party not found.");
+
+  await insertAgentMessage({
+    roomId: params.roomId,
+    canonicalContent: params.canonicalContent,
+    adaptations: params.adaptations,
+    messageKind: "mediation_question",
+    addresseeUserId: addressee.id,
+  });
+
+  await db
+    .update(rooms)
+    .set({
+      // Mode B: parties answer independently — do not lock a single active party.
+      mediationTurnDeadlineAt: null,
+      mediationTurnNudged: false,
+    })
+    .where(eq(rooms.id, params.roomId));
+
+  await setPartyNotification({
+    roomId: params.roomId,
+    type: "question_received",
+    targetRole: params.partyRole,
+  });
+}
+
+function assertDialoguePhase(phase: string | null) {
+  if (phase !== "dialogue" && phase !== "opening") {
+    throw new Error("Dialogue is not active.");
+  }
+}
+
 export async function sendMediatorQuestion(params: {
   roomId: string;
   mediatorUserId: string;
@@ -176,9 +221,7 @@ export async function sendMediatorQuestion(params: {
   editedText?: string;
 }) {
   const room = await assertMediatorOwnsRoom(params.roomId, params.mediatorUserId);
-  if (room.mediationPhase !== "dialogue" && room.mediationPhase !== "opening") {
-    throw new Error("Dialogue is not active.");
-  }
+  assertDialoguePhase(room.mediationPhase);
 
   const stored = (room.mediatorQuestionCandidates as MediatorQuestionCandidates | null) ?? {
     party_a: [],
@@ -187,10 +230,6 @@ export async function sendMediatorQuestion(params: {
   const list = params.partyRole === "party_a" ? stored.party_a : stored.party_b;
   const candidate = list.find((c) => c.id === params.candidateId);
   if (!candidate) throw new Error("Candidate not found.");
-
-  const { partyA, partyB } = await getRoomPartiesForPipeline(params.roomId);
-  const addressee = params.partyRole === "party_a" ? partyA : partyB;
-  if (!addressee) throw new Error("Party not found.");
 
   const edited = params.editedText?.trim();
   const canonicalContent = edited || candidate.canonicalContent;
@@ -205,12 +244,11 @@ export async function sendMediatorQuestion(params: {
           party_b: edited || candidate.partyB,
         };
 
-  await insertAgentMessage({
+  await deliverMediatorQuestion({
     roomId: params.roomId,
+    partyRole: params.partyRole,
     canonicalContent,
     adaptations,
-    messageKind: "mediation_question",
-    addresseeUserId: addressee.id,
   });
 
   const nextCandidates: MediatorQuestionCandidates = {
@@ -220,18 +258,27 @@ export async function sendMediatorQuestion(params: {
 
   await db
     .update(rooms)
-    .set({
-      mediatorQuestionCandidates: nextCandidates,
-      // Mode B: parties answer independently — do not lock a single active party.
-      mediationTurnDeadlineAt: null,
-      mediationTurnNudged: false,
-    })
+    .set({ mediatorQuestionCandidates: nextCandidates })
     .where(eq(rooms.id, params.roomId));
+}
 
-  await setPartyNotification({
+export async function sendCustomMediatorQuestion(params: {
+  roomId: string;
+  mediatorUserId: string;
+  partyRole: PartyRole;
+  text: string;
+}) {
+  const room = await assertMediatorOwnsRoom(params.roomId, params.mediatorUserId);
+  assertDialoguePhase(room.mediationPhase);
+
+  const text = params.text.trim();
+  if (!text) throw new Error("Question cannot be empty.");
+
+  await deliverMediatorQuestion({
     roomId: params.roomId,
-    type: "question_received",
-    targetRole: params.partyRole,
+    partyRole: params.partyRole,
+    canonicalContent: text,
+    adaptations: { party_a: text, party_b: text },
   });
 }
 

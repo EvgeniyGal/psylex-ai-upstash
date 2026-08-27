@@ -16,6 +16,7 @@ import {
   generateQuestionCandidates,
   getMediatorConsoleSessionState,
   publishMediatorCompromise,
+  sendCustomMediatorQuestion,
   sendMediatorQuestion,
 } from "@/lib/mediator-session/orchestrator";
 import type { MediationOption } from "@/lib/mediation/types";
@@ -95,6 +96,27 @@ export async function sendMediatorQuestionAction(params: {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to send question.";
     console.error("sendMediatorQuestionAction failed:", message, error);
+    throw new Error(message);
+  }
+  return getMediatorConsoleSessionState(userId, params.roomId);
+}
+
+export async function sendCustomMediatorQuestionAction(params: {
+  roomId: string;
+  partyRole: PartyRole;
+  text: string;
+}) {
+  const userId = await requireMediator();
+  try {
+    await sendCustomMediatorQuestion({
+      roomId: params.roomId,
+      mediatorUserId: userId,
+      partyRole: params.partyRole,
+      text: params.text,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to send question.";
+    console.error("sendCustomMediatorQuestionAction failed:", message, error);
     throw new Error(message);
   }
   return getMediatorConsoleSessionState(userId, params.roomId);

@@ -8,6 +8,7 @@ import {
   generateMediatorOptionsAction,
   generateMediatorQuestionCandidatesAction,
   publishMediatorCompromiseAction,
+  sendCustomMediatorQuestionAction,
   sendMediatorQuestionAction,
 } from "@/app/mediator/rooms/actions";
 import { SessionElapsedTimer } from "@/components/mediator/session-elapsed-timer";
@@ -87,6 +88,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
   const [selectedParty, setSelectedParty] = useState<PartyRole>("party_a");
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
+  const [customText, setCustomText] = useState("");
   const [compromiseEdit, setCompromiseEdit] = useState<MediationOption | null>(null);
 
   const refresh = useCallback(async () => {
@@ -165,6 +167,24 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
         if (next) setState(next);
         setSelectedCandidateId(null);
         setEditText("");
+        toast.success(admin.mediatorSendQuestion);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
+      }
+    });
+  };
+
+  const onSendCustomQuestion = () => {
+    if (!customText.trim()) return;
+    startTransition(async () => {
+      try {
+        const next = await sendCustomMediatorQuestionAction({
+          roomId,
+          partyRole: selectedParty,
+          text: customText,
+        });
+        if (next) setState(next);
+        setCustomText("");
         toast.success(admin.mediatorSendQuestion);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
@@ -337,6 +357,26 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
                 className="btn-primary flex w-full items-center justify-center gap-2 px-3 py-2 text-body-sm disabled:opacity-60"
                 disabled={pending || !editText.trim()}
                 onClick={onSendQuestion}
+                type="button"
+              >
+                {admin.mediatorSendQuestion}
+              </button>
+            </div>
+          ) : null}
+
+          {canGenerateQuestions ? (
+            <div className="space-y-2">
+              <label className="text-body-sm text-on-surface-variant">{admin.mediatorOwnQuestion}</label>
+              <textarea
+                className="w-full rounded-md border border-hair bg-paper px-3 py-2 text-body-sm"
+                onChange={(event) => setCustomText(event.target.value)}
+                rows={4}
+                value={customText}
+              />
+              <button
+                className="btn-primary flex w-full items-center justify-center gap-2 px-3 py-2 text-body-sm disabled:opacity-60"
+                disabled={pending || !customText.trim()}
+                onClick={onSendCustomQuestion}
                 type="button"
               >
                 {admin.mediatorSendQuestion}

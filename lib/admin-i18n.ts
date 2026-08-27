@@ -225,6 +225,7 @@ export type AdminCopy = {
   mediatorGenerateOptions: string;
   mediatorPublishCompromise: string;
   mediatorQuestionCandidates: string;
+  mediatorOwnQuestion: string;
   mediatorSelectCandidate: string;
   mediatorCompromiseDraft: string;
   mediatorCompromiseCanonical: string;
@@ -490,6 +491,7 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     mediatorGenerateOptions: "Generate solution options",
     mediatorPublishCompromise: "Publish compromise",
     mediatorQuestionCandidates: "Question candidates",
+    mediatorOwnQuestion: "Your question",
     mediatorSelectCandidate: "Select a question",
     mediatorCompromiseDraft: "Compromise draft",
     mediatorCompromiseCanonical: "Canonical description (mediator view)",
@@ -827,6 +829,7 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     mediatorGenerateOptions: "Згенерувати варіанти рішення",
     mediatorPublishCompromise: "Опублікувати компроміс",
     mediatorQuestionCandidates: "Варіанти запитань",
+    mediatorOwnQuestion: "Ваше запитання",
     mediatorSelectCandidate: "Оберіть запитання",
     mediatorCompromiseDraft: "Чернетка компромісу",
     mediatorCompromiseCanonical: "Канонічний опис (для медіатора)",
