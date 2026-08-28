@@ -11,15 +11,16 @@ import { cn } from "@/lib/utils";
 type HelpMarkdownProps = {
   markdown: string;
   className?: string;
+  compact?: boolean;
   onDocLink?: (slug: HelpSlug) => void;
 };
 
-export function HelpMarkdown({ markdown, className, onDocLink }: HelpMarkdownProps) {
+export function HelpMarkdown({ markdown, className, compact, onDocLink }: HelpMarkdownProps) {
   return (
-    <div className={cn("help-markdown", className)}>
+    <div className={cn("help-markdown", compact && "help-markdown-chat", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeSlug]}
+        rehypePlugins={compact ? undefined : [rehypeSlug]}
         components={{
           a: ({ href, children, ...props }) => (
             <HelpMarkdownLink href={href} onDocLink={onDocLink} {...props}>

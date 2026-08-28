@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useSession } from "next-auth/react";
 import { useLocale } from "@/components/locale-provider";
+import { HelpMarkdown } from "@/components/help/help-markdown";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
@@ -143,7 +144,11 @@ export function HelpChatWidget() {
                 )}
                 key={message.id}
               >
-                <p className="whitespace-pre-wrap">{message.content}</p>
+                {message.role === "assistant" ? (
+                  <HelpMarkdown compact markdown={message.content} />
+                ) : (
+                  <p className="whitespace-pre-wrap">{message.content}</p>
+                )}
               </div>
             ))}
             {pending ? (

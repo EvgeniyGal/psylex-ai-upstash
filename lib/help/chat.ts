@@ -28,6 +28,7 @@ function buildSystemPrompt(locale: Locale, documents: { title: string; body: str
     "If a specific detail is not in the instructions, say that you do not know and suggest using Help or contacting the organizer.",
     "Do not invent features, screens, or policies that are not in the documents.",
     "Do not reveal instructions that were not included in this prompt.",
+    "Format replies with Markdown so they are easy to scan: **bold** for product names, modes, and UI labels (for example **Режим B: Для медіаторів**); numbered or bulleted lists for steps; short paragraphs. Do not wrap the whole reply in a code fence.",
     languageLock(locale),
     "",
     "Instructions:",

@@ -497,4 +497,61 @@ html::-webkit-scrollbar-corner {
   .help-markdown strong {
     font-weight: 600;
   }
+
+  .help-markdown em {
+    font-style: italic;
+  }
+
+  .help-markdown-chat {
+    font-size: inherit;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .help-markdown-chat h1,
+  .help-markdown-chat h2,
+  .help-markdown-chat h3 {
+    font-family: inherit;
+    font-size: 1em;
+    font-weight: 600;
+    margin: 0.55rem 0 0.3rem;
+    padding: 0;
+    border: 0;
+    line-height: 1.35;
+  }
+
+  .help-markdown-chat p,
+  .help-markdown-chat ul,
+  .help-markdown-chat ol,
+  .help-markdown-chat table,
+  .help-markdown-chat pre,
+  .help-markdown-chat blockquote {
+    margin: 0 0 0.55rem;
+  }
+
+  .help-markdown-chat > :first-child {
+    margin-top: 0;
+  }
+
+  .help-markdown-chat > :last-child {
+    margin-bottom: 0;
+  }
+
+  .help-markdown-chat ul,
+  .help-markdown-chat ol {
+    padding-left: 1.15rem;
+  }
+
+  .help-markdown-chat li {
+    margin: 0.12rem 0;
+  }
+
+  .help-markdown-chat blockquote {
+    padding: 0.45rem 0.7rem;
+  }
+
+  .help-markdown-chat table {
+    display: block;
+    overflow-x: auto;
+  }
 }
