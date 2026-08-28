@@ -18,7 +18,8 @@ const navItems = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
-  const { admin } = useLocale();
+  const { admin, portal } = useLocale();
+  const { openHelp } = useHelp();
 
   return (
     <aside className="fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r border-hair bg-surface-container py-stack-md">
@@ -54,6 +55,14 @@ export function AdminSidebar() {
       </nav>
 
       <div className="mt-auto space-y-3 px-4">
+        <button
+          className="flex w-full items-center justify-center gap-2 rounded-full border border-hair px-4 py-3 text-ink-soft transition-colors hover:bg-paper hover:text-ink"
+          onClick={openHelp}
+          type="button"
+        >
+          <span className="material-symbols-outlined">help_outline</span>
+          <span className="text-body-md">{portal.helpTitle}</span>
+        </button>
         <div className="flex justify-center rounded-full border border-hair py-3">
           <LocaleSwitcher />
         </div>
@@ -71,8 +80,7 @@ export function AdminSidebar() {
 }
 
 export function AdminTopBar() {
-  const { admin, portal } = useLocale();
-  const { openHelp } = useHelp();
+  const { admin } = useLocale();
   const scrolled = useHeaderScrolled();
 
   return (
@@ -83,19 +91,9 @@ export function AdminTopBar() {
       )}
     >
       <h2 className="font-display text-headline-md text-ink">{admin.portalTitle}</h2>
-      <div className="flex items-center gap-6">
-        <button className="text-ink-soft transition-colors hover:text-ink" type="button">
-          <span className="material-symbols-outlined">notifications</span>
-        </button>
-        <button
-          aria-label={portal.helpAria}
-          className="text-ink-soft transition-colors hover:text-ink"
-          onClick={openHelp}
-          type="button"
-        >
-          <span className="material-symbols-outlined">help_outline</span>
-        </button>
-      </div>
+      <button className="text-ink-soft transition-colors hover:text-ink" type="button">
+        <span className="material-symbols-outlined">notifications</span>
+      </button>
     </header>
   );
 }

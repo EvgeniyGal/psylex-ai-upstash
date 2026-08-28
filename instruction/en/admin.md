@@ -2,7 +2,7 @@
 
 This guide is for the **Admin** role. You operate the PsyLex platform: Mode A rooms, mediator and party accounts, integration keys, test links, AI agent prompts, the RAG legal corpus, and the Help knowledge base.
 
-> **Tip.** The Help icon in the top bar opens all instructions (overview, parties, mediator, admin). The chat assistant replies in **EN | UA**. Help texts are edited under **Settings → Help**.
+> **Tip.** The **Help** button at the bottom of the sidebar opens all instructions (overview, parties, mediator, admin). The chat assistant replies in **EN | UA**. Help texts are edited under **Settings → Help**.
 
 Instructions for parties and mediators: [parties.md](./parties.md), [mediator.md](./mediator.md).
 
@@ -69,9 +69,9 @@ On the left, the label **Admin Console**. Menu:
 | **Mediators** | Mediator registry |
 | **Settings** | API, tests, prompts, RAG, Help |
 
-Also: **EN | UA** and **Logout**. The content-area heading is **Mediation Portal**.
+Also: **Help**, **EN | UA**, and **Logout**. The content-area heading is **Mediation Portal**.
 
-The **Help** icon in the top bar opens the instructions and PDF / DOCX downloads. The notifications icon is decorative for now.
+The **Help** button at the bottom of the sidebar opens the instructions and PDF / DOCX downloads. The notifications icon in the top bar is decorative for now.
 
 ---
 
