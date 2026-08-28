@@ -12,7 +12,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:migrate-from-selfhosted": "node scripts/migrate-selfhosted-to-cloud.mjs",
-    "test:pdf-cyrillic": "tsx scripts/test-mediation-pdf-cyrillic.ts"
+    "test:pdf-cyrillic": "tsx scripts/test-mediation-pdf-cyrillic.ts",
+    "help:docs": "tsx scripts/generate-help-docs.ts"
   },
   "keywords": [],
   "author": "",
@@ -29,6 +30,7 @@
     "@tanstack/react-table": "^8.21.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "docx": "^9.7.1",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "framer-motion": "^12.42.2",
@@ -42,6 +44,9 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-hook-form": "^7.79.0",
+    "react-markdown": "^10.1.0",
+    "rehype-slug": "^6.0.0",
+    "remark-gfm": "^4.0.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "unpdf": "^1.6.2",

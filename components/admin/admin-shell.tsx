@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { useHelp } from "@/components/help/help-provider";
 import { useLocale } from "@/components/locale-provider";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { siteHeaderSurfaceClassName, useHeaderScrolled } from "@/components/site-header";
@@ -70,7 +71,8 @@ export function AdminSidebar() {
 }
 
 export function AdminTopBar() {
-  const { admin } = useLocale();
+  const { admin, portal } = useLocale();
+  const { openHelp } = useHelp();
   const scrolled = useHeaderScrolled();
 
   return (
@@ -85,7 +87,12 @@ export function AdminTopBar() {
         <button className="text-ink-soft transition-colors hover:text-ink" type="button">
           <span className="material-symbols-outlined">notifications</span>
         </button>
-        <button className="text-ink-soft transition-colors hover:text-ink" type="button">
+        <button
+          aria-label={portal.helpAria}
+          className="text-ink-soft transition-colors hover:text-ink"
+          onClick={openHelp}
+          type="button"
+        >
           <span className="material-symbols-outlined">help_outline</span>
         </button>
       </div>

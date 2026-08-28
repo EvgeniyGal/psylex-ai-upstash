@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { rooms, users } from "@/drizzle/schema";
 import { requireSessionUserId } from "@/lib/auth-session";
+import { isUuid } from "@/lib/utils";
 import { RoomDetailContent } from "@/components/admin/room-detail-content";
 import { getAdminMediationDetails } from "@/lib/mediation/admin-room-details";
 import { getRoomActivityLog } from "@/lib/pipeline/room-activity-log";
@@ -13,6 +14,7 @@ export default async function MediatorRoomDetailPage({
   params: Promise<{ roomId: string }>;
 }) {
   const { roomId } = await params;
+  if (!isUuid(roomId)) notFound();
   const userId = await requireSessionUserId();
 
   const [room] = await db

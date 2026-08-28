@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { useHelp } from "@/components/help/help-provider";
 import { useLocale } from "@/components/locale-provider";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { cn } from "@/lib/utils";
@@ -15,7 +16,8 @@ const navItems = [
 
 export function MediatorSidebar() {
   const pathname = usePathname();
-  const { admin } = useLocale();
+  const { admin, portal } = useLocale();
+  const { openHelp } = useHelp();
 
   return (
     <aside className="fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r border-hair bg-surface-container py-stack-md">
@@ -51,6 +53,14 @@ export function MediatorSidebar() {
       </nav>
 
       <div className="mt-auto space-y-3 px-4">
+        <button
+          className="flex w-full items-center justify-center gap-2 rounded-full border border-hair px-4 py-3 text-ink-soft transition-colors hover:bg-paper hover:text-ink"
+          onClick={openHelp}
+          type="button"
+        >
+          <span className="material-symbols-outlined">help_outline</span>
+          <span className="text-body-md">{portal.helpTitle}</span>
+        </button>
         <div className="flex justify-center rounded-full border border-hair py-3">
           <LocaleSwitcher />
         </div>

@@ -5,6 +5,7 @@ import { rooms, users } from "@/drizzle/schema";
 import { RoomDetailContent } from "@/components/admin/room-detail-content";
 import { getAdminMediationDetails } from "@/lib/mediation/admin-room-details";
 import { getRoomActivityLog } from "@/lib/pipeline/room-activity-log";
+import { isUuid } from "@/lib/utils";
 
 export default async function AdminRoomDetailPage({
   params,
@@ -12,6 +13,7 @@ export default async function AdminRoomDetailPage({
   params: Promise<{ roomId: string }>;
 }) {
   const { roomId } = await params;
+  if (!isUuid(roomId)) notFound();
 
   const [room] = await db.select().from(rooms).where(eq(rooms.id, roomId)).limit(1);
   if (!room) notFound();

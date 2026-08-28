@@ -96,6 +96,19 @@ export type AdminCopy = {
   settingsSaved: string;
   tabPrompts: string;
   tabRag: string;
+  tabHelp: string;
+  helpSettingsSubtitle: string;
+  helpDocTitleLabel: string;
+  helpDocBodyLabel: string;
+  helpSaved: string;
+  helpReset: string;
+  helpResetConfirm: string;
+  helpLocaleEn: string;
+  helpLocaleUk: string;
+  helpSlugOverview: string;
+  helpSlugParties: string;
+  helpSlugMediator: string;
+  helpSlugAdmin: string;
   ragSubtitle: string;
   ragUploadDocument: string;
   ragDocumentName: string;
@@ -354,6 +367,20 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     settingsSaved: "Settings saved",
     tabPrompts: "Prompts",
     tabRag: "RAG",
+    tabHelp: "Help",
+    helpSettingsSubtitle:
+      "Edit the instruction texts that power Help, the chat assistant, and PDF/DOCX downloads. This is not the legal RAG corpus.",
+    helpDocTitleLabel: "Title",
+    helpDocBodyLabel: "Markdown",
+    helpSaved: "Help document saved",
+    helpReset: "Reset to bundled file",
+    helpResetConfirm: "Replace this document with the bundled instruction file?",
+    helpLocaleEn: "English",
+    helpLocaleUk: "Ukrainian",
+    helpSlugOverview: "Overview",
+    helpSlugParties: "Parties",
+    helpSlugMediator: "Mediator",
+    helpSlugAdmin: "Admin",
     ragSubtitle: "Manage legal documents for hybrid retrieval. Upload legislation by jurisdiction and category.",
     ragUploadDocument: "Upload document",
     ragDocumentName: "Document name",
@@ -692,6 +719,20 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     settingsSaved: "Налаштування збережено",
     tabPrompts: "Промпти",
     tabRag: "RAG",
+    tabHelp: "Довідка",
+    helpSettingsSubtitle:
+      "Редагуйте тексти інструкцій для вікна довідки, чат-помічника та завантажень PDF/DOCX. Це не правовий корпус RAG.",
+    helpDocTitleLabel: "Заголовок",
+    helpDocBodyLabel: "Markdown",
+    helpSaved: "Документ довідки збережено",
+    helpReset: "Скинути до файлу",
+    helpResetConfirm: "Замінити цей документ текстом із файлу інструкції?",
+    helpLocaleEn: "Англійська",
+    helpLocaleUk: "Українська",
+    helpSlugOverview: "Огляд",
+    helpSlugParties: "Сторони",
+    helpSlugMediator: "Медіатор",
+    helpSlugAdmin: "Адмін",
     ragSubtitle: "Керуйте правовими документами для гібридного пошуку. Завантажуйте законодавство за юрисдикцією та категорією.",
     ragUploadDocument: "Завантажити документ",
     ragDocumentName: "Назва документа",

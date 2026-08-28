@@ -4,11 +4,13 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { saveApiCredentials, saveTestLinks } from "@/app/admin/settings/actions";
 import { AgentPromptsSettingsContent } from "@/components/admin/agent-prompts-settings-content";
+import { HelpSettingsContent } from "@/components/admin/help-settings-content";
 import { RagSettingsContent } from "@/components/admin/rag-settings-content";
 import { Spinner } from "@/components/ui/spinner";
 import { useLocale } from "@/components/locale-provider";
 import type { LegalDocumentRow } from "@/lib/rag/types";
 import type { AgentKey } from "@/lib/pipeline/agent-keys";
+import type { HelpDocument } from "@/lib/help/types";
 
 export type PlatformSettingsRow = {
   id: string;
@@ -26,16 +28,17 @@ const inputClass =
 
 const secretInputClass = `${inputClass} pr-12`;
 
-const tabs = ["credentials", "tests", "prompts", "rag"] as const;
+const tabs = ["credentials", "tests", "prompts", "rag", "help"] as const;
 type SettingsTab = (typeof tabs)[number];
 
 type SettingsContentProps = {
   settings: PlatformSettingsRow;
   documents: LegalDocumentRow[];
   prompts: { agentKey: AgentKey; systemPrompt: string }[];
+  helpDocuments: HelpDocument[];
 };
 
-export function SettingsContent({ settings, documents, prompts }: SettingsContentProps) {
+export function SettingsContent({ settings, documents, prompts, helpDocuments }: SettingsContentProps) {
   const { admin } = useLocale();
   const [activeTab, setActiveTab] = useState<SettingsTab>("credentials");
   const [showOpenaiKey, setShowOpenaiKey] = useState(false);
@@ -72,6 +75,7 @@ export function SettingsContent({ settings, documents, prompts }: SettingsConten
     if (tab === "credentials") return admin.tabCredentials;
     if (tab === "tests") return admin.tabTests;
     if (tab === "prompts") return admin.tabPrompts;
+    if (tab === "help") return admin.tabHelp;
     return admin.tabRag;
   };
 
@@ -189,6 +193,8 @@ export function SettingsContent({ settings, documents, prompts }: SettingsConten
           </form>
         ) : activeTab === "prompts" ? (
           <AgentPromptsSettingsContent prompts={prompts} />
+        ) : activeTab === "help" ? (
+          <HelpSettingsContent documents={helpDocuments} />
         ) : (
           <RagSettingsContent documents={documents} />
         )}

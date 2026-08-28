@@ -9,6 +9,7 @@ import {
   tryFinalizeMediatorSession,
 } from "@/lib/mediator-session/handshake";
 import { isMediatorSessionEnded } from "@/lib/mediator-session/room-mode";
+import { isUuid } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ export default async function MediatorRoomLobbyPage({
   params: Promise<{ roomId: string }>;
 }) {
   const { roomId } = await params;
+  if (!isUuid(roomId)) redirect("/mediator/rooms");
   const userId = await requireSessionUserId();
 
   const [room] = await db

@@ -183,6 +183,13 @@
       "when": 1784480000000,
       "tag": "0025_row_level_security",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1784560000000,
+      "tag": "0026_help_documents",
+      "breakpoints": true
     }
   ]
 }

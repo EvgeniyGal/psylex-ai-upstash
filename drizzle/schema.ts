@@ -349,3 +349,23 @@ export const mediationFilingReceiptsRelations = relations(mediationFilingReceipt
     references: [rooms.id],
   }),
 }));
+
+export const helpDocumentSlug = pgEnum("help_document_slug", [
+  "overview",
+  "parties",
+  "mediator",
+  "admin",
+]);
+
+export const helpDocuments = pgTable(
+  "help_documents",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    slug: helpDocumentSlug("slug").notNull(),
+    locale: preferredLocale("locale").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [unique("help_documents_slug_locale_unique").on(table.slug, table.locale)],
+);

@@ -6,7 +6,10 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "10mb",
     },
   },
-  serverExternalPackages: ["pdfkit", "unpdf"],
+  serverExternalPackages: ["pdfkit", "unpdf", "docx"],
+  outputFileTracingIncludes: {
+    "/*": ["./instruction/**/*", "./assets/**/*"],
+  },
 };
 
 export default nextConfig;

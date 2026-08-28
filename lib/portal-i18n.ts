@@ -90,6 +90,24 @@ type PortalCopy = {
   modeBWaitingCompromisePublish: string;
   backToStart: string;
   logout: string;
+  helpTitle: string;
+  helpAria: string;
+  helpDownloadPdf: string;
+  helpDownloadDocx: string;
+  helpNoDocuments: string;
+  helpChatTitle: string;
+  helpChatPlaceholder: string;
+  helpChatSend: string;
+  helpChatClear: string;
+  helpChatEmpty: string;
+  helpChatError: string;
+  helpChatThinking: string;
+  helpChatOpen: string;
+  helpChatClose: string;
+  helpDocOverview: string;
+  helpDocParties: string;
+  helpDocMediator: string;
+  helpDocAdmin: string;
   roomTitle: string;
   roomComingSoon: string;
   roomComingSoonDesc: string;
@@ -312,6 +330,24 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     modeBWaitingCompromisePublish: "Waiting for the mediator to publish a compromise option.",
     backToStart: "Back to start",
     logout: "Logout",
+    helpTitle: "Help",
+    helpAria: "Open help",
+    helpDownloadPdf: "Download PDF",
+    helpDownloadDocx: "Download DOCX",
+    helpNoDocuments: "No instructions are available for your role.",
+    helpChatTitle: "PsyLex assistant",
+    helpChatPlaceholder: "Ask a question about PsyLex…",
+    helpChatSend: "Send",
+    helpChatClear: "Clear history",
+    helpChatEmpty: "Ask anything about how PsyLex works. Answers stay in this browser.",
+    helpChatError: "The assistant could not answer. Try again in a moment.",
+    helpChatThinking: "Preparing an answer…",
+    helpChatOpen: "Open chat assistant",
+    helpChatClose: "Close chat assistant",
+    helpDocOverview: "Overview",
+    helpDocParties: "Parties A and B",
+    helpDocMediator: "Mediator",
+    helpDocAdmin: "Administrator",
     roomTitle: "Mediation room",
     roomComingSoon: "COMING SOON",
     roomComingSoonDesc: "Mediation room features are being rebuilt and will be available in a future release.",
@@ -554,6 +590,24 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     modeBWaitingCompromisePublish: "Очікуємо, поки медіатор опублікує компромісний варіант.",
     backToStart: "На головну",
     logout: "Вийти",
+    helpTitle: "Довідка",
+    helpAria: "Відкрити довідку",
+    helpDownloadPdf: "Завантажити PDF",
+    helpDownloadDocx: "Завантажити DOCX",
+    helpNoDocuments: "Для вашої ролі інструкції недоступні.",
+    helpChatTitle: "Помічник PsyLex",
+    helpChatPlaceholder: "Запитайте про роботу PsyLex…",
+    helpChatSend: "Надіслати",
+    helpChatClear: "Очистити історію",
+    helpChatEmpty: "Запитайте будь-що про роботу PsyLex. Історія зберігається в цьому браузері.",
+    helpChatError: "Помічник не зміг відповісти. Спробуйте ще раз за мить.",
+    helpChatThinking: "Готуємо відповідь…",
+    helpChatOpen: "Відкрити чат-помічника",
+    helpChatClose: "Закрити чат-помічника",
+    helpDocOverview: "Огляд",
+    helpDocParties: "Сторони А і Б",
+    helpDocMediator: "Медіатор",
+    helpDocAdmin: "Адміністратор",
     roomTitle: "Кімната медіації",
     roomComingSoon: "НЕЗАБАРОМ",
     roomComingSoonDesc: "Функції кімнати медіації перебудовуються та будуть доступні в майбутньому релізі.",
