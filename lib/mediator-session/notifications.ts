@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { rooms } from "@/drizzle/schema";
+import { notifyRoom } from "@/lib/realtime/notify";
 import type { PartyNotification, PartyNotificationType } from "@/lib/mediator-session/types";
 import type { PartyRole } from "@/lib/participant-roles";
 
@@ -23,6 +24,7 @@ export async function setPartyNotification(params: {
     .update(rooms)
     .set({ partyNotification: notification })
     .where(eq(rooms.id, params.roomId));
+  notifyRoom(params.roomId);
 
   return notification;
 }
@@ -45,4 +47,5 @@ export async function clearPartyNotificationIfType(
     .update(rooms)
     .set({ partyNotification: null })
     .where(eq(rooms.id, roomId));
+  notifyRoom(roomId);
 }

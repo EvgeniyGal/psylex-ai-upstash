@@ -2,6 +2,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { rooms, users, type rooms as roomsTable } from "@/drizzle/schema";
 import { isPartyRole, type PartyRole } from "@/lib/participant-roles";
+import { notifyRoom } from "@/lib/realtime/notify";
 
 export type HandshakeStatus = "idle" | "waiting" | "started" | "ineligible";
 
@@ -64,6 +65,7 @@ async function finalizeMediationStart(roomId: string): Promise<Date | null> {
     .set({ mediationStartedAt: new Date() })
     .where(and(eq(rooms.id, roomId), isNull(rooms.mediationStartedAt)))
     .returning({ mediationStartedAt: rooms.mediationStartedAt });
+  notifyRoom(roomId);
 
   if (!updated) {
     const [room] = await db
@@ -119,6 +121,7 @@ export async function recordStartClick(roomId: string, role: PartyRole): Promise
         : { partyBMediationStartClickedAt: clickAt },
     )
     .where(eq(rooms.id, roomId));
+  notifyRoom(roomId);
 
   const updated = await loadRoomHandshake(roomId);
   if (!updated) {

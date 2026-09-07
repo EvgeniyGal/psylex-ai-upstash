@@ -13,6 +13,7 @@ import type { Locale } from "@/lib/i18n";
 import { buildAdminAgreementDownload } from "@/lib/mediation/pdf";
 import { isRoomJurisdiction } from "@/lib/room/jurisdiction";
 import { isUsaSubJurisdiction, parseUsaSubJurisdiction } from "@/lib/rag/usa-jurisdictions";
+import { notifyRoom, notifyUser } from "@/lib/realtime/notify";
 
 function required(value: FormDataEntryValue | null, field: string) {
   const text = String(value ?? "").trim();
@@ -105,6 +106,7 @@ export async function createRoom(formData: FormData) {
       roomId: room.id,
     },
   ]);
+  notifyRoom(room.id);
 
   revalidatePath("/admin/rooms");
   revalidatePath("/mediator/rooms");
@@ -121,6 +123,7 @@ export async function updateRoomMeta(formData: FormData) {
     .update(rooms)
     .set({ title, description })
     .where(eq(rooms.id, id));
+  notifyRoom(id);
   revalidatePath("/admin/rooms");
   revalidatePath(`/admin/rooms/${id}`);
 }
@@ -131,7 +134,9 @@ export async function updateParticipantMeta(formData: FormData) {
   const description = required(formData.get("description"), "description");
 
   await db.update(users).set({ title, description }).where(eq(users.id, id));
+  notifyUser(id);
   const [user] = await db.select({ roomId: users.roomId }).from(users).where(eq(users.id, id)).limit(1);
+  notifyRoom(user?.roomId);
   revalidatePath("/admin/rooms");
   revalidatePath("/admin/mediators");
   if (user?.roomId) revalidatePath(`/admin/rooms/${user.roomId}`);
@@ -144,6 +149,7 @@ export async function deleteRoom(formData: FormData) {
 
   await db.delete(users).where(eq(users.roomId, roomId));
   await db.delete(rooms).where(eq(rooms.id, roomId));
+  notifyRoom(roomId);
 
   revalidatePath("/admin/rooms");
   revalidatePath("/admin/mediators");

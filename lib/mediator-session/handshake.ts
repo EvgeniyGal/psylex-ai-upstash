@@ -11,6 +11,7 @@ import { getSideReadiness } from "@/lib/dispute-intake";
 import { isPostIntakePipelineComplete } from "@/lib/pipeline/gate";
 import { getRoomSides } from "@/lib/room/helpers";
 import { isPartyRole, type PartyRole } from "@/lib/participant-roles";
+import { notifyRoom } from "@/lib/realtime/notify";
 
 export type MediatorHandshakeStatus =
   | "idle"
@@ -230,6 +231,7 @@ async function finalizeMediatorSessionStart(roomId: string): Promise<Date | null
     })
     .where(and(eq(rooms.id, roomId), isNull(rooms.mediationStartedAt)))
     .returning({ mediationStartedAt: rooms.mediationStartedAt });
+  notifyRoom(roomId);
 
   if (!updated) {
     const fresh = await loadRoomHandshake(roomId);
@@ -307,6 +309,7 @@ export async function recordMediatorStartClick(
 
   if (!existing) {
     await db.update(rooms).set(patch).where(eq(rooms.id, roomId));
+    notifyRoom(roomId);
     // "You can now click Start" is obsolete once anyone has clicked.
     await clearPartyNotificationIfType(roomId, "start_window_open");
   }

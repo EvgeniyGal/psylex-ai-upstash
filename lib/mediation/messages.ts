@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { roomMessages } from "@/drizzle/schema";
 import { resolveAdaptedText } from "@/lib/mediation/assemble-input";
@@ -6,6 +6,7 @@ import type { MediationMessageKind, PartyAdaptations } from "@/lib/mediation/typ
 import type { Locale } from "@/lib/i18n";
 import type { PartyRole } from "@/lib/participant-roles";
 import { resolveLocalizedSystemMessage } from "@/lib/mediation/system-messages";
+import { notifyRoom } from "@/lib/realtime/notify";
 
 export { resolveLocalizedSystemMessage } from "@/lib/mediation/system-messages";
 
@@ -15,6 +16,34 @@ export async function listRoomMessages(roomId: string) {
     .from(roomMessages)
     .where(eq(roomMessages.roomId, roomId))
     .orderBy(asc(roomMessages.createdAt));
+}
+
+export async function hasMessageKindInRoom(roomId: string, messageKind: string) {
+  const [row] = await db
+    .select({ id: roomMessages.id })
+    .from(roomMessages)
+    .where(and(eq(roomMessages.roomId, roomId), eq(roomMessages.messageKind, messageKind)))
+    .limit(1);
+  return Boolean(row);
+}
+
+export function dedupeConsecutiveViewerMessages<
+  T extends { senderType: string; messageKind: string | null; content: string },
+>(messages: T[]): T[] {
+  const result: T[] = [];
+  for (const message of messages) {
+    const prev = result[result.length - 1];
+    if (
+      prev &&
+      prev.senderType === message.senderType &&
+      prev.messageKind === message.messageKind &&
+      prev.content === message.content
+    ) {
+      continue;
+    }
+    result.push(message);
+  }
+  return result;
 }
 
 export function toPartyAdaptations(payload: {
@@ -49,6 +78,7 @@ export async function insertAgentMessage(params: {
       participantUserId: params.addresseeUserId ?? null,
     })
     .returning();
+  notifyRoom(params.roomId);
   return row;
 }
 
@@ -67,6 +97,7 @@ export async function insertParticipantMessage(params: {
       content: params.content,
     })
     .returning();
+  notifyRoom(params.roomId);
   return row;
 }
 
@@ -88,6 +119,7 @@ export async function insertSystemMessage(params: {
       messageKind: "mediation_system",
     })
     .returning();
+  notifyRoom(params.roomId);
   return row;
 }
 

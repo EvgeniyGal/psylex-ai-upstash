@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { rooms, users } from "@/drizzle/schema";
 import { hasSubmittedDisputeIntake } from "@/lib/dispute-intake";
 import { getRoomSides } from "@/lib/room/helpers";
+import { notifyRoom } from "@/lib/realtime/notify";
 
 function isPersonalBotReady(user: {
   personalBotPrompt: string | null;
@@ -88,6 +89,7 @@ export async function markPipelineStarted(roomId: string) {
     .update(rooms)
     .set({ postIntakePipelineStartedAt: new Date() })
     .where(eq(rooms.id, roomId));
+  notifyRoom(roomId);
 }
 
 export async function markPipelineCompleted(roomId: string) {
@@ -95,6 +97,7 @@ export async function markPipelineCompleted(roomId: string) {
     .update(rooms)
     .set({ postIntakePipelineCompletedAt: new Date() })
     .where(eq(rooms.id, roomId));
+  notifyRoom(roomId);
 }
 
 export async function listUsersWithPersonalBot() {

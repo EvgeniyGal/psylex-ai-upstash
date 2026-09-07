@@ -12,6 +12,7 @@ import {
 } from "@/lib/pipeline/locale";
 import { runAgent } from "@/lib/pipeline/run-agent";
 import type { InterestsAnalysis, PsychodynamicProfile } from "@/lib/pipeline/schemas";
+import { notifyRoom } from "@/lib/realtime/notify";
 
 type RunInterestsParams = {
   roomId: string;
@@ -98,6 +99,7 @@ export async function runInterestsAgent(params: RunInterestsParams) {
           interestsAnalysisAt: new Date(),
         })
         .where(eq(rooms.id, params.roomId));
+      notifyRoom(params.roomId);
 
       await logPipelineEvent({
         roomId: params.roomId,

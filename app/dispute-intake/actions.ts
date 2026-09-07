@@ -23,6 +23,7 @@ import {
   type HandshakeStatusResponse,
 } from "@/lib/mediation/handshake";
 import { getMediationLobbyStatusForUser, type MediationLobbyStatus } from "@/lib/dispute-intake";
+import { notifyRoom, notifyUser } from "@/lib/realtime/notify";
 
 async function requireSideParticipant() {
   const session = await getServerSession(authOptions);
@@ -79,6 +80,8 @@ export async function submitDisputeIntake(formData: FormData) {
       disputeIntakeSubmittedAt: new Date(),
     })
     .where(eq(users.id, user.id));
+  notifyUser(user.id);
+  notifyRoom(user.roomId);
 
   if (user.roomId) {
     tryRunPostIntakePipeline(user.roomId);

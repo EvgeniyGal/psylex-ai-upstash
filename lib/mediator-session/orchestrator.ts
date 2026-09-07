@@ -7,6 +7,7 @@ import {
   partyRoleFromUser,
 } from "@/lib/mediation/assemble-input";
 import {
+  dedupeConsecutiveViewerMessages,
   insertAgentMessage,
   insertParticipantMessage,
   insertSystemMessage,
@@ -44,6 +45,7 @@ import { getRoomPartiesForPipeline, isPostIntakePipelineComplete } from "@/lib/p
 import type { PartyRole } from "@/lib/participant-roles";
 import type { Locale } from "@/lib/i18n";
 import { portalCopy } from "@/lib/portal-i18n";
+import { notifyRoom } from "@/lib/realtime/notify";
 
 type RoomRow = typeof rooms.$inferSelect;
 
@@ -56,6 +58,7 @@ async function loadRoom(roomId: string) {
 
 async function setPhase(roomId: string, phase: MediationPhase, payload?: Record<string, unknown>) {
   await db.update(rooms).set({ mediationPhase: phase }).where(eq(rooms.id, roomId));
+  notifyRoom(roomId);
   await logPipelineEvent({
     roomId,
     agentKey: "mediation",
@@ -479,6 +482,7 @@ export async function castMediatorPartyVote(userId: string, optionId: string) {
     role === "party_a" ? { partyAVoteOptionId: optionId } : { partyBVoteOptionId: optionId };
 
   await db.update(rooms).set(patch).where(eq(rooms.id, room.id));
+  notifyRoom(room.id);
 
   const updated = await loadRoom(room.id);
   if (!updated?.partyAVoteOptionId || !updated.partyBVoteOptionId) return updated;
@@ -538,6 +542,7 @@ export async function castMediatorCompromiseVote(userId: string, accepted: boole
     role === "party_a" ? { partyACompromiseVote: accepted } : { partyBCompromiseVote: accepted };
 
   await db.update(rooms).set(patch).where(eq(rooms.id, room.id));
+  notifyRoom(room.id);
   const updated = await loadRoom(room.id);
   if (!updated) return null;
 
@@ -607,6 +612,7 @@ async function ensureDraftAgreement(roomId: string, optionId: string) {
     };
 
     await db.update(rooms).set({ draftAgreement: agreement }).where(eq(rooms.id, roomId));
+    notifyRoom(roomId);
   } finally {
     agentWork.delete(roomId);
   }
@@ -703,7 +709,7 @@ async function buildSessionState(
     return null;
   };
 
-  const viewerMessages =
+  const viewerMessages = dedupeConsecutiveViewerMessages(
     viewerKind === "mediator"
       ? messages.map((message) => {
           const addresseeUserId =
@@ -744,7 +750,8 @@ async function buildSessionState(
             addresseeUserId: message.participantUserId,
             senderPartyRole: roleForUserId(message.senderUserId),
             addresseePartyRole: roleForUserId(message.participantUserId),
-          }));
+          })),
+  );
 
   const mapOption = (option: MediationOption) => ({
     id: option.id,

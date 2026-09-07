@@ -10,6 +10,7 @@ import { getPlatformSettings } from "@/lib/platform-settings";
 import { isParticipantRole } from "@/lib/participant-roles";
 import { TEST_KEYS, type TestKey } from "@/lib/test-keys";
 import { userTestCompletions, users } from "@/drizzle/schema";
+import { notifyRoom, notifyUser } from "@/lib/realtime/notify";
 
 export type TestStatusSyncResult = {
   completedTests: TestKey[];
@@ -46,6 +47,7 @@ export async function syncUserTestStatus(
       role: users.role,
       personalBotPrompt: users.personalBotPrompt,
       personalBotReadyAt: users.personalBotReadyAt,
+      roomId: users.roomId,
     })
     .from(users)
     .where(eq(users.id, userId))
@@ -62,6 +64,8 @@ export async function syncUserTestStatus(
         .update(users)
         .set({ personalBotPrompt: finalized })
         .where(eq(users.id, userId));
+      notifyUser(userId);
+      notifyRoom(user?.roomId);
     }
   }
 
@@ -161,6 +165,11 @@ export async function syncUserTestStatus(
       syncedBotPrompt = null;
       syncedBotReady = false;
     }
+  }
+
+  if (updated) {
+    notifyUser(userId);
+    notifyRoom(user?.roomId);
   }
 
   return {

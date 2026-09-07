@@ -5,18 +5,16 @@
 - Next.js App Router + TypeScript
 - Tailwind CSS + lightweight shadcn setup
 - NextAuth credentials auth (plain-text password for MVP)
-- Drizzle ORM + PostgreSQL (Supabase Cloud recommended)
-- Supabase Realtime for mediation / lobby live updates
+- Drizzle ORM + PostgreSQL (Neon or any Postgres; no realtime features required)
+- Upstash Redis for mediation / lobby live updates and a short room cache
 
 ## Setup
 
 1. Copy `.env.example` to `.env`
 2. Fill in:
-   - `DATABASE_URL` — **Session pooler** URI from Supabase Dashboard → Connect  
-     (direct `db.*.supabase.co` is IPv6-only; most home networks need the pooler)
+   - `DATABASE_URL` — Postgres connection string (session pooler or Neon pooler)
    - `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
-   - `NEXT_PUBLIC_SUPABASE_URL` — `https://<project>.supabase.co`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — anon/public JWT from Project Settings → API
+   - `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` from the Upstash console
 3. Install dependencies:
 
 ```bash
@@ -35,9 +33,8 @@ npm run db:generate
 npm run db:migrate
 ```
 
-Migration `0020_supabase_realtime` adds `rooms`, `room_messages`, `users`, and `user_test_completions` to the `supabase_realtime` publication.  
-Migration `0022_realtime_replica_identity` sets `REPLICA IDENTITY FULL` so filtered UPDATE/DELETE events work.  
-Migration `0025_row_level_security` enables RLS on all public tables and blocks Supabase `anon` / PostgREST access (app uses Drizzle via `DATABASE_URL`). See [docs/security-rls.md](docs/security-rls.md).
+Migration `0025_row_level_security` enables RLS on public tables when present. See [docs/security-rls.md](docs/security-rls.md).  
+Migration `0027_drop_pg_notify` removes unused Postgres LISTEN/NOTIFY triggers (live updates are Upstash).
 
 6. Create admin user manually in DB (example):
 
@@ -60,31 +57,26 @@ VALUES (
 npm run dev
 ```
 
-### Migrating from self-hosted Supabase
+### Copying data from another Postgres
 
-Keep the old DB URL as `O_DATABASE_URL`, set cloud pooler as `DATABASE_URL`, then:
+Keep the old DB URL as `OLD_DATABASE_URL` (read-only). Set the destination as `DATABASE_URL`, then:
 
 ```bash
 node scripts/migrate-selfhosted-to-cloud.mjs
 ```
 
-## Supabase Realtime
+The script never writes to the source. It migrates schema on the target, copies app tables, then restores foreign keys.
 
-Live updates use push, not polling:
+## Live updates (Upstash)
 
-1. **Postgres LISTEN/NOTIFY + SSE** (`/api/realtime/room/[roomId]`) — always on (works with NextAuth)
-2. **Supabase Realtime WebSocket** (`postgres_changes`) — additive when `NEXT_PUBLIC_SUPABASE_URL` is configured
+Postgres is storage only. After writes, the server emits a tiny `room.change` / `user.change` ping on per-entity Redis channels. The browser subscribes via SSE (`/api/realtime`) and refetches authoritative state through server actions.
 
-SSE stays active even if the WebSocket reports subscribed but RLS blocks event delivery. Changes are debounced before refetching authoritative state via server actions.
+- **Channels:** `room-{roomId}`, `user-{userId}`
+- **Auth:** NextAuth session + room membership (or mediator owner / admin)
+- **Fallback:** 15s polling if the Upstash connection is down
+- **Cache:** 30s Redis cache for room rows and message lists, invalidated on emit
 
-Tables watched:
-
-| Table | Used for |
-|-------|----------|
-| `rooms` | phases, votes, handshake, pipeline flags |
-| `room_messages` | new mediation messages |
-| `users` | opposite-party readiness in lobby |
-| `user_test_completions` | testing dashboard / lobby readiness |
+On Vercel, enable Fluid Compute so SSE connections are billed for CPU time, not connection duration.
 
 ## Routes
 

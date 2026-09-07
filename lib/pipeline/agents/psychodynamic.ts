@@ -9,6 +9,7 @@ import {
 import { logPipelineEvent } from "@/lib/pipeline/log-event";
 import { normalizeLocale } from "@/lib/pipeline/locale";
 import { runAgent } from "@/lib/pipeline/run-agent";
+import { notifyRoom, notifyUser } from "@/lib/realtime/notify";
 
 type RunPsychodynamicParams = {
   userId: string;
@@ -62,6 +63,8 @@ export async function runPsychodynamicAgent(params: RunPsychodynamicParams) {
           psychodynamicProfileAt: new Date(),
         })
         .where(eq(users.id, user.id));
+      notifyUser(user.id);
+      notifyRoom(params.roomId);
 
       await logPipelineEvent({
         roomId: params.roomId!,

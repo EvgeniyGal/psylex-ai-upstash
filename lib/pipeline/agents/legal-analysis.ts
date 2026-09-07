@@ -23,6 +23,7 @@ import {
   normalizeLocale,
 } from "@/lib/pipeline/locale";
 import { getOpenAIClient, parseJsonFromModelResponse } from "@/lib/pipeline/openai-client";
+import { notifyRoom } from "@/lib/realtime/notify";
 import type { LegalAnalysis } from "@/lib/pipeline/schemas";
 import { legalAnalysisSchema } from "@/lib/pipeline/schemas";
 
@@ -179,6 +180,7 @@ export async function runLegalAnalysisAgent(params: RunLegalAnalysisParams) {
           legalAnalysisAt: new Date(),
         })
         .where(eq(rooms.id, params.roomId));
+      notifyRoom(params.roomId);
 
       await logPipelineEvent({
         roomId: params.roomId,

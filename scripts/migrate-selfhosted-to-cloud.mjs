@@ -3,12 +3,17 @@ import { execSync } from "node:child_process";
 import postgres from "postgres";
 
 /**
- * Copy app data from old self-hosted Supabase (O_DATABASE_URL)
- * into the new cloud project (DATABASE_URL).
+ * Copy app data from OLD_DATABASE_URL (read-only) into DATABASE_URL.
+ *
+ * Never writes to the source. Target is truncated and refilled.
  *
  * Usage: node scripts/migrate-selfhosted-to-cloud.mjs
  */
-const sourceUrl = process.env.O_DATABASE_URL;
+const sourceUrl = (
+  process.env.OLD_DATABASE_URL ??
+  process.env.O_DATABASE_URL ??
+  ""
+).replace(/^"|"$/g, "");
 const targetUrl = (process.env.DATABASE_URL ?? "").replace(/^"|"$/g, "");
 
 // Insert order respects soft dependencies; FKs are disabled during copy.
@@ -24,6 +29,7 @@ const APP_TABLES = [
   "pipeline_event_logs",
   "room_messages",
   "mediation_filing_receipts",
+  "help_documents",
 ];
 
 const TRUNCATE_ORDER = [...APP_TABLES].reverse();
@@ -32,13 +38,27 @@ const INSERT_ORDER = APP_TABLES;
 function sslFor(url) {
   try {
     const host = new URL(url).hostname;
-    if (host.includes("supabase.co") || host.includes("pooler.supabase.com")) {
+    if (
+      host.includes("supabase.co") ||
+      host.includes("pooler.supabase.com") ||
+      host.includes("neon.tech")
+    ) {
       return "require";
     }
   } catch {
     /* ignore */
   }
   return undefined;
+}
+
+function assertDifferentDatabases() {
+  const sourceHost = new URL(sourceUrl).hostname;
+  const targetHost = new URL(targetUrl).hostname;
+  const sourcePath = new URL(sourceUrl).pathname;
+  const targetPath = new URL(targetUrl).pathname;
+  if (sourceHost === targetHost && sourcePath === targetPath) {
+    throw new Error("OLD_DATABASE_URL and DATABASE_URL must be different databases.");
+  }
 }
 
 async function probe(url, label) {
@@ -92,6 +112,17 @@ async function ensureExtensions(url) {
   }
 }
 
+async function tableExists(sql, table) {
+  const [row] = await sql`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = ${table}
+    ) AS present
+  `;
+  return Boolean(row.present);
+}
+
 async function copyAllData(fromUrl, toUrl) {
   const source = postgres(fromUrl, {
     ssl: sslFor(fromUrl),
@@ -110,15 +141,37 @@ async function copyAllData(fromUrl, toUrl) {
     const tableData = new Map();
 
     for (const table of APP_TABLES) {
+      if (!(await tableExists(source, table))) {
+        tableData.set(table, []);
+        console.log(`  ${table}: missing on source (skip read)`);
+        continue;
+      }
       const rows = await source.unsafe(`SELECT * FROM public."${table}"`);
       tableData.set(table, rows);
       console.log(`  ${table}: read ${rows.length} rows from source`);
     }
 
-    await target`SET session_replication_role = replica`;
+    // Neon (and some poolers) forbid session_replication_role. Drop FKs instead.
+    const foreignKeys = await target`
+      SELECT
+        conname,
+        conrelid::regclass::text AS table_name,
+        pg_get_constraintdef(oid) AS def
+      FROM pg_constraint
+      WHERE contype = 'f'
+        AND connamespace = 'public'::regnamespace
+    `;
+    for (const fk of foreignKeys) {
+      await target.unsafe(
+        `ALTER TABLE ${fk.table_name} DROP CONSTRAINT IF EXISTS "${fk.conname}"`,
+      );
+    }
+    console.log(`  dropped ${foreignKeys.length} foreign keys on target`);
 
     for (const table of TRUNCATE_ORDER) {
-      await target.unsafe(`TRUNCATE public."${table}" CASCADE`);
+      if (await tableExists(target, table)) {
+        await target.unsafe(`TRUNCATE public."${table}" CASCADE`);
+      }
     }
 
     for (const table of INSERT_ORDER) {
@@ -128,7 +181,7 @@ async function copyAllData(fromUrl, toUrl) {
         continue;
       }
 
-      console.log(`  ${table}: writing ${rows.length} rows to cloud...`);
+      console.log(`  ${table}: writing ${rows.length} rows to target...`);
 
       const batchSize = table === "document_chunks" ? 20 : 50;
       for (let i = 0; i < rows.length; i += batchSize) {
@@ -139,7 +192,12 @@ async function copyAllData(fromUrl, toUrl) {
       console.log(`  ${table}: done`);
     }
 
-    await target`SET session_replication_role = DEFAULT`;
+    for (const fk of foreignKeys) {
+      await target.unsafe(
+        `ALTER TABLE ${fk.table_name} ADD CONSTRAINT "${fk.conname}" ${fk.def}`,
+      );
+    }
+    console.log(`  restored ${foreignKeys.length} foreign keys on target`);
   } finally {
     await source.end({ timeout: 10 });
     await target.end({ timeout: 10 });
@@ -148,7 +206,7 @@ async function copyAllData(fromUrl, toUrl) {
 
 async function main() {
   if (!sourceUrl) {
-    console.error("O_DATABASE_URL is not set in .env");
+    console.error("OLD_DATABASE_URL is not set in .env");
     process.exit(1);
   }
   if (!targetUrl) {
@@ -156,27 +214,29 @@ async function main() {
     process.exit(1);
   }
 
-  console.log("Step 1: Probing databases...");
-  const sourceProbe = await probe(sourceUrl, "OLD self-hosted (source)");
+  assertDifferentDatabases();
+
+  console.log("Step 1: Probing databases (source is read-only)...");
+  const sourceProbe = await probe(sourceUrl, "OLD source (read-only)");
   if (!sourceProbe.ok) process.exit(1);
 
-  const targetProbe = await probe(targetUrl, "NEW cloud (target)");
+  const targetProbe = await probe(targetUrl, "NEW target");
   if (!targetProbe.ok) process.exit(1);
 
-  console.log("\nStep 2: Ensuring extensions on cloud...");
+  console.log("\nStep 2: Ensuring extensions on target...");
   await ensureExtensions(targetUrl);
 
-  console.log("\nStep 3: Applying schema migrations on cloud...");
+  console.log("\nStep 3: Applying schema migrations on target...");
   run("npx drizzle-kit migrate", { ...process.env, DATABASE_URL: targetUrl });
 
-  console.log("\nStep 4: Copying data from self-hosted → cloud...");
+  console.log("\nStep 4: Copying data from source → target (source unchanged)...");
   await copyAllData(sourceUrl, targetUrl);
 
-  console.log("\nStep 5: Verifying row counts on cloud...");
-  await probe(targetUrl, "NEW cloud (after import)");
+  console.log("\nStep 5: Verifying row counts on target...");
+  await probe(targetUrl, "NEW target (after import)");
 
-  console.log("\nMigration complete.");
-  console.log("Restart the Next.js app so it uses the new DATABASE_URL.");
+  console.log("\nMigration complete. Source database was not modified.");
+  console.log("Restart the Next.js app so it uses DATABASE_URL.");
 }
 
 main().catch((error) => {

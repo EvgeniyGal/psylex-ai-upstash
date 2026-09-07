@@ -16,8 +16,7 @@ function createClient() {
     prepare: false,
     connect_timeout: 2,
     ssl: postgresSslOption(connectionString),
-    // Supabase session pooler caps total clients; keep each app instance small.
-    max: process.env.NODE_ENV === "production" ? 1 : 3,
+    max: process.env.NODE_ENV === "production" ? 3 : 5,
   });
 }
 

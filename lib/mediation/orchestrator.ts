@@ -8,10 +8,12 @@ import {
   partyRoleFromUser,
 } from "@/lib/mediation/assemble-input";
 import {
+  dedupeConsecutiveViewerMessages,
   insertAgentMessage,
   insertParticipantMessage,
   insertSystemMessage,
   isMessageVisibleToViewer,
+  hasMessageKindInRoom,
   listRoomMessages,
   resolveMessageForViewer,
   toPartyAdaptations,
@@ -40,6 +42,7 @@ import { isMediatorFacilitatedRoom } from "@/lib/mediator-session/room-mode";
 import { logPipelineEvent } from "@/lib/pipeline/log-event";
 import { getRoomPartiesForPipeline, isPostIntakePipelineComplete } from "@/lib/pipeline/gate";
 import type { PartyRole } from "@/lib/participant-roles";
+import { notifyRoom } from "@/lib/realtime/notify";
 
 type RoomRow = typeof rooms.$inferSelect;
 
@@ -77,6 +80,7 @@ async function loadRoom(roomId: string) {
 
 async function setPhase(roomId: string, phase: MediationPhase, payload?: Record<string, unknown>) {
   await db.update(rooms).set({ mediationPhase: phase }).where(eq(rooms.id, roomId));
+  notifyRoom(roomId);
   await logPipelineEvent({
     roomId,
     agentKey: "mediation",
@@ -115,6 +119,7 @@ async function beginTurn(roomId: string, party: PartyRole) {
       mediationTurnNudged: false,
     })
     .where(eq(rooms.id, roomId));
+  notifyRoom(roomId);
 }
 
 async function clearTurn(roomId: string) {
@@ -126,6 +131,7 @@ async function clearTurn(roomId: string) {
       mediationTurnNudged: false,
     })
     .where(eq(rooms.id, roomId));
+  notifyRoom(roomId);
 }
 
 async function askDialogueQuestion(room: RoomRow, addressee: PartyRole) {
@@ -373,11 +379,6 @@ async function activatePreparedSession(roomId: string) {
   });
 
   await beginTurn(roomId, "party_a");
-}
-
-async function hasMessageKindInRoom(roomId: string, messageKind: string) {
-  const messages = await listRoomMessages(roomId);
-  return messages.some((message) => message.messageKind === messageKind);
 }
 
 /**
@@ -672,6 +673,7 @@ export async function markReadyForOptions(userId: string) {
       : { partyBReadyForOptionsAt: new Date() };
 
   await db.update(rooms).set(patch).where(eq(rooms.id, participant.roomId));
+  notifyRoom(participant.roomId);
   await tickMediationTimers(participant.roomId);
 }
 
@@ -697,6 +699,7 @@ export async function castVote(userId: string, optionId: string) {
       : { partyBVoteOptionId: optionId };
 
   await db.update(rooms).set(patch).where(eq(rooms.id, room.id));
+  notifyRoom(room.id);
 
   const updated = await loadRoom(room.id);
   if (!updated?.partyAVoteOptionId || !updated.partyBVoteOptionId) return updated;
@@ -709,6 +712,7 @@ export async function castVote(userId: string, optionId: string) {
         mediationPhase: "agreement",
       })
       .where(eq(rooms.id, room.id));
+    notifyRoom(room.id);
     await ensureDraftAgreement({
       ...updated,
       selectedOptionId: updated.partyAVoteOptionId,
@@ -756,6 +760,7 @@ export async function castCompromiseVote(userId: string, accepted: boolean) {
       : { partyBCompromiseVote: accepted };
 
   await db.update(rooms).set(patch).where(eq(rooms.id, room.id));
+  notifyRoom(room.id);
   const updated = await loadRoom(room.id);
   if (!updated) return null;
 
@@ -774,6 +779,7 @@ export async function castCompromiseVote(userId: string, accepted: boolean) {
         mediationPhase: "agreement",
       })
       .where(eq(rooms.id, room.id));
+    notifyRoom(room.id);
 
     await ensureDraftAgreement({
       ...updated,
@@ -790,6 +796,7 @@ export async function castCompromiseVote(userId: string, accepted: boolean) {
       mediationCompletedAt: new Date(),
     })
     .where(eq(rooms.id, room.id));
+  notifyRoom(room.id);
 
   return loadRoom(room.id);
 }
@@ -818,6 +825,7 @@ async function generateDraftAgreement(roomId: string, optionId: string) {
       },
     })
     .where(eq(rooms.id, roomId));
+  notifyRoom(roomId);
 }
 
 export async function acceptAgreement(userId: string) {
@@ -836,6 +844,7 @@ export async function acceptAgreement(userId: string) {
       : { partyBAgreementAcceptedAt: now };
 
   await db.update(rooms).set(patch).where(eq(rooms.id, room.id));
+  notifyRoom(room.id);
   const updated = await loadRoom(room.id);
   if (!updated?.partyAAgreementAcceptedAt || !updated.partyBAgreementAcceptedAt) {
     return updated;
@@ -850,6 +859,7 @@ export async function acceptAgreement(userId: string) {
       mediationCompletedAt: finalizedAt,
     })
     .where(eq(rooms.id, room.id));
+  notifyRoom(room.id);
 
   const draft = updated.draftAgreement as { title: string; body: string; terms: string[] } | null;
   const hash = createHash("sha256")
@@ -921,20 +931,22 @@ export async function getMediationRoomState(userId: string) {
     partyBUserId: partyB?.id ?? "",
   };
 
-  const viewerMessages = messages
-    .filter((message) =>
-      partyA?.id && partyB?.id
-        ? isMessageVisibleToViewer(message, userId, visibilityContext)
-        : message.senderUserId === userId || message.senderType !== "participant",
-    )
-    .map((message) => ({
-      id: message.id,
-      senderType: message.senderType,
-      messageKind: message.messageKind,
-      content: resolveMessageForViewer(message, role, participant.user.preferredLocale),
-      createdAt: message.createdAt.toISOString(),
-      isOwn: message.senderUserId === userId,
-    }));
+  const viewerMessages = dedupeConsecutiveViewerMessages(
+    messages
+      .filter((message) =>
+        partyA?.id && partyB?.id
+          ? isMessageVisibleToViewer(message, userId, visibilityContext)
+          : message.senderUserId === userId || message.senderType !== "participant",
+      )
+      .map((message) => ({
+        id: message.id,
+        senderType: message.senderType,
+        messageKind: message.messageKind,
+        content: resolveMessageForViewer(message, role, participant.user.preferredLocale),
+        createdAt: message.createdAt.toISOString(),
+        isOwn: message.senderUserId === userId,
+      })),
+  );
 
   const mapOption = (option: MediationOption) => ({
     id: option.id,

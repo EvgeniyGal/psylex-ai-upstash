@@ -9,6 +9,7 @@ import {
   isScheduleMinuteOption,
 } from "@/lib/mediator-session/schedule-options";
 import { logPipelineEvent } from "@/lib/pipeline/log-event";
+import { notifyRoom } from "@/lib/realtime/notify";
 import { getSideReadiness } from "@/lib/dispute-intake";
 import { isPostIntakePipelineComplete } from "@/lib/pipeline/gate";
 import { getRoomSides } from "@/lib/room/helpers";
@@ -94,6 +95,7 @@ export async function scheduleMediatorSession(params: {
       mediatorMediationStartClickedAt: null,
     })
     .where(eq(rooms.id, params.roomId));
+  notifyRoom(params.roomId);
 
   await setPartyNotification({
     roomId: params.roomId,

@@ -10,6 +10,7 @@ import { users } from "@/drizzle/schema";
 import { getParticipantNextPath, getUserOnboardingStatus } from "@/lib/onboarding";
 import { isParticipantRole, type ParticipantRole } from "@/lib/participant-roles";
 import { syncUserTestStatus } from "@/lib/test-status-sync";
+import { notifyRoom, notifyUser } from "@/lib/realtime/notify";
 
 async function requireParticipantUser() {
   const session = await getServerSession(authOptions);
@@ -45,6 +46,8 @@ export async function markWelcomeSeen() {
     .update(users)
     .set({ welcomeSeenAt: new Date() })
     .where(eq(users.id, user.id));
+  notifyUser(user.id);
+  notifyRoom(user.roomId);
 
   revalidatePath("/onboarding/welcome");
   redirect("/onboarding/consent");
@@ -63,6 +66,8 @@ export async function acceptDisclaimer(formData: FormData) {
       disclaimerAcceptedAt: now,
     })
     .where(eq(users.id, user.id));
+  notifyUser(user.id);
+  notifyRoom(user.roomId);
 
   revalidatePath("/onboarding/consent");
   revalidatePath("/onboarding/welcome");
@@ -93,6 +98,8 @@ export async function completeOnboarding() {
     .update(users)
     .set({ onboardingCompletedAt: new Date() })
     .where(eq(users.id, user.id));
+  notifyUser(user.id);
+  notifyRoom(user.roomId);
 
   revalidatePath("/onboarding/tests");
   redirect(await getParticipantNextPath(user.id, role as ParticipantRole));
