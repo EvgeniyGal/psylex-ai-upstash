@@ -46,15 +46,23 @@ Both hero CTA buttons SHALL navigate to the login page at `/login`.
 - **WHEN** a visitor clicks "For Mediators →" (or "Для медіаторів →")
 - **THEN** the browser navigates to `/login`
 
-### Requirement: Attorney vs PsyLex contrast section
+### Requirement: Roles section
 
-The landing page SHALL include a two-column contrast section with large typography comparing traditional attorney approach and PsyLex approach. The section MUST NOT use tables.
+The landing page SHALL explain that parties, the mediator, and a licensed attorney each have a distinct role. The section MUST NOT compare PsyLex against attorneys or claim a solution in one session.
 
-#### Scenario: Contrast content displayed
+#### Scenario: English roles content
 
-- **WHEN** a visitor scrolls to the contrast section
-- **THEN** five comparison pairs are shown: cost, outcome, goal, duration, and relationship framing
-- **AND** the PsyLex column emphasizes accessibility, mutual solution, agreement, single-session resolution, and collaboration
+- **WHEN** a visitor views the roles section in English
+- **THEN** the heading reads "Everyone has a role"
+- **AND** the subheading reads "PsyLex supports the process — people make the decisions."
+- **AND** three cards describe the parties, the mediator, and the attorney
+- **AND** the attorney card states that PsyLex refers parties to licensed attorneys
+
+#### Scenario: Ukrainian roles content
+
+- **WHEN** a visitor views the roles section in Ukrainian
+- **THEN** the heading reads «У кожного своя роль»
+- **AND** three cards describe the parties, the mediator, and the attorney
 
 ### Requirement: Win-win-win section
 

@@ -12,15 +12,15 @@ import {
   DotGrid,
   SectionGradient,
 } from "@/components/ui/decorative-shapes";
-import {
-  fadeInUp,
-  fadeIn,
-  scaleIn,
-  slideInLeft,
-  slideInRight,
-} from "@/lib/motion";
+import { fadeInUp, scaleIn } from "@/lib/motion";
 
 const beatBorders = ["border-t-med", "border-t-law", "border-t-risk"] as const;
+
+const roleAccents = [
+  { border: "border-t-party-a", icon: "text-party-a", iconName: "groups" },
+  { border: "border-t-med", icon: "text-med", iconName: "balance" },
+  { border: "border-t-law", icon: "text-law", iconName: "gavel" },
+] as const;
 
 function WorkflowSteps({
   steps,
@@ -62,7 +62,7 @@ export function LandingPage() {
           <>
             <LocaleSwitcher />
             <Link
-              className="hidden text-[13px] font-medium tracking-wide text-ink-soft transition-colors hover:text-ink md:block"
+              className="text-[13px] font-medium tracking-wide text-ink-soft transition-colors hover:text-ink"
               href="/login"
             >
               {t.login}
@@ -153,35 +153,25 @@ export function LandingPage() {
 
         <section className="relative mx-auto mt-16 max-w-container-max">
           <SectionGradient />
-          <StaggerContainer className="grid grid-cols-1 gap-3.5 lg:grid-cols-5" staggerDelay={0.15}>
-            <motion.div
-              className="card-lift rounded border border-hair border-t-[3px] border-t-party-a bg-surface-container p-5 lg:col-span-3"
-              variants={slideInLeft}
-            >
-              <h3 className="mb-4 text-center font-display text-headline-md text-ink">{t.psylexTitle}</h3>
-              <ul className="mx-auto max-w-sm space-y-3">
-                {t.psylexPoints.map((point) => (
-                  <li className="flex items-start text-body-sm text-ink-soft" key={point}>
-                    <span className="material-symbols-outlined mr-2 mt-0.5 text-base text-party-a">check</span>
-                    {point}
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-            <motion.div
-              className="card-lift rounded border border-hair border-t-[3px] border-t-risk bg-surface-container p-5 lg:col-span-2"
-              variants={slideInRight}
-            >
-              <h3 className="mb-4 text-center font-display text-headline-md text-ink">{t.attorneyTitle}</h3>
-              <ul className="mx-auto max-w-sm space-y-3">
-                {t.attorneyPoints.map((point) => (
-                  <li className="flex items-start text-body-sm text-ink-soft" key={point}>
-                    <span className="material-symbols-outlined mr-2 mt-0.5 text-base text-risk">close</span>
-                    {point}
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
+          <AnimateOnScroll>
+            <h2 className="mb-3 font-display text-headline-lg text-ink">{t.rolesTitle}</h2>
+            <p className="mb-8 max-w-3xl text-body-md text-ink-soft">{t.rolesSubtitle}</p>
+          </AnimateOnScroll>
+
+          <StaggerContainer className="grid grid-cols-1 gap-3.5 lg:grid-cols-3" staggerDelay={0.15}>
+            {t.roles.map((role, index) => (
+              <motion.div
+                className={`card-lift rounded border border-hair border-t-[3px] bg-surface-container p-5 ${roleAccents[index].border}`}
+                key={role.title}
+                variants={scaleIn}
+              >
+                <span className={`material-symbols-outlined mb-3 text-[28px] ${roleAccents[index].icon}`}>
+                  {roleAccents[index].iconName}
+                </span>
+                <h3 className="mb-1.5 font-display text-headline-md text-ink">{role.title}</h3>
+                <p className="text-body-sm text-ink-soft">{role.body}</p>
+              </motion.div>
+            ))}
           </StaggerContainer>
         </section>
 

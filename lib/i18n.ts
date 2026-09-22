@@ -13,10 +13,9 @@ type Copy = {
   win2: string;
   win3: string;
   winFooter: string;
-  psylexTitle: string;
-  attorneyTitle: string;
-  psylexPoints: string[];
-  attorneyPoints: string[];
+  rolesTitle: string;
+  rolesSubtitle: string;
+  roles: { title: string; body: string }[];
   howTitle: string;
   modeA: string;
   modeB: string;
@@ -63,21 +62,21 @@ export const copy: Record<Locale, Copy> = {
     win3: "Agreement is real and signed.",
     winFooter:
       '"Mediation is not a compromise for the sake of compromise. It is a search for a solution where each party receives what is important."',
-    psylexTitle: "PsyLex",
-    attorneyTitle: "Attorney",
-    psylexPoints: [
-      "Available to everyone",
-      "Both sides find a way out",
-      "Goal is to agree",
-      "Solution in one session",
-      "You work together to find a way out",
-    ],
-    attorneyPoints: [
-      "$300–700 per hour",
-      "Someone loses",
-      "Goal is to win",
-      "Months of conflict",
-      "You against them",
+    rolesTitle: "Everyone has a role",
+    rolesSubtitle: "PsyLex supports the process — people make the decisions.",
+    roles: [
+      {
+        title: "The parties",
+        body: "Share their story and needs, and decide on the agreement themselves.",
+      },
+      {
+        title: "The mediator",
+        body: "In mediator mode, leads the process, confirms legal information and keeps it fair.",
+      },
+      {
+        title: "The attorney",
+        body: "Gives legal advice when a party needs it. PsyLex refers parties to licensed attorneys.",
+      },
     ],
     howTitle: "How It Works",
     modeA: "Mode A: Self-Resolution",
@@ -151,21 +150,21 @@ export const copy: Record<Locale, Copy> = {
     win3: "Угода реальна та підписана.",
     winFooter:
       "«Медіація — це не компроміс заради компромісу. Це пошук рішення, де кожна сторона отримує те, що для неї важливо.»",
-    psylexTitle: "PsyLex",
-    attorneyTitle: "Адвокат",
-    psylexPoints: [
-      "Доступно кожному",
-      "Обидві сторони знаходять вихід",
-      "Мета — домовитися",
-      "Рішення за одну сесію",
-      "Ви разом шукаєте вихід",
-    ],
-    attorneyPoints: [
-      "$300–700 на годину",
-      "Хтось програє",
-      "Мета — перемогти",
-      "Конфлікт місяцями",
-      "Ти проти них",
+    rolesTitle: "У кожного своя роль",
+    rolesSubtitle: "PsyLex підтримує процес — рішення ухвалюють люди.",
+    roles: [
+      {
+        title: "Сторони",
+        body: "Розповідають свою історію та потреби і самі ухвалюють рішення щодо угоди.",
+      },
+      {
+        title: "Медіатор",
+        body: "У режимі з медіатором веде процес, підтверджує правову інформацію та стежить за справедливістю.",
+      },
+      {
+        title: "Адвокат",
+        body: "Надає юридичну консультацію, коли вона потрібна стороні. PsyLex направляє сторони до ліцензованих адвокатів.",
+      },
     ],
     howTitle: "Як це працює",
     modeA: "Режим A: Самостійно",
