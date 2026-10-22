@@ -72,6 +72,10 @@ export function assembleMediationAgentInput(ctx: MediationContext, extra?: strin
   return [
     `Jurisdiction: ${formatRoomJurisdiction(ctx.room, ctx.partyA.preferredLocale)}`,
     "",
+    "=== PRIMARY: Live dialogue transcript (prefer this over intake) ===",
+    ctx.dialogueTranscript || "(none yet)",
+    "",
+    "=== BACKGROUND ONLY: Intake answers (use only if restated or needed for context) ===",
     formatDisputeIntakeAnswers(ctx.partyA, partyRoleLabel("party_a", ctx.partyA.preferredLocale)),
     "",
     formatDisputeIntakeAnswers(ctx.partyB, partyRoleLabel("party_b", ctx.partyB.preferredLocale)),
@@ -89,9 +93,6 @@ export function assembleMediationAgentInput(ctx: MediationContext, extra?: strin
     "",
     "Legal analysis (information only, not advice):",
     legal ? JSON.stringify(legal, null, 2) : "(not available)",
-    "",
-    "Dialogue transcript:",
-    ctx.dialogueTranscript || "(none yet)",
     extra ? `\n${extra}` : "",
   ]
     .filter(Boolean)

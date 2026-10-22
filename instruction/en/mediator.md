@@ -38,7 +38,7 @@ In the Mediator Console you:
 - schedule the date, time, and duration of the session;
 - manage the schedule in **Calendar** (view, reschedule, change duration);
 - open the **lobby** and start the session together with the parties;
-- in the live session, review party profiles, generate or write questions, send them to the parties, generate solution options, edit and publish a compromise;
+- in the live session, review party profiles, generate or write questions, send them to the parties, generate solution options, edit and publish a compromise, edit and publish the agreement draft;
 - review the preparation log, mediation details, and download results;
 - delete your own rooms.
 
@@ -261,7 +261,15 @@ When the dialogue has produced enough material (this is your professional judgme
 1. Click **Generate solution options**.
 2. The system moves to voting; the parties receive **Solution options are ready to review.**
 
-The parties then vote on their own. If the votes match — the system prepares a draft agreement. If they differ — the **Second vote** phase.
+The parties then vote on their own. If the votes match — the system prepares a **draft agreement** for you to edit. If they differ — **vote discrepancy**.
+
+#### Vote discrepancy
+
+When votes differ, you can:
+
+1. **Propose / edit compromise** — wait for the AI draft if needed, edit fields, then **Publish compromise for vote**.
+2. **Return to dialogue** — clears votes and options (chat history stays) so you can continue the conversation and generate options again.
+3. **End without agreement** — closes the session; the outcome is recorded in the activity log.
 
 #### Compromise
 
@@ -269,16 +277,26 @@ AI prepares a draft, but the parties **do not** see it until you publish it.
 
 Fields:
 
-- **Compromise draft**
 - **Canonical description (mediator view)**
 - **Text for Party A** / **Text for Party B**
 - **Legal information (not advice)**
 - **Fulfillment likelihood**
 - **Risks if refused**
 
-Check neutrality and accuracy, edit if needed, click **Publish compromise**. The parties vote **Accept compromise** / **Reject compromise**.
+Check neutrality and accuracy, edit if needed, click **Publish compromise for vote**. The parties vote **Accept compromise** / **Reject compromise**.
 
-The session normally ends when the parties accept the agreement or reject the compromise (no mutual agreement). You can also click **End session** on the live console (with confirmation) to close early without an agreement.
+#### Agreement draft (publish gate)
+
+When votes match (or both accept a compromise), AI drafts a **third-person** shared agreement from the dialogue and the selected option. Parties see **Waiting for the mediator to finalize the agreement** until you publish.
+
+On your console:
+
+1. Edit **title**, **shared narrative**, and **obligations** (each with an optional **deadline**).
+2. Toggle **protective clauses** (e.g. moratorium until survey) — pre-checked when relevant; uncheck to exclude.
+3. **Save draft**, then **Publish to parties**.
+4. Parties review the same document and click **I accept**. Mutual accept finalizes the session.
+
+The session normally ends when the parties accept the agreement or reject the compromise (no mutual agreement). You can also click **End without agreement** on the live console (with confirmation) to close early.
 
 ### Audience tabs (shared vs caucus)
 
@@ -346,6 +364,8 @@ The email-send field is not active yet — save the PDF yourself.
 
 **Magic Link is not created.** Contact the administrator.
 
-**The parties are waiting for a compromise.** Do not forget **Publish compromise** after you review the draft — otherwise they will see the waiting-for-publication state.
+**The parties are waiting for a compromise.** Do not forget **Publish compromise for vote** after you review the draft — otherwise they will see the waiting-for-publication state.
+
+**The parties are waiting for the agreement.** After matching votes, edit the draft and click **Publish to parties** — they cannot accept until you publish.
 
 **Neutrality.** You facilitate communication; you do not represent either party. PsyLex does not replace your professional judgment, legal advice, or therapy. Legal blocks in the options are information from sources, not advice.

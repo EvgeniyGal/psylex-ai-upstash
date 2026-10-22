@@ -46,10 +46,27 @@ export type MediationOption = {
   partyB: string;
 };
 
+export type DraftObligationSource = "dialogue" | "option" | "protective" | "mediator";
+
+export type DraftObligation = {
+  id: string;
+  text: string;
+  deadline: string | null;
+  source: DraftObligationSource;
+};
+
+export type DraftAgreementStatus = "draft" | "published" | "accepted" | "rejected";
+
 export type DraftAgreement = {
   title: string;
   body: string;
+  /** Structured obligations (preferred). */
+  obligations: DraftObligation[];
+  /** Derived from obligations for legacy consumers. */
   terms: string[];
+  protectiveClauseIds: string[];
+  status: DraftAgreementStatus;
+  publishedAt?: string;
   generatedAt: string;
 };
 

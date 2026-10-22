@@ -77,6 +77,7 @@ export function MediatorPartyRoom({
   });
 
   const awaitingCompromisePublish = !!state.room.awaitingCompromisePublish;
+  const awaitingMediatorPublish = !!state.room.awaitingMediatorPublish;
   const waitingForPeerVote =
     phase === "voting" && !!state.room.selfVote && !state.room.peerHasVoted && !review;
 
@@ -88,15 +89,17 @@ export function MediatorPartyRoom({
       ? t.modeBNotifyQuestion
       : awaitingCompromisePublish
         ? t.modeBWaitingCompromisePublish
-        : waitingForPeerVote
-          ? t.mediationVoteRecorded
-          : phase === "voting"
-            ? t.modeBNotifyOptions
-            : phase === "voting_discrepancy" && state.compromise
-              ? t.modeBNotifyCompromise
-              : phase === "agreement"
-                ? t.modeBNotifyAgreement
-                : null);
+        : awaitingMediatorPublish
+          ? t.modeBWaitingAgreementPublish
+          : waitingForPeerVote
+            ? t.mediationVoteRecorded
+            : phase === "voting"
+              ? t.modeBNotifyOptions
+              : phase === "voting_discrepancy" && state.compromise
+                ? t.modeBNotifyCompromise
+                : phase === "agreement" && state.room.agreementPublished
+                  ? t.modeBNotifyAgreement
+                  : null);
 
   const onSend = () => {
     if (!reply.trim()) return;
@@ -339,7 +342,14 @@ export function MediatorPartyRoom({
               />
             ) : null}
 
-            {phase === "agreement" && draft ? (
+            {phase === "agreement" && awaitingMediatorPublish ? (
+              <div className="glass-panel rounded-xl p-4 text-body-sm text-on-surface-variant">
+                <Spinner className="mb-2" size="sm" />
+                {t.modeBWaitingAgreementPublish}
+              </div>
+            ) : null}
+
+            {phase === "agreement" && draft && state.room.agreementPublished ? (
               <div className="space-y-4">
                 <h2 className="font-display text-headline-md text-on-surface">
                   {draft.title ?? t.mediationAgreementTitle}
@@ -347,7 +357,20 @@ export function MediatorPartyRoom({
                 <div className="glass-panel whitespace-pre-wrap rounded-xl p-4 text-body-md text-on-surface">
                   {draft.body}
                 </div>
-                {draft.terms?.length ? (
+                {draft.obligations?.length ? (
+                  <ul className="list-disc space-y-2 pl-5 text-body-md text-on-surface">
+                    {draft.obligations.map((obligation) => (
+                      <li key={obligation.id}>
+                        <span>{obligation.text}</span>
+                        {obligation.deadline ? (
+                          <span className="mt-0.5 block text-body-sm text-on-surface-variant">
+                            {obligation.deadline}
+                          </span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                ) : draft.terms?.length ? (
                   <ul className="list-disc space-y-1 pl-5 text-body-md text-on-surface">
                     {draft.terms.map((term, index) => (
                       <li key={`${term}-${index}`}>{term}</li>

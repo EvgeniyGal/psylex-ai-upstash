@@ -422,6 +422,18 @@ export async function generateMediatorOptions(roomId: string, mediatorUserId: st
       })
       .where(eq(rooms.id, roomId));
 
+    await logPipelineEvent({
+      roomId,
+      agentKey: "mediation",
+      eventType: "options_published",
+      payload: {
+        options: options.map((o) => ({
+          id: o.id,
+          canonicalDescription: o.canonicalDescription,
+        })),
+      },
+    });
+
     await setPartyNotification({
       roomId,
       type: "options_ready",
@@ -497,6 +509,18 @@ export async function publishMediatorCompromise(params: {
     type: "compromise_ready",
     targetRole: "all",
   });
+
+  await logPipelineEvent({
+    roomId: params.roomId,
+    agentKey: "mediation",
+    eventType: "compromise_published",
+    payload: {
+      optionId: params.draft.id,
+      canonicalDescription: params.draft.canonicalDescription,
+    },
+  });
+
+  return getMediatorConsoleSessionState(params.mediatorUserId, params.roomId);
 }
 
 export async function castMediatorPartyVote(userId: string, optionId: string) {
@@ -516,8 +540,20 @@ export async function castMediatorPartyVote(userId: string, optionId: string) {
   const patch =
     role === "party_a" ? { partyAVoteOptionId: optionId } : { partyBVoteOptionId: optionId };
 
+  const votedOption = options.find((o) => o.id === optionId);
   await db.update(rooms).set(patch).where(eq(rooms.id, room.id));
   notifyRoom(room.id);
+
+  await logPipelineEvent({
+    roomId: room.id,
+    agentKey: "mediation",
+    eventType: "option_vote_cast",
+    payload: {
+      partyRole: role,
+      optionId,
+      canonicalDescription: votedOption?.canonicalDescription ?? null,
+    },
+  });
 
   const updated = await loadRoom(room.id);
   if (!updated?.partyAVoteOptionId || !updated.partyBVoteOptionId) return updated;
@@ -531,11 +567,8 @@ export async function castMediatorPartyVote(userId: string, optionId: string) {
       })
       .where(eq(rooms.id, room.id));
     await ensureDraftAgreement(room.id, updated.partyAVoteOptionId);
-    await setPartyNotification({
-      roomId: room.id,
-      type: "agreement_ready",
-      targetRole: "all",
-    });
+    // Parties are notified when the mediator publishes the draft.
+    notifyRoom(room.id);
     return loadRoom(room.id);
   }
 
@@ -598,11 +631,7 @@ export async function castMediatorCompromiseVote(userId: string, accepted: boole
       .where(eq(rooms.id, room.id));
 
     await ensureDraftAgreement(room.id, compromise.id);
-    await setPartyNotification({
-      roomId: room.id,
-      type: "agreement_ready",
-      targetRole: "all",
-    });
+    notifyRoom(room.id);
     return loadRoom(room.id);
   }
 
@@ -613,6 +642,13 @@ export async function castMediatorCompromiseVote(userId: string, accepted: boole
       mediationCompletedAt: new Date(),
     })
     .where(eq(rooms.id, room.id));
+
+  await logPipelineEvent({
+    roomId: room.id,
+    agentKey: "mediation",
+    eventType: "session_ended_without_agreement",
+    payload: { reason: "compromise_rejected" },
+  });
 
   await setPartyNotification({
     roomId: room.id,
@@ -654,8 +690,110 @@ export async function endMediatorSession(mediatorUserId: string, roomId: string)
   await logPipelineEvent({
     roomId,
     agentKey: "mediation",
+    eventType: "session_ended_without_agreement",
+    payload: { reason: "mediator_ended" },
+  });
+
+  return getMediatorConsoleSessionState(mediatorUserId, roomId);
+}
+
+export async function saveMediatorDraftAgreement(
+  mediatorUserId: string,
+  roomId: string,
+  draft: DraftAgreement,
+) {
+  const room = await assertMediatorOwnsRoom(roomId, mediatorUserId);
+  if (room.mediationPhase !== "agreement") {
+    throw new Error("Agreement draft can only be edited in the agreement phase.");
+  }
+
+  const { mergeProtectiveClausesIntoDraft, normalizeDraftAgreement, obligationsToTerms } =
+    await import("@/lib/mediation/draft-agreement");
+
+  let next = normalizeDraftAgreement({
+    title: draft.title,
+    body: draft.body,
+    terms: draft.terms,
+    obligations: draft.obligations,
+    protectiveClauseIds: draft.protectiveClauseIds,
+    status: draft.status === "published" ? "published" : "draft",
+    publishedAt: draft.status === "published" ? draft.publishedAt : undefined,
+    generatedAt: draft.generatedAt || new Date().toISOString(),
+  });
+  next = mergeProtectiveClausesIntoDraft(next, next.protectiveClauseIds, "en");
+  next = { ...next, terms: obligationsToTerms(next.obligations) };
+
+  await db.update(rooms).set({ draftAgreement: next }).where(eq(rooms.id, roomId));
+  notifyRoom(roomId);
+  return getMediatorConsoleSessionState(mediatorUserId, roomId);
+}
+
+export async function publishMediatorDraftAgreement(mediatorUserId: string, roomId: string) {
+  const room = await assertMediatorOwnsRoom(roomId, mediatorUserId);
+  if (room.mediationPhase !== "agreement") {
+    throw new Error("Nothing to publish.");
+  }
+  const existing = room.draftAgreement as DraftAgreement | null;
+  if (!existing) throw new Error("Draft agreement missing.");
+
+  const { normalizeDraftAgreement, obligationsToTerms } = await import(
+    "@/lib/mediation/draft-agreement"
+  );
+  const published = normalizeDraftAgreement({
+    title: existing.title,
+    body: existing.body,
+    obligations: existing.obligations,
+    protectiveClauseIds: existing.protectiveClauseIds,
+    status: "published",
+    publishedAt: new Date().toISOString(),
+    generatedAt: existing.generatedAt,
+    terms: obligationsToTerms(existing.obligations ?? []),
+  });
+
+  await db.update(rooms).set({ draftAgreement: published }).where(eq(rooms.id, roomId));
+  await setPartyNotification({
+    roomId,
+    type: "agreement_ready",
+    targetRole: "all",
+  });
+  await logPipelineEvent({
+    roomId,
+    agentKey: "mediation",
+    eventType: "agreement_published",
+    payload: {
+      title: published.title,
+      terms: published.terms,
+    },
+  });
+  return getMediatorConsoleSessionState(mediatorUserId, roomId);
+}
+
+export async function returnMediatorSessionToDialogue(mediatorUserId: string, roomId: string) {
+  await assertMediatorOwnsRoom(roomId, mediatorUserId);
+
+  await db
+    .update(rooms)
+    .set({
+      mediationPhase: "dialogue",
+      mediationOptions: null,
+      partyAVoteOptionId: null,
+      partyBVoteOptionId: null,
+      compromiseOption: null,
+      mediatorCompromiseDraft: null,
+      partyACompromiseVote: null,
+      partyBCompromiseVote: null,
+      selectedOptionId: null,
+      draftAgreement: null,
+      mediatorQuestionCandidates: null,
+    })
+    .where(eq(rooms.id, roomId));
+  notifyRoom(roomId);
+
+  await logPipelineEvent({
+    roomId,
+    agentKey: "mediation",
     eventType: "mediation_phase_changed",
-    payload: { phase: "completed", mode: "mediator_facilitated", reason: "mediator_ended" },
+    payload: { phase: "dialogue", reason: "return_to_dialogue" },
   });
 
   return getMediatorConsoleSessionState(mediatorUserId, roomId);
@@ -671,18 +809,45 @@ async function ensureDraftAgreement(roomId: string, optionId: string) {
     const fresh = await loadRoom(roomId);
     if (!fresh || fresh.draftAgreement) return;
 
+    const { defaultSuggestedProtectiveIds, mergeProtectiveClausesIntoDraft, normalizeDraftAgreement } =
+      await import("@/lib/mediation/draft-agreement");
+    const { buildAgreementDraftExtraInstruction, findOptionInRoom } = await import(
+      "@/lib/mediation/build-agreement-extra"
+    );
+
+    const options = (fresh.mediationOptions as MediationOption[] | null) ?? [];
+    const compromise = fresh.compromiseOption as MediationOption | null;
+    const option = findOptionInRoom(options, compromise, optionId);
+    const roomText = [
+      fresh.title,
+      option?.canonicalDescription,
+      ...options.map((o) => o.canonicalDescription),
+    ]
+      .filter(Boolean)
+      .join("\n");
+    const suggestedProtectiveIds = defaultSuggestedProtectiveIds(roomText);
+
     const { ctx } = await buildContext(fresh);
     const draft = await runMediationAgent({
       mode: "agreement_draft",
       context: ctx,
       schema: mediationAgreementDraftSchema,
-      extraInstruction: `Selected option id: ${optionId}`,
+      extraInstruction: buildAgreementDraftExtraInstruction({
+        optionId,
+        option,
+        suggestedProtectiveIds,
+      }),
     });
 
-    const agreement: DraftAgreement = {
-      ...draft,
-      generatedAt: new Date().toISOString(),
-    };
+    let agreement: DraftAgreement = normalizeDraftAgreement(
+      {
+        ...draft,
+        generatedAt: new Date().toISOString(),
+        status: "draft",
+      },
+      { suggestProtectiveIds: suggestedProtectiveIds },
+    );
+    agreement = mergeProtectiveClausesIntoDraft(agreement, suggestedProtectiveIds, "en");
 
     await db.update(rooms).set({ draftAgreement: agreement }).where(eq(rooms.id, roomId));
     notifyRoom(roomId);
@@ -741,6 +906,10 @@ export async function getMediatorConsoleSessionState(mediatorUserId: string, roo
   let fresh = (await loadRoom(room.id)) ?? room;
   if (fresh.mediationPhase === "voting_discrepancy" && !fresh.mediatorCompromiseDraft && !fresh.compromiseOption) {
     await generateCompromiseDraft(fresh);
+    fresh = (await loadRoom(room.id)) ?? fresh;
+  }
+  if (fresh.mediationPhase === "agreement" && !fresh.draftAgreement && fresh.selectedOptionId) {
+    await ensureDraftAgreement(room.id, fresh.selectedOptionId);
     fresh = (await loadRoom(room.id)) ?? fresh;
   }
 
@@ -884,7 +1053,16 @@ async function buildSessionState(
 
   const mappedOptions = options.map(mapOption);
   const mappedCompromise = compromise ? mapOption(compromise) : null;
-  const draftAgreement = room.draftAgreement as DraftAgreement | null;
+  const draftAgreementRaw = room.draftAgreement as DraftAgreement | null;
+  const draftStatus = draftAgreementRaw?.status ?? null;
+  const agreementPublished =
+    draftStatus === "published" || draftStatus === "accepted";
+  const awaitingMediatorPublish =
+    room.mediationPhase === "agreement" && !agreementPublished;
+  const draftAgreement =
+    viewerKind === "party" && draftAgreementRaw && !agreementPublished
+      ? null
+      : draftAgreementRaw;
 
   const statePayload = {
     room: {
@@ -906,6 +1084,8 @@ async function buildSessionState(
         : null,
       peerHasVoted,
       awaitingCompromisePublish,
+      awaitingMediatorPublish,
+      agreementPublished,
       partyAVote: viewerKind === "mediator" ? room.partyAVoteOptionId : undefined,
       partyBVote: viewerKind === "mediator" ? room.partyBVoteOptionId : undefined,
       selfCompromiseVote:

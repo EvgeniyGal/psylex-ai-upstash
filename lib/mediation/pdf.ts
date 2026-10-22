@@ -45,38 +45,54 @@ function formatDraftAgreementChapterBody(params: {
 export async function buildAgreementDownloadFromSummary(
   summary: MediationResultsSummary,
   locale: Locale = "en",
+  options?: { includePsychodynamic?: boolean },
 ) {
   const copy = portalCopy[locale];
   const termsHeading = locale === "uk" ? "Умови" : "Terms";
+  const includePsychodynamic = options?.includePsychodynamic === true;
+
+  const contentSections = [
+    {
+      heading: copy.mediationPdfLegislation,
+      body: formatLegislationChapterBody(summary),
+    },
+    {
+      heading: copy.mediationPdfSolution,
+      body: summary.solution,
+    },
+    {
+      heading: copy.mediationAgreementTitle,
+      body: formatDraftAgreementChapterBody({
+        agreementBody: summary.agreementBody,
+        terms: summary.terms,
+        termsHeading,
+        notAvailable: copy.mediationPdfNotAvailable,
+      }),
+    },
+  ];
+
+  const sections = includePsychodynamic
+    ? [
+        {
+          heading: copy.mediationPdfPsychodynamicProfile,
+          body: summary.psychodynamicProfile,
+        },
+        ...contentSections,
+      ].map((section, index) => ({
+        heading: `${index + 1}. ${section.heading}`,
+        body: section.body,
+      }))
+    : contentSections.map((section, index) => ({
+        heading: `${index + 1}. ${section.heading}`,
+        body: section.body,
+      }));
 
   const pdfBuffer = await generateMediationPdf({
     title: summary.agreementTitle,
     documentLabel: copy.mediationPdfDocumentTitle,
     companyName: copy.mediationPdfCompanyName,
     generatedAt: new Date(),
-    sections: [
-      {
-        heading: `1. ${copy.mediationPdfPsychodynamicProfile}`,
-        body: summary.psychodynamicProfile,
-      },
-      {
-        heading: `2. ${copy.mediationPdfLegislation}`,
-        body: formatLegislationChapterBody(summary),
-      },
-      {
-        heading: `3. ${copy.mediationPdfSolution}`,
-        body: summary.solution,
-      },
-      {
-        heading: `4. ${copy.mediationAgreementTitle}`,
-        body: formatDraftAgreementChapterBody({
-          agreementBody: summary.agreementBody,
-          terms: summary.terms,
-          termsHeading,
-          notAvailable: copy.mediationPdfNotAvailable,
-        }),
-      },
-    ],
+    sections,
     agreementBody: undefined,
     agreementHeading: copy.mediationAgreementTitle,
     terms: [],
@@ -97,10 +113,11 @@ export async function buildAgreementDownload(
   locale: Locale = "en",
 ) {
   const summary = await buildMediationResultsSummary(state, locale);
-  return buildAgreementDownloadFromSummary(summary, locale);
+  // Party downloads omit psychodynamic profiles.
+  return buildAgreementDownloadFromSummary(summary, locale, { includePsychodynamic: false });
 }
 
 export async function buildAdminAgreementDownload(roomId: string, locale: Locale = "en") {
   const { summary } = await buildAdminMediationDownload(roomId, locale);
-  return buildAgreementDownloadFromSummary(summary, locale);
+  return buildAgreementDownloadFromSummary(summary, locale, { includePsychodynamic: true });
 }

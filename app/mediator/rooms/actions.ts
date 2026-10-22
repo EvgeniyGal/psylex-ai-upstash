@@ -22,11 +22,14 @@ import {
   generateQuestionCandidates,
   getMediatorConsoleSessionState,
   publishMediatorCompromise,
+  publishMediatorDraftAgreement,
+  returnMediatorSessionToDialogue,
+  saveMediatorDraftAgreement,
   sendCustomMediatorQuestion,
   sendMediatorQuestion,
   type MediatorAudience,
 } from "@/lib/mediator-session/orchestrator";
-import type { MediationOption } from "@/lib/mediation/types";
+import type { DraftAgreement, MediationOption } from "@/lib/mediation/types";
 import type { PartyRole } from "@/lib/participant-roles";
 
 async function requireMediator() {
@@ -170,4 +173,22 @@ export async function endMediatorSessionAction(roomId: string) {
   revalidatePath(`/mediator/rooms/${roomId}/session`);
   revalidatePath("/mediation");
   return state;
+}
+
+export async function saveMediatorDraftAgreementAction(
+  roomId: string,
+  draft: DraftAgreement,
+) {
+  const userId = await requireMediator();
+  return saveMediatorDraftAgreement(userId, roomId, draft);
+}
+
+export async function publishMediatorDraftAgreementAction(roomId: string) {
+  const userId = await requireMediator();
+  return publishMediatorDraftAgreement(userId, roomId);
+}
+
+export async function returnMediatorSessionToDialogueAction(roomId: string) {
+  const userId = await requireMediator();
+  return returnMediatorSessionToDialogue(userId, roomId);
 }

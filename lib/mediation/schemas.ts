@@ -77,10 +77,19 @@ export const mediationCompromiseSchema = z.object({
   option: mediationOptionSchema,
 });
 
+const draftObligationSchema = z.object({
+  id: z.string().optional(),
+  text: z.string(),
+  deadline: z.string().nullable().optional(),
+  source: z.enum(["dialogue", "option", "protective", "mediator"]).optional(),
+});
+
 export const mediationAgreementDraftSchema = z.object({
   title: z.string(),
   body: z.string(),
-  terms: z.array(z.string()),
+  /** Prefer structured obligations; terms kept for backward-compatible model output. */
+  obligations: z.array(draftObligationSchema).optional(),
+  terms: z.array(z.string()).optional(),
 });
 
 export type MediationOpening = z.infer<typeof mediationOpeningSchema>;
@@ -115,9 +124,9 @@ export const mediationModeInstructions: Record<MediationAgentMode, string> = {
     'Run mode "moderation_redirect". Redirect the party away from personal attacks toward substance.',
   nudge: 'Run mode "nudge". Gently prompt the party to respond to the current question.',
   options:
-    'Run mode "options". Generate 2-3 solution options with legal information (not advice), fulfillment probability, refusal risks, and per-party presentations.',
+    'Run mode "options". Generate 2-3 solution options grounded FIRST in the live dialogue transcript. Prefer proposals the parties actually discussed or confirmed in session. Do not invent options that appear only in intake/background unless restated in the dialogue. Include legal information (not advice), fulfillment probability, refusal risks, and per-party presentations for voting only.',
   compromise:
     'Run mode "compromise". Generate exactly one compromise option informed by the parties\' votes.',
   agreement_draft:
-    'Run mode "agreement_draft". Generate a draft voluntary agreement document from the selected option.',
+    'Run mode "agreement_draft". Produce ONE shared voluntary agreement in third person (not "I agree"). Prefer mutually confirmed terms from the dialogue transcript over option-template wording when they conflict (e.g. who pays). Return title, body (third-person narrative), and obligations: [{text, deadline|null, source:"dialogue"|"option"}]. Include deadlines when discussed. Do not invent payment splits or other material terms that contradict the chat.',
 };

@@ -97,6 +97,62 @@ function formatPayloadLines(
     return lines;
   }
 
+  if (entry.kind === "options_published" && Array.isArray(payload.options)) {
+    for (const option of payload.options) {
+      if (!option || typeof option !== "object") continue;
+      const row = option as Record<string, unknown>;
+      const id = typeof row.id === "string" ? row.id : "—";
+      const text =
+        typeof row.canonicalDescription === "string" ? row.canonicalDescription : "—";
+      lines.push(`${admin.activityLogFields.optionId ?? "Option"} ${id}: ${text}`);
+    }
+    return lines;
+  }
+
+  if (entry.kind === "option_vote_cast") {
+    if (payload.partyRole) {
+      lines.push(
+        `${admin.activityLogFields.partyRole ?? "Party"}: ${String(payload.partyRole)}`,
+      );
+    }
+    if (payload.optionId) {
+      lines.push(`${admin.activityLogFields.optionId ?? "Option"}: ${String(payload.optionId)}`);
+    }
+    if (payload.canonicalDescription) {
+      lines.push(
+        `${admin.activityLogFields.canonicalDescription ?? "Description"}: ${formatPayloadValue(payload.canonicalDescription, { fullText: true })}`,
+      );
+    }
+    return lines;
+  }
+
+  if (
+    entry.kind === "compromise_published" ||
+    entry.kind === "agreement_published" ||
+    entry.kind === "session_ended_without_agreement"
+  ) {
+    if (payload.canonicalDescription) {
+      lines.push(
+        `${admin.activityLogFields.canonicalDescription ?? "Description"}: ${formatPayloadValue(payload.canonicalDescription, { fullText: true })}`,
+      );
+    }
+    if (payload.title) {
+      lines.push(`${admin.activityLogFields.title ?? "Title"}: ${String(payload.title)}`);
+    }
+    if (Array.isArray(payload.terms)) {
+      for (const term of payload.terms) {
+        lines.push(`${admin.activityLogFields.terms ?? "Terms"}: ${String(term)}`);
+      }
+    }
+    if (payload.reason) {
+      lines.push(`${admin.activityLogFields.reason}: ${String(payload.reason)}`);
+    }
+    if (payload.optionId) {
+      lines.push(`${admin.activityLogFields.optionId ?? "Option"}: ${String(payload.optionId)}`);
+    }
+    return lines;
+  }
+
   for (const [key, value] of Object.entries(payload)) {
     const label = admin.activityLogFields[key] ?? key;
     lines.push(`${label}: ${formatPayloadValue(value)}`);

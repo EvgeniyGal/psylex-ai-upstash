@@ -9,6 +9,8 @@ import type { MediationResultsSummary } from "@/lib/mediation/results-summary";
 
 type MediationResultsPanelProps = {
   summary: MediationResultsSummary;
+  /** Admin/mediator detail views only. Parties never see psychodynamic profiles. */
+  includePsychodynamic?: boolean;
 };
 
 const chapterStagger = {
@@ -148,7 +150,10 @@ function formatDocumentDate(locale: string) {
   });
 }
 
-export function MediationResultsPanel({ summary }: MediationResultsPanelProps) {
+export function MediationResultsPanel({
+  summary,
+  includePsychodynamic = false,
+}: MediationResultsPanelProps) {
   const { locale, portal: t } = useLocale();
   const [documentDate, setDocumentDate] = useState("");
 
@@ -183,13 +188,18 @@ export function MediationResultsPanel({ summary }: MediationResultsPanelProps) {
           </p>
         </motion.div>
 
-        <ChapterSection heading={t.mediationPdfPsychodynamicProfile} index={1}>
-          <p className="whitespace-pre-wrap text-body-md leading-relaxed text-on-surface">
-            {summary.psychodynamicProfile}
-          </p>
-        </ChapterSection>
+        {includePsychodynamic ? (
+          <ChapterSection heading={t.mediationPdfPsychodynamicProfile} index={1}>
+            <p className="whitespace-pre-wrap text-body-md leading-relaxed text-on-surface">
+              {summary.psychodynamicProfile}
+            </p>
+          </ChapterSection>
+        ) : null}
 
-        <ChapterSection heading={t.mediationPdfLegislation} index={2}>
+        <ChapterSection
+          heading={t.mediationPdfLegislation}
+          index={includePsychodynamic ? 2 : 1}
+        >
           {summary.legislationSections.length > 0 ? (
             summary.legislationSections.map((section, index) => (
               <SubchapterSection heading={section.heading} key={`${section.heading}-${index}`}>
@@ -206,13 +216,19 @@ export function MediationResultsPanel({ summary }: MediationResultsPanelProps) {
           )}
         </ChapterSection>
 
-        <ChapterSection heading={t.mediationPdfSolution} index={3}>
+        <ChapterSection
+          heading={t.mediationPdfSolution}
+          index={includePsychodynamic ? 3 : 2}
+        >
           <p className="whitespace-pre-wrap text-body-md leading-relaxed text-on-surface">
             {summary.solution}
           </p>
         </ChapterSection>
 
-        <ChapterSection heading={t.mediationAgreementTitle} index={4}>
+        <ChapterSection
+          heading={t.mediationAgreementTitle}
+          index={includePsychodynamic ? 4 : 3}
+        >
           {summary.agreementBody || summary.terms.length > 0 ? (
             <>
             {summary.agreementBody ? (

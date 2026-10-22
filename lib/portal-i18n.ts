@@ -90,6 +90,7 @@ type PortalCopy = {
   modeBNotifyAgreement: string;
   modeBNotifyCompleted: string;
   modeBWaitingCompromisePublish: string;
+  modeBWaitingAgreementPublish: string;
   backToStart: string;
   logout: string;
   helpTitle: string;
@@ -332,9 +333,10 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     modeBNotifyQuestion: "You have a new question from the mediator.",
     modeBNotifyOptions: "Solution options are ready to review.",
     modeBNotifyCompromise: "A compromise option is ready for your vote.",
-    modeBNotifyAgreement: "A draft agreement is ready for review.",
+    modeBNotifyAgreement: "The agreement is ready for your confirmation.",
     modeBNotifyCompleted: "The mediation session has completed.",
     modeBWaitingCompromisePublish: "Waiting for the mediator to publish a compromise option.",
+    modeBWaitingAgreementPublish: "Waiting for the mediator to finalize the agreement.",
     backToStart: "Back to start",
     logout: "Logout",
     helpTitle: "Help",
@@ -597,9 +599,10 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     modeBNotifyQuestion: "У вас нове запитання від медіатора.",
     modeBNotifyOptions: "Варіанти рішення готові до перегляду.",
     modeBNotifyCompromise: "Компромісний варіант готовий до голосування.",
-    modeBNotifyAgreement: "Чернетка угоди готова до перегляду.",
+    modeBNotifyAgreement: "Угода готова до вашого підтвердження.",
     modeBNotifyCompleted: "Сесію медіації завершено.",
     modeBWaitingCompromisePublish: "Очікуємо, поки медіатор опублікує компромісний варіант.",
+    modeBWaitingAgreementPublish: "Очікуємо, поки медіатор фіналізує угоду.",
     backToStart: "На головну",
     logout: "Вийти",
     helpTitle: "Довідка",

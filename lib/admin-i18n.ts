@@ -248,12 +248,28 @@ export type AdminCopy = {
   mediatorEndSessionError: string;
   mediatorSelectCandidate: string;
   mediatorCompromiseDraft: string;
+  mediatorCompromiseGenerating: string;
+  mediatorProposeCompromise: string;
+  mediatorReturnToDialogue: string;
+  mediatorReturnToDialogueConfirm: string;
   mediatorCompromiseCanonical: string;
   mediatorCompromisePartyA: string;
   mediatorCompromisePartyB: string;
   mediatorCompromiseLegalNorms: string;
   mediatorCompromiseFulfillment: string;
   mediatorCompromiseRefusalRisks: string;
+  mediatorAgreementDraftTitle: string;
+  mediatorAgreementBody: string;
+  mediatorAgreementObligations: string;
+  mediatorObligationText: string;
+  mediatorObligationDeadline: string;
+  mediatorAddObligation: string;
+  mediatorRemoveObligation: string;
+  mediatorProtectiveClauses: string;
+  mediatorSaveDraft: string;
+  mediatorPublishAgreement: string;
+  mediatorDraftSaved: string;
+  mediatorDraftPublished: string;
   mediatorProfilesTitle: string;
   mediatorMessageKinds: Record<string, string>;
   mediatorMessageToParty: string;
@@ -529,22 +545,39 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     mediatorSendQuestion: "Send to party",
     mediatorEditQuestion: "Edit question",
     mediatorGenerateOptions: "Generate solution options",
-    mediatorPublishCompromise: "Publish compromise",
+    mediatorPublishCompromise: "Publish compromise for vote",
     mediatorQuestionCandidates: "Question candidates",
     mediatorOwnQuestion: "Your question",
     mediatorSessionFinished: "Session finished. Returning to room details…",
-    mediatorEndSession: "End session",
+    mediatorEndSession: "End without agreement",
     mediatorEndSessionConfirm:
-      "End this session without an agreement? Parties will see the session as completed.",
+      "End this session without an agreement? This is recorded in the activity log. Parties will see the session as completed.",
     mediatorEndSessionError: "Could not end the session.",
     mediatorSelectCandidate: "Select a question",
-    mediatorCompromiseDraft: "Compromise draft",
+    mediatorCompromiseDraft: "Propose compromise",
+    mediatorCompromiseGenerating: "Preparing a compromise draft…",
+    mediatorProposeCompromise: "Propose / edit compromise",
+    mediatorReturnToDialogue: "Return to dialogue",
+    mediatorReturnToDialogueConfirm:
+      "Return both parties to dialogue? Votes and options will be cleared; the chat history stays.",
     mediatorCompromiseCanonical: "Canonical description (mediator view)",
     mediatorCompromisePartyA: "Text for Party A",
     mediatorCompromisePartyB: "Text for Party B",
     mediatorCompromiseLegalNorms: "Legal information (not advice)",
     mediatorCompromiseFulfillment: "Fulfillment likelihood",
     mediatorCompromiseRefusalRisks: "Risks if refused",
+    mediatorAgreementDraftTitle: "Agreement title",
+    mediatorAgreementBody: "Shared agreement narrative",
+    mediatorAgreementObligations: "Obligations",
+    mediatorObligationText: "Obligation",
+    mediatorObligationDeadline: "Deadline",
+    mediatorAddObligation: "Add obligation",
+    mediatorRemoveObligation: "Remove",
+    mediatorProtectiveClauses: "Protective clauses",
+    mediatorSaveDraft: "Save draft",
+    mediatorPublishAgreement: "Publish to parties",
+    mediatorDraftSaved: "Draft saved.",
+    mediatorDraftPublished: "Agreement published to parties.",
     mediatorProfilesTitle: "Party profiles",
     mediatorMessageKinds: {
       mediation_system: "Notice",
@@ -595,6 +628,11 @@ export const adminCopy: Record<Locale, AdminCopy> = {
       agent_skipped: "Agent skipped",
       mediation_phase_changed: "Mediation phase changed",
       mediation_timer_expired: "Mediation timer expired",
+      options_published: "Solution options published",
+      option_vote_cast: "Party voted on an option",
+      compromise_published: "Compromise published",
+      agreement_published: "Agreement published to parties",
+      session_ended_without_agreement: "Session ended without agreement",
     },
     activityLogTests: {
       personality_type: "Personality type",
@@ -626,6 +664,12 @@ export const adminCopy: Record<Locale, AdminCopy> = {
       profile: "Profile",
       triggers: "Triggers",
       error: "Error",
+      options: "Options",
+      optionId: "Option",
+      canonicalDescription: "Description",
+      partyRole: "Party",
+      title: "Title",
+      terms: "Terms",
     },
     comingSoon: "COMING SOON",
     comingSoonDesc:
@@ -895,22 +939,39 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     mediatorSendQuestion: "Надіслати стороні",
     mediatorEditQuestion: "Редагувати запитання",
     mediatorGenerateOptions: "Згенерувати варіанти рішення",
-    mediatorPublishCompromise: "Опублікувати компроміс",
+    mediatorPublishCompromise: "Опублікувати компроміс для голосування",
     mediatorQuestionCandidates: "Варіанти запитань",
     mediatorOwnQuestion: "Ваше запитання",
     mediatorSessionFinished: "Сесію завершено. Повертаємо до деталей кімнати…",
-    mediatorEndSession: "Завершити сесію",
+    mediatorEndSession: "Завершити без угоди",
     mediatorEndSessionConfirm:
-      "Завершити сесію без угоди? Сторони побачать сесію як завершену.",
+      "Завершити сесію без угоди? Це буде записано в журнал активності. Сторони побачать сесію як завершену.",
     mediatorEndSessionError: "Не вдалося завершити сесію.",
     mediatorSelectCandidate: "Оберіть запитання",
-    mediatorCompromiseDraft: "Чернетка компромісу",
+    mediatorCompromiseDraft: "Запропонувати компроміс",
+    mediatorCompromiseGenerating: "Готуємо чернетку компромісу…",
+    mediatorProposeCompromise: "Запропонувати / редагувати компроміс",
+    mediatorReturnToDialogue: "Повернути до діалогу",
+    mediatorReturnToDialogueConfirm:
+      "Повернути обидві сторони до діалогу? Голоси та варіанти буде скинуто; історія чату збережеться.",
     mediatorCompromiseCanonical: "Канонічний опис (для медіатора)",
     mediatorCompromisePartyA: "Текст для сторони A",
     mediatorCompromisePartyB: "Текст для сторони B",
     mediatorCompromiseLegalNorms: "Правова інформація (не порада)",
     mediatorCompromiseFulfillment: "Ймовірність виконання",
     mediatorCompromiseRefusalRisks: "Ризики відмови",
+    mediatorAgreementDraftTitle: "Назва угоди",
+    mediatorAgreementBody: "Спільний текст угоди",
+    mediatorAgreementObligations: "Зобов’язання",
+    mediatorObligationText: "Зобов’язання",
+    mediatorObligationDeadline: "Строк",
+    mediatorAddObligation: "Додати зобов’язання",
+    mediatorRemoveObligation: "Видалити",
+    mediatorProtectiveClauses: "Захисні положення",
+    mediatorSaveDraft: "Зберегти чернетку",
+    mediatorPublishAgreement: "Опублікувати сторонам",
+    mediatorDraftSaved: "Чернетку збережено.",
+    mediatorDraftPublished: "Угоду опубліковано сторонам.",
     mediatorProfilesTitle: "Профілі сторін",
     mediatorMessageKinds: {
       mediation_system: "Повідомлення",
@@ -961,6 +1022,11 @@ export const adminCopy: Record<Locale, AdminCopy> = {
       agent_skipped: "Агента пропущено",
       mediation_phase_changed: "Фазу медіації змінено",
       mediation_timer_expired: "Таймер медіації завершився",
+      options_published: "Опубліковано варіанти рішення",
+      option_vote_cast: "Сторона проголосувала за варіант",
+      compromise_published: "Опубліковано компроміс",
+      agreement_published: "Угоду опубліковано сторонам",
+      session_ended_without_agreement: "Сесію завершено без угоди",
     },
     activityLogTests: {
       personality_type: "Тип особистості",
@@ -992,6 +1058,12 @@ export const adminCopy: Record<Locale, AdminCopy> = {
       profile: "Профіль",
       triggers: "Тригери",
       error: "Помилка",
+      options: "Варіанти",
+      optionId: "Варіант",
+      canonicalDescription: "Опис",
+      partyRole: "Сторона",
+      title: "Назва",
+      terms: "Умови",
     },
     comingSoon: "НЕЗАБАРОМ",
     comingSoonDesc:

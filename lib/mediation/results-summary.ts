@@ -21,6 +21,7 @@ export type MediationResultsSummaryInput = {
   options: Array<{
     id: string;
     description: string;
+    canonicalDescription?: string | null;
     legalNorms?: string | null;
     fulfillmentProbability?: string | null;
     refusalRisks?: string | null;
@@ -28,6 +29,7 @@ export type MediationResultsSummaryInput = {
   compromise: {
     id: string;
     description: string;
+    canonicalDescription?: string | null;
     legalNorms?: string | null;
     fulfillmentProbability?: string | null;
     refusalRisks?: string | null;
@@ -55,6 +57,21 @@ function findSelectedOption(state: MediationResultsSummaryInput) {
   );
 }
 
+function termsFromDraft(draft: {
+  title?: string;
+  body?: string;
+  terms?: string[];
+  obligations?: Array<{ text: string; deadline?: string | null }>;
+} | null): string[] {
+  if (!draft) return [];
+  if (draft.obligations && draft.obligations.length > 0) {
+    return draft.obligations.map((o) =>
+      o.deadline?.trim() ? `${o.text.trim()} (Deadline: ${o.deadline.trim()})` : o.text.trim(),
+    );
+  }
+  return draft.terms ?? [];
+}
+
 export async function buildMediationResultsSummary(
   state: MediationResultsSummaryInput,
   locale: Locale = "en",
@@ -63,6 +80,7 @@ export async function buildMediationResultsSummary(
     title?: string;
     body?: string;
     terms?: string[];
+    obligations?: Array<{ text: string; deadline?: string | null }>;
   } | null;
 
   const copy = portalCopy[locale];
@@ -92,13 +110,19 @@ export async function buildMediationResultsSummary(
 
   const solutionParts: string[] = [];
   if (selectedOption) {
-    solutionParts.push(selectedOption.description);
+    const sharedSolution =
+      selectedOption.canonicalDescription?.trim() ||
+      draft?.body?.trim() ||
+      selectedOption.description;
+    solutionParts.push(sharedSolution);
     if (selectedOption.fulfillmentProbability) {
       solutionParts.push(`${copy.mediationFulfillment}: ${selectedOption.fulfillmentProbability}`);
     }
     if (selectedOption.refusalRisks) {
       solutionParts.push(`${copy.mediationRefusalRisks}: ${selectedOption.refusalRisks}`);
     }
+  } else if (draft?.body?.trim()) {
+    solutionParts.push(draft.body.trim());
   }
 
   return {
@@ -111,6 +135,6 @@ export async function buildMediationResultsSummary(
     solution: solutionParts.join("\n\n") || copy.mediationNoAgreementOutcome,
     agreementTitle: draft?.title ?? copy.mediationAgreementTitle,
     agreementBody: draft?.body ?? null,
-    terms: draft?.terms ?? [],
+    terms: termsFromDraft(draft),
   };
 }

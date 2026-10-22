@@ -10,6 +10,9 @@ import {
   generateMediatorOptionsAction,
   generateMediatorQuestionCandidatesAction,
   publishMediatorCompromiseAction,
+  publishMediatorDraftAgreementAction,
+  returnMediatorSessionToDialogueAction,
+  saveMediatorDraftAgreementAction,
   sendCustomMediatorQuestionAction,
   sendMediatorQuestionAction,
 } from "@/app/mediator/rooms/actions";
@@ -25,7 +28,9 @@ import type {
   MediatorSessionRoomState,
 } from "@/lib/mediator-session/orchestrator";
 import type { PartyRole } from "@/lib/participant-roles";
-import type { MediationOption } from "@/lib/mediation/types";
+import type { DraftAgreement, DraftObligation, MediationOption } from "@/lib/mediation/types";
+import { listProtectiveClauses } from "@/lib/mediation/draft-agreement";
+import { protectiveClauseText } from "@/lib/mediation/protective-clauses";
 import { psychodynamicProfileLabels } from "@/lib/mediation/format-pdf-content";
 import type { PsychodynamicProfile } from "@/lib/pipeline/schemas";
 import { psychodynamicProfileSchema } from "@/lib/pipeline/schemas";
@@ -114,11 +119,13 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
   const [editText, setEditText] = useState("");
   const [customText, setCustomText] = useState("");
   const [compromiseEdit, setCompromiseEdit] = useState<MediationOption | null>(null);
+  const [draftEdit, setDraftEdit] = useState<DraftAgreement | null>(null);
   const selectedParty: PartyRole =
     selectedAudience === "party_b" ? "party_b" : "party_a";
   const isPartyAudience = selectedAudience === "party_a" || selectedAudience === "party_b";
 
   const sessionEnded = isMediatorSessionEnded(state.room.phase);
+  const protectiveCatalog = listProtectiveClauses();
 
   const refresh = useCallback(async () => {
     try {
@@ -153,6 +160,31 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
       };
     });
   }, [state.compromiseDraft, state.compromisePublished]);
+
+  useEffect(() => {
+    if (state.room.phase !== "agreement" || !state.draftAgreement) {
+      setDraftEdit(null);
+      return;
+    }
+    setDraftEdit((prev) => {
+      if (prev && prev.generatedAt === state.draftAgreement!.generatedAt && prev.status === state.draftAgreement!.status) {
+        return prev;
+      }
+      return {
+        ...state.draftAgreement!,
+        obligations: state.draftAgreement!.obligations?.length
+          ? state.draftAgreement!.obligations
+          : (state.draftAgreement!.terms ?? []).map((text, index) => ({
+              id: `term-${index}`,
+              text,
+              deadline: null,
+              source: "option" as const,
+            })),
+        protectiveClauseIds: state.draftAgreement!.protectiveClauseIds ?? [],
+        status: state.draftAgreement!.status ?? "draft",
+      };
+    });
+  }, [state.draftAgreement, state.room.phase]);
 
   useEffect(() => {
     if (!sessionEnded) return;
@@ -256,6 +288,65 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
       } catch (error) {
         toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
       }
+    });
+  };
+
+  const onReturnToDialogue = () => {
+    if (!window.confirm(admin.mediatorReturnToDialogueConfirm)) return;
+    startTransition(async () => {
+      try {
+        const next = await returnMediatorSessionToDialogueAction(roomId);
+        if (next) setState(next);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
+      }
+    });
+  };
+
+  const onSaveDraft = () => {
+    if (!draftEdit) return;
+    startTransition(async () => {
+      try {
+        const next = await saveMediatorDraftAgreementAction(roomId, draftEdit);
+        if (next) setState(next);
+        toast.success(admin.mediatorDraftSaved);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
+      }
+    });
+  };
+
+  const onPublishDraft = () => {
+    if (!draftEdit) return;
+    startTransition(async () => {
+      try {
+        await saveMediatorDraftAgreementAction(roomId, draftEdit);
+        const next = await publishMediatorDraftAgreementAction(roomId);
+        if (next) setState(next);
+        toast.success(admin.mediatorDraftPublished);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
+      }
+    });
+  };
+
+  const updateObligation = (id: string, patch: Partial<DraftObligation>) => {
+    setDraftEdit((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        obligations: prev.obligations.map((o) => (o.id === id ? { ...o, ...patch } : o)),
+      };
+    });
+  };
+
+  const toggleProtective = (clauseId: string, checked: boolean) => {
+    setDraftEdit((prev) => {
+      if (!prev) return prev;
+      const ids = new Set(prev.protectiveClauseIds);
+      if (checked) ids.add(clauseId);
+      else ids.delete(clauseId);
+      return { ...prev, protectiveClauseIds: [...ids] };
     });
   };
 
@@ -492,71 +583,247 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
             {admin.mediatorGenerateOptions}
           </button>
 
-          {state.room.phase === "voting_discrepancy" && compromiseEdit && !state.compromisePublished ? (
+          {state.room.phase === "voting_discrepancy" ? (
             <div className="space-y-3 border-t border-hair pt-3">
               <p className="text-label-md uppercase text-on-surface-variant">
-                {admin.mediatorCompromiseDraft}
+                {admin.mediatorProposeCompromise}
               </p>
 
-              {(
-                [
-                  {
-                    key: "canonicalDescription" as const,
-                    label: admin.mediatorCompromiseCanonical,
-                    rows: 3,
-                  },
-                  {
-                    key: "partyA" as const,
-                    label: admin.mediatorCompromisePartyA,
-                    rows: 3,
-                  },
-                  {
-                    key: "partyB" as const,
-                    label: admin.mediatorCompromisePartyB,
-                    rows: 3,
-                  },
-                  {
-                    key: "legalNorms" as const,
-                    label: admin.mediatorCompromiseLegalNorms,
-                    rows: 2,
-                  },
-                  {
-                    key: "fulfillmentProbability" as const,
-                    label: admin.mediatorCompromiseFulfillment,
-                    rows: 2,
-                  },
-                  {
-                    key: "refusalRisks" as const,
-                    label: admin.mediatorCompromiseRefusalRisks,
-                    rows: 2,
-                  },
-                ] as const
-              ).map((field) => (
-                <label className="block space-y-1" key={field.key}>
-                  <span className="text-body-sm text-on-surface-variant">{field.label}</span>
-                  <textarea
-                    className="w-full rounded-md border border-ink/25 bg-surface-variant px-3 py-2 text-body-sm text-ink focus:border-law focus:outline-none focus:ring-1 focus:ring-law"
-                    onChange={(event) =>
-                      setCompromiseEdit((prev) =>
-                        prev ? { ...prev, [field.key]: event.target.value } : prev,
-                      )
-                    }
-                    rows={field.rows}
-                    value={compromiseEdit[field.key]}
-                  />
-                </label>
-              ))}
+              {!state.compromisePublished && !compromiseEdit ? (
+                <p className="flex items-center gap-2 text-body-sm text-on-surface-variant">
+                  <Spinner size="sm" />
+                  {admin.mediatorCompromiseGenerating}
+                </p>
+              ) : null}
+
+              {compromiseEdit && !state.compromisePublished ? (
+                <>
+                  {(
+                    [
+                      {
+                        key: "canonicalDescription" as const,
+                        label: admin.mediatorCompromiseCanonical,
+                        rows: 3,
+                      },
+                      {
+                        key: "partyA" as const,
+                        label: admin.mediatorCompromisePartyA,
+                        rows: 3,
+                      },
+                      {
+                        key: "partyB" as const,
+                        label: admin.mediatorCompromisePartyB,
+                        rows: 3,
+                      },
+                      {
+                        key: "legalNorms" as const,
+                        label: admin.mediatorCompromiseLegalNorms,
+                        rows: 2,
+                      },
+                      {
+                        key: "fulfillmentProbability" as const,
+                        label: admin.mediatorCompromiseFulfillment,
+                        rows: 2,
+                      },
+                      {
+                        key: "refusalRisks" as const,
+                        label: admin.mediatorCompromiseRefusalRisks,
+                        rows: 2,
+                      },
+                    ] as const
+                  ).map((field) => (
+                    <label className="block space-y-1" key={field.key}>
+                      <span className="text-body-sm text-on-surface-variant">{field.label}</span>
+                      <textarea
+                        className="w-full rounded-md border border-ink/25 bg-surface-variant px-3 py-2 text-body-sm text-ink focus:border-law focus:outline-none focus:ring-1 focus:ring-law"
+                        onChange={(event) =>
+                          setCompromiseEdit((prev) =>
+                            prev ? { ...prev, [field.key]: event.target.value } : prev,
+                          )
+                        }
+                        rows={field.rows}
+                        value={compromiseEdit[field.key]}
+                      />
+                    </label>
+                  ))}
+
+                  <button
+                    className="btn-primary flex w-full items-center justify-center gap-2 px-3 py-2 text-body-sm disabled:opacity-60"
+                    disabled={pending}
+                    onClick={onPublishCompromise}
+                    type="button"
+                  >
+                    {pending ? <Spinner className="text-white" size="sm" /> : null}
+                    {admin.mediatorPublishCompromise}
+                  </button>
+                </>
+              ) : null}
 
               <button
-                className="btn-primary flex w-full items-center justify-center gap-2 px-3 py-2 text-body-sm disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-2 rounded-md border border-hair px-3 py-2 text-body-sm font-semibold text-on-surface disabled:opacity-60"
                 disabled={pending}
-                onClick={onPublishCompromise}
+                onClick={onReturnToDialogue}
+                type="button"
+              >
+                {admin.mediatorReturnToDialogue}
+              </button>
+            </div>
+          ) : null}
+
+          {state.room.phase === "agreement" && draftEdit ? (
+            <div className="space-y-3 border-t border-hair pt-3">
+              <p className="text-label-md uppercase text-on-surface-variant">
+                {admin.mediatorAgreementDraftTitle}
+              </p>
+              <label className="block space-y-1">
+                <span className="text-body-sm text-on-surface-variant">
+                  {admin.mediatorAgreementDraftTitle}
+                </span>
+                <input
+                  className="w-full rounded-md border border-ink/25 bg-surface-variant px-3 py-2 text-body-sm"
+                  onChange={(event) =>
+                    setDraftEdit((prev) =>
+                      prev ? { ...prev, title: event.target.value } : prev,
+                    )
+                  }
+                  value={draftEdit.title}
+                />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-body-sm text-on-surface-variant">
+                  {admin.mediatorAgreementBody}
+                </span>
+                <textarea
+                  className="w-full rounded-md border border-ink/25 bg-surface-variant px-3 py-2 text-body-sm"
+                  onChange={(event) =>
+                    setDraftEdit((prev) =>
+                      prev ? { ...prev, body: event.target.value } : prev,
+                    )
+                  }
+                  rows={5}
+                  value={draftEdit.body}
+                />
+              </label>
+
+              <div className="space-y-2">
+                <p className="text-body-sm font-semibold text-on-surface">
+                  {admin.mediatorAgreementObligations}
+                </p>
+                {draftEdit.obligations.map((obligation) => (
+                  <div className="space-y-1 rounded-md border border-hair p-2" key={obligation.id}>
+                    <textarea
+                      className="w-full rounded-md border border-ink/25 bg-surface-variant px-2 py-1 text-body-sm"
+                      onChange={(event) =>
+                        updateObligation(obligation.id, {
+                          text: event.target.value,
+                          source: obligation.source === "protective" ? "protective" : "mediator",
+                        })
+                      }
+                      rows={2}
+                      value={obligation.text}
+                    />
+                    <input
+                      className="w-full rounded-md border border-ink/25 bg-surface-variant px-2 py-1 text-body-sm"
+                      onChange={(event) =>
+                        updateObligation(obligation.id, {
+                          deadline: event.target.value || null,
+                        })
+                      }
+                      placeholder={admin.mediatorObligationDeadline}
+                      value={obligation.deadline ?? ""}
+                    />
+                    <button
+                      className="text-body-sm text-error"
+                      onClick={() =>
+                        setDraftEdit((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                obligations: prev.obligations.filter((o) => o.id !== obligation.id),
+                                protectiveClauseIds:
+                                  obligation.source === "protective"
+                                    ? prev.protectiveClauseIds.filter(
+                                        (id) => `protective-${id}` !== obligation.id && id !== obligation.id.replace(/^protective-/, ""),
+                                      )
+                                    : prev.protectiveClauseIds,
+                              }
+                            : prev,
+                        )
+                      }
+                      type="button"
+                    >
+                      {admin.mediatorRemoveObligation}
+                    </button>
+                  </div>
+                ))}
+                <button
+                  className="text-body-sm font-semibold text-law"
+                  onClick={() =>
+                    setDraftEdit((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            obligations: [
+                              ...prev.obligations,
+                              {
+                                id: `mediator-${crypto.randomUUID()}`,
+                                text: "",
+                                deadline: null,
+                                source: "mediator",
+                              },
+                            ],
+                          }
+                        : prev,
+                    )
+                  }
+                  type="button"
+                >
+                  {admin.mediatorAddObligation}
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-body-sm font-semibold text-on-surface">
+                  {admin.mediatorProtectiveClauses}
+                </p>
+                {protectiveCatalog.map((clause) => (
+                  <label className="flex items-start gap-2 text-body-sm" key={clause.id}>
+                    <input
+                      checked={draftEdit.protectiveClauseIds.includes(clause.id)}
+                      className="mt-1"
+                      onChange={(event) => toggleProtective(clause.id, event.target.checked)}
+                      type="checkbox"
+                    />
+                    <span>{protectiveClauseText(clause, locale === "uk" ? "uk" : "en")}</span>
+                  </label>
+                ))}
+              </div>
+
+              <button
+                className="flex w-full items-center justify-center gap-2 rounded-md border border-hair px-3 py-2 text-body-sm font-semibold disabled:opacity-60"
+                disabled={pending || draftEdit.status === "published" || draftEdit.status === "accepted"}
+                onClick={onSaveDraft}
+                type="button"
+              >
+                {admin.mediatorSaveDraft}
+              </button>
+              <button
+                className="btn-primary flex w-full items-center justify-center gap-2 px-3 py-2 text-body-sm disabled:opacity-60"
+                disabled={pending || draftEdit.status === "published" || draftEdit.status === "accepted"}
+                onClick={onPublishDraft}
                 type="button"
               >
                 {pending ? <Spinner className="text-white" size="sm" /> : null}
-                {admin.mediatorPublishCompromise}
+                {admin.mediatorPublishAgreement}
               </button>
             </div>
+          ) : null}
+
+          {state.room.phase === "agreement" && !draftEdit ? (
+            <p className="flex items-center gap-2 border-t border-hair pt-3 text-body-sm text-on-surface-variant">
+              <Spinner size="sm" />
+              {t.mediationPreparing}
+            </p>
           ) : null}
         </aside>
       </div>

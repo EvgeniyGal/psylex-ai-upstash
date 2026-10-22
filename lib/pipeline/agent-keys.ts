@@ -26,4 +26,9 @@ export type PipelineEventType =
   | "agent_failed"
   | "agent_skipped"
   | "mediation_phase_changed"
-  | "mediation_timer_expired";
+  | "mediation_timer_expired"
+  | "options_published"
+  | "option_vote_cast"
+  | "compromise_published"
+  | "agreement_published"
+  | "session_ended_without_agreement";

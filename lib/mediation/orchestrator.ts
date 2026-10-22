@@ -805,26 +805,51 @@ async function generateDraftAgreement(roomId: string, optionId: string) {
   const room = await loadRoom(roomId);
   if (!room) return;
 
+  const { defaultSuggestedProtectiveIds, mergeProtectiveClausesIntoDraft, normalizeDraftAgreement } =
+    await import("@/lib/mediation/draft-agreement");
+  const { buildAgreementDraftExtraInstruction, findOptionInRoom } = await import(
+    "@/lib/mediation/build-agreement-extra"
+  );
+
+  const options = (room.mediationOptions as MediationOption[] | null) ?? [];
+  const compromise = room.compromiseOption as MediationOption | null;
+  const option = findOptionInRoom(options, compromise, optionId);
+  const roomText = [
+    room.title,
+    option?.canonicalDescription,
+    ...(options.map((o) => o.canonicalDescription) ?? []),
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const suggestedProtectiveIds = defaultSuggestedProtectiveIds(roomText);
+
   const { ctx } = await buildContext(room);
   const draft = await runMediationAgent({
     mode: "agreement_draft",
     context: ctx,
     schema: mediationAgreementDraftSchema,
-    extraInstruction: `Selected option id: ${optionId}`,
+    extraInstruction: buildAgreementDraftExtraInstruction({
+      optionId,
+      option,
+      suggestedProtectiveIds,
+    }),
   });
 
   const afterLlm = await loadRoom(roomId);
   if (afterLlm?.draftAgreement) return;
 
-  await db
-    .update(rooms)
-    .set({
-      draftAgreement: {
-        ...draft,
-        generatedAt: new Date().toISOString(),
-      },
-    })
-    .where(eq(rooms.id, roomId));
+  let agreement = normalizeDraftAgreement(
+    {
+      ...draft,
+      generatedAt: new Date().toISOString(),
+      status: isMediatorFacilitatedRoom(room) ? "draft" : "published",
+      publishedAt: isMediatorFacilitatedRoom(room) ? undefined : new Date().toISOString(),
+    },
+    { suggestProtectiveIds: suggestedProtectiveIds },
+  );
+  agreement = mergeProtectiveClausesIntoDraft(agreement, suggestedProtectiveIds, "en");
+
+  await db.update(rooms).set({ draftAgreement: agreement }).where(eq(rooms.id, roomId));
   notifyRoom(roomId);
 }
 
@@ -835,6 +860,11 @@ export async function acceptAgreement(userId: string) {
 
   const room = await loadRoom(participant.roomId);
   if (!room || room.mediationPhase !== "agreement") throw new Error("Agreement not ready.");
+
+  const draft = room.draftAgreement as { status?: string } | null;
+  if (isMediatorFacilitatedRoom(room) && draft?.status !== "published" && draft?.status !== "accepted") {
+    throw new Error("Agreement has not been published by the mediator yet.");
+  }
 
   const role = partyRoleFromUser(participant.user);
   const now = new Date();
@@ -851,19 +881,28 @@ export async function acceptAgreement(userId: string) {
   }
 
   const finalizedAt = new Date();
+  const acceptedDraft = {
+    ...((updated.draftAgreement as Record<string, unknown> | null) ?? {}),
+    status: "accepted",
+  };
   await db
     .update(rooms)
     .set({
       agreementFinalizedAt: finalizedAt,
       mediationPhase: "completed",
       mediationCompletedAt: finalizedAt,
+      draftAgreement: acceptedDraft,
     })
     .where(eq(rooms.id, room.id));
   notifyRoom(room.id);
 
-  const draft = updated.draftAgreement as { title: string; body: string; terms: string[] } | null;
+  const filingDraft = acceptedDraft as unknown as {
+    title?: string;
+    body?: string;
+    terms?: string[];
+  };
   const hash = createHash("sha256")
-    .update(JSON.stringify(draft ?? {}))
+    .update(JSON.stringify(filingDraft ?? {}))
     .digest("hex");
 
   await db.insert(mediationFilingReceipts).values({

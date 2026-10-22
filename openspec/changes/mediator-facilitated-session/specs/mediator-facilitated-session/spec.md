@@ -79,6 +79,29 @@ When votes differ, compromise SHALL be drafted for mediator edit and published b
 - **WHEN** phase is voting_discrepancy and compromise is not published
 - **THEN** parties see a waiting state and cannot vote on compromise
 
+### Requirement: Vote discrepancy mediator controls
+
+In `voting_discrepancy`, the mediator SHALL be able to propose/edit a compromise, return the session to dialogue (clearing votes and options while keeping message history), or end the session without agreement (logged).
+
+#### Scenario: Return to dialogue
+
+- **WHEN** the mediator chooses Return to dialogue
+- **THEN** phase becomes `dialogue`, votes/options/compromise/draft are cleared, and message history is retained
+
+### Requirement: Mediator agreement publish gate
+
+Mode B draft agreements SHALL remain unpublished until the mediator edits and publishes. Parties SHALL NOT accept until `status` is `published`.
+
+#### Scenario: Waiting for publish
+
+- **WHEN** phase is `agreement` and draft status is `draft`
+- **THEN** parties see a waiting-for-mediator state and cannot accept
+
+#### Scenario: Publish unlocks accept
+
+- **WHEN** the mediator publishes the draft
+- **THEN** both parties see the same third-person document and can accept
+
 ### Requirement: Elapsed session timer
 
 Mode B rooms SHALL show elapsed time since session start, not a remaining countdown.
