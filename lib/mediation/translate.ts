@@ -1,6 +1,6 @@
 import type { Locale } from "@/lib/i18n";
 import { normalizeLocale } from "@/lib/pipeline/locale";
-import { getOpenAIClient } from "@/lib/pipeline/openai-client";
+import { getOpenAIChatModel, getOpenAIClient } from "@/lib/pipeline/openai-client";
 
 export type MessageTranslations = Partial<Record<Locale, string>>;
 
@@ -19,8 +19,9 @@ export async function translateText(params: {
   if (!trimmed) return params.text;
 
   const client = await getOpenAIClient();
+  const model = await getOpenAIChatModel();
   const completion = await client.chat.completions.create({
-    model: "gpt-4o-mini",
+    model,
     temperature: 0,
     messages: [
       {

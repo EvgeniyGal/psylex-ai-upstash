@@ -1,7 +1,11 @@
 import type { z } from "zod";
 import type { Locale } from "@/lib/i18n";
 import { loadAgentPrompt } from "@/lib/pipeline/load-prompt";
-import { getOpenAIClient, parseJsonFromModelResponse } from "@/lib/pipeline/openai-client";
+import {
+  getOpenAIChatModel,
+  getOpenAIClient,
+  parseJsonFromModelResponse,
+} from "@/lib/pipeline/openai-client";
 import { localeInstruction, normalizeLocale } from "@/lib/pipeline/locale";
 import {
   assembleMediationAgentInput,
@@ -26,6 +30,7 @@ export async function runMediationAgent<T extends z.ZodType>(params: RunMediatio
   const targetLocale = normalizeLocale(params.targetLocale ?? "en");
   const systemPrompt = await loadAgentPrompt("mediation", params.draftPrompt);
   const client = await getOpenAIClient();
+  const model = await getOpenAIChatModel();
   const userMessage = [
     assembleMediationAgentInput(params.context, params.extraInstruction),
     "",
@@ -39,7 +44,7 @@ export async function runMediationAgent<T extends z.ZodType>(params: RunMediatio
 
   const callModel = async (retryHint?: string) => {
     const completion = await client.chat.completions.create({
-      model: "gpt-4o-mini",
+      model,
       temperature: 0,
       response_format: { type: "json_object" },
       messages: [

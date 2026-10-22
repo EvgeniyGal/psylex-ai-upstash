@@ -22,7 +22,11 @@ import {
   mergeLocalizedOutputs,
   normalizeLocale,
 } from "@/lib/pipeline/locale";
-import { getOpenAIClient, parseJsonFromModelResponse } from "@/lib/pipeline/openai-client";
+import {
+  getOpenAIChatModel,
+  getOpenAIClient,
+  parseJsonFromModelResponse,
+} from "@/lib/pipeline/openai-client";
 import { notifyRoom } from "@/lib/realtime/notify";
 import type { LegalAnalysis } from "@/lib/pipeline/schemas";
 import { legalAnalysisSchema } from "@/lib/pipeline/schemas";
@@ -67,9 +71,10 @@ async function generateLegalAnalysisForLocale(params: {
   const basePrompt = await loadAgentPrompt("legal_analysis", params.draftPrompt);
   const systemPrompt = `${basePrompt}\n\n${LEGAL_ANALYSIS_STRICT_RULES}`;
   const client = await getOpenAIClient();
+  const model = await getOpenAIChatModel();
 
   const completion = await client.chat.completions.create({
-    model: "gpt-4o-mini",
+    model,
     temperature: 0,
     response_format: { type: "json_object" },
     messages: [

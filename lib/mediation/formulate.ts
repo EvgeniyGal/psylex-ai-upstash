@@ -1,6 +1,6 @@
 import type { Locale } from "@/lib/i18n";
 import { normalizeLocale } from "@/lib/pipeline/locale";
-import { getOpenAIClient } from "@/lib/pipeline/openai-client";
+import { getOpenAIChatModel, getOpenAIClient } from "@/lib/pipeline/openai-client";
 
 /**
  * Rewrite a participant draft more clearly and without insults,
@@ -20,8 +20,9 @@ export async function helpFormulateText(params: {
       : "Write the rewritten text entirely in English.";
 
   const client = await getOpenAIClient();
+  const model = await getOpenAIChatModel();
   const completion = await client.chat.completions.create({
-    model: "gpt-4o-mini",
+    model,
     temperature: 0.2,
     messages: [
       {

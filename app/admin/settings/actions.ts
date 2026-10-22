@@ -6,6 +6,11 @@ import { revalidatePath } from "next/cache";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { platformSettings } from "@/drizzle/schema";
+import { listOpenAIChatModelIds } from "@/lib/pipeline/openai-client";
+import {
+  FALLBACK_OPENAI_CHAT_MODEL,
+  isLikelyChatModelId,
+} from "@/lib/pipeline/openai-models";
 import { getPlatformSettings } from "@/lib/platform-settings";
 
 async function requireAdmin() {
@@ -24,6 +29,10 @@ export async function saveApiCredentials(formData: FormData) {
 
   const openaiApiKey = optionalString(formData.get("openaiApiKey"));
   const airtableApiKey = optionalString(formData.get("airtableApiKey"));
+  const openaiModelRaw = optionalString(formData.get("openaiModel"));
+  const openaiModel = isLikelyChatModelId(openaiModelRaw)
+    ? openaiModelRaw
+    : FALLBACK_OPENAI_CHAT_MODEL;
 
   await getPlatformSettings();
 
@@ -31,12 +40,19 @@ export async function saveApiCredentials(formData: FormData) {
     .update(platformSettings)
     .set({
       openaiApiKey,
+      openaiModel,
       airtableApiKey,
       updatedAt: new Date(),
     })
     .where(eq(platformSettings.id, "default"));
 
   revalidatePath("/admin/settings");
+}
+
+export async function loadOpenAIChatModels(apiKeyOverride?: string) {
+  await requireAdmin();
+  const key = apiKeyOverride?.trim();
+  return listOpenAIChatModelIds(key || undefined);
 }
 
 export async function saveTestLinks(formData: FormData) {

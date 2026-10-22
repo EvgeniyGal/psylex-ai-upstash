@@ -249,6 +249,7 @@ export const magicTokensRelations = relations(magicTokens, ({ one }) => ({
 export const platformSettings = pgTable("platform_settings", {
   id: text("id").primaryKey().default("default"),
   openaiApiKey: text("openai_api_key").notNull().default(""),
+  openaiModel: text("openai_model").notNull().default("gpt-4o-mini"),
   airtableApiKey: text("airtable_api_key").notNull().default(""),
   testPersonalityTypeUrl: text("test_personality_type_url").notNull().default(""),
   testFaceFearUrl: text("test_face_fear_url").notNull().default(""),

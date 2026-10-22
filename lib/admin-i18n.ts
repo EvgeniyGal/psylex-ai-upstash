@@ -85,6 +85,11 @@ export type AdminCopy = {
   credentialsSubtitle: string;
   testsSubtitle: string;
   openaiApiKeyLabel: string;
+  openaiModelLabel: string;
+  openaiModelHint: string;
+  openaiModelLoading: string;
+  openaiModelLoadError: string;
+  openaiModelRefresh: string;
   airtableApiKeyLabel: string;
   showApiKey: string;
   hideApiKey: string;
@@ -393,6 +398,12 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     credentialsSubtitle: "Add API keys for external integrations used by the platform.",
     testsSubtitle: "Configure links to personality and conflict assessment tests.",
     openaiApiKeyLabel: "OpenAI API key",
+    openaiModelLabel: "OpenAI chat model",
+    openaiModelHint:
+      "Used for agents, translation, RAG answers, and help chat. Recommended: gpt-6.1-sol (quality/cost). gpt-6-luna is cheaper for high volume. Embeddings stay separate.",
+    openaiModelLoading: "Loading models…",
+    openaiModelLoadError: "Could not load models. Check the API key, then refresh.",
+    openaiModelRefresh: "Refresh models",
     airtableApiKeyLabel: "Airtable API key",
     showApiKey: "Show key",
     hideApiKey: "Hide key",
@@ -800,6 +811,12 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     credentialsSubtitle: "Додайте API-ключі для зовнішніх інтеграцій платформи.",
     testsSubtitle: "Налаштуйте посилання на тести особистості та конфліктів.",
     openaiApiKeyLabel: "OpenAI API ключ",
+    openaiModelLabel: "Модель OpenAI (чат)",
+    openaiModelHint:
+      "Використовується для агентів, перекладу, RAG і довідки. Рекомендовано: gpt-6.1-sol (якість/ціна). gpt-6-luna дешевша для великого обсягу. Ембедінги окремо.",
+    openaiModelLoading: "Завантаження моделей…",
+    openaiModelLoadError: "Не вдалося завантажити моделі. Перевірте API-ключ і оновіть список.",
+    openaiModelRefresh: "Оновити моделі",
     airtableApiKeyLabel: "Airtable API ключ",
     showApiKey: "Показати ключ",
     hideApiKey: "Приховати ключ",

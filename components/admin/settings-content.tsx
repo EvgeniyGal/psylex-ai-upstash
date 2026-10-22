@@ -1,8 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { saveApiCredentials, saveTestLinks } from "@/app/admin/settings/actions";
+import {
+  loadOpenAIChatModels,
+  saveApiCredentials,
+  saveTestLinks,
+} from "@/app/admin/settings/actions";
 import { AgentPromptsSettingsContent } from "@/components/admin/agent-prompts-settings-content";
 import { HelpSettingsContent } from "@/components/admin/help-settings-content";
 import { RagSettingsContent } from "@/components/admin/rag-settings-content";
@@ -11,10 +15,15 @@ import { useLocale } from "@/components/locale-provider";
 import type { LegalDocumentRow } from "@/lib/rag/types";
 import type { AgentKey } from "@/lib/pipeline/agent-keys";
 import type { HelpDocument } from "@/lib/help/types";
+import {
+  FALLBACK_OPENAI_CHAT_MODEL,
+  RECOMMENDED_OPENAI_CHAT_MODEL,
+} from "@/lib/pipeline/openai-models";
 
 export type PlatformSettingsRow = {
   id: string;
   openaiApiKey: string;
+  openaiModel: string;
   airtableApiKey: string;
   testPersonalityTypeUrl: string;
   testFaceFearUrl: string;
@@ -43,8 +52,43 @@ export function SettingsContent({ settings, documents, prompts, helpDocuments }:
   const [activeTab, setActiveTab] = useState<SettingsTab>("credentials");
   const [showOpenaiKey, setShowOpenaiKey] = useState(false);
   const [showAirtableKey, setShowAirtableKey] = useState(false);
+  const [openaiModel, setOpenaiModel] = useState(
+    settings.openaiModel || FALLBACK_OPENAI_CHAT_MODEL,
+  );
+  const [modelOptions, setModelOptions] = useState<string[]>(() =>
+    settings.openaiModel ? [settings.openaiModel] : [FALLBACK_OPENAI_CHAT_MODEL],
+  );
+  const [modelsLoading, setModelsLoading] = useState(false);
+  const [modelsError, setModelsError] = useState(false);
   const [credentialsPending, startCredentialsTransition] = useTransition();
   const [testsPending, startTestsTransition] = useTransition();
+
+  const refreshModels = (apiKeyOverride?: string) => {
+    setModelsLoading(true);
+    setModelsError(false);
+    void loadOpenAIChatModels(apiKeyOverride)
+      .then((ids) => {
+        setOpenaiModel((current) => {
+          const selected = current.trim();
+          const merged = selected && !ids.includes(selected) ? [selected, ...ids] : ids;
+          setModelOptions(merged.length > 0 ? merged : selected ? [selected] : [FALLBACK_OPENAI_CHAT_MODEL]);
+          return selected || merged[0] || FALLBACK_OPENAI_CHAT_MODEL;
+        });
+      })
+      .catch(() => {
+        setModelsError(true);
+      })
+      .finally(() => {
+        setModelsLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    if (!settings.openaiApiKey) return;
+    refreshModels();
+    // Load once when a saved key is present.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount / key presence only
+  }, [settings.openaiApiKey]);
 
   const onSaveCredentials = (formData: FormData) => {
     startCredentialsTransition(async () => {
@@ -115,6 +159,7 @@ export function SettingsContent({ settings, documents, prompts, helpDocuments }:
                     autoComplete="off"
                     className={secretInputClass}
                     defaultValue={settings.openaiApiKey}
+                    id="openai-api-key"
                     name="openaiApiKey"
                     placeholder="sk-..."
                     type={showOpenaiKey ? "text" : "password"}
@@ -153,6 +198,42 @@ export function SettingsContent({ settings, documents, prompts, helpDocuments }:
                     </span>
                   </button>
                 </div>
+              </div>
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-body-sm text-on-surface-variant" htmlFor="openai-model">
+                  {admin.openaiModelLabel}
+                </label>
+                <div className="flex flex-wrap items-center gap-3">
+                  <select
+                    className={`${inputClass} max-w-md`}
+                    disabled={modelsLoading || modelOptions.length === 0}
+                    id="openai-model"
+                    name="openaiModel"
+                    onChange={(event) => setOpenaiModel(event.target.value)}
+                    value={openaiModel}
+                  >
+                    {modelOptions.map((id) => (
+                      <option key={id} value={id}>
+                        {id === RECOMMENDED_OPENAI_CHAT_MODEL ? `${id} ★` : id}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    className="rounded-md border border-hair bg-paper px-3 py-2 text-body-sm text-ink transition-colors hover:border-law disabled:opacity-60"
+                    disabled={modelsLoading}
+                    onClick={() => {
+                      const keyInput = document.getElementById("openai-api-key") as HTMLInputElement | null;
+                      refreshModels(keyInput?.value);
+                    }}
+                    type="button"
+                  >
+                    {modelsLoading ? admin.openaiModelLoading : admin.openaiModelRefresh}
+                  </button>
+                </div>
+                <p className="mt-1 text-body-sm text-on-surface-variant">{admin.openaiModelHint}</p>
+                {modelsError ? (
+                  <p className="mt-1 text-body-sm text-error">{admin.openaiModelLoadError}</p>
+                ) : null}
               </div>
             </div>
             <button

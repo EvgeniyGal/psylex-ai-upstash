@@ -1,6 +1,10 @@
 import { z } from "zod";
 import type { Locale } from "@/lib/i18n";
-import { getOpenAIClient, parseJsonFromModelResponse } from "@/lib/pipeline/openai-client";
+import {
+  getOpenAIChatModel,
+  getOpenAIClient,
+  parseJsonFromModelResponse,
+} from "@/lib/pipeline/openai-client";
 import { isLegalDocumentCategory, LEGAL_DOCUMENT_CATEGORIES } from "@/lib/rag/categories";
 import type { LegalDocumentCategory, RoomJurisdiction } from "@/lib/rag/types";
 import { getUsaSubJurisdictionLabel, type UsaSubJurisdiction } from "@/lib/rag/usa-jurisdictions";
@@ -95,8 +99,9 @@ export async function prepareLegalSearch(params: PrepareLegalSearchParams): Prom
 
   try {
     const client = await getOpenAIClient();
+    const model = await getOpenAIChatModel();
     const completion = await client.chat.completions.create({
-      model: "gpt-4o-mini",
+      model,
       temperature: 0,
       response_format: { type: "json_object" },
       messages: [

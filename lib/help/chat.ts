@@ -1,4 +1,4 @@
-import { getOpenAIClient } from "@/lib/pipeline/openai-client";
+import { getOpenAIChatModel, getOpenAIClient } from "@/lib/pipeline/openai-client";
 import { listHelpDocuments } from "@/lib/help/documents";
 import type { HelpViewerRole } from "@/lib/help/types";
 import type { Locale } from "@/lib/i18n";
@@ -43,10 +43,11 @@ export async function answerHelpChat(params: {
 }): Promise<string> {
   const documents = await listHelpDocuments(params.locale, params.role);
   const client = await getOpenAIClient();
+  const model = await getOpenAIChatModel();
   const history = params.messages.slice(-12);
 
   const completion = await client.chat.completions.create({
-    model: "gpt-4o-mini",
+    model,
     temperature: 0.2,
     messages: [
       { role: "system", content: buildSystemPrompt(params.locale, documents) },

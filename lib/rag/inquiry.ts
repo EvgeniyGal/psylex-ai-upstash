@@ -1,6 +1,5 @@
-import OpenAI from "openai";
 import type { Locale } from "@/lib/i18n";
-import { getPlatformSettings } from "@/lib/platform-settings";
+import { getOpenAIChatModel, getOpenAIClient } from "@/lib/pipeline/openai-client";
 import { RAG_DEFAULTS, RAG_INQUIRY_NOT_FOUND } from "@/lib/rag/config";
 import { prepareLegalSearch } from "@/lib/rag/prepare-search";
 import { searchLegalCorpusWithFallback } from "@/lib/rag/search";
@@ -87,14 +86,10 @@ export async function runRagInquiry(params: RunInquiryParams): Promise<RagInquir
     )
     .join("\n\n");
 
-  const settings = await getPlatformSettings();
-  if (!settings.openaiApiKey) {
-    throw new Error("OpenAI API key is not configured in Settings → Credentials.");
-  }
-
-  const client = new OpenAI({ apiKey: settings.openaiApiKey });
+  const client = await getOpenAIClient();
+  const model = await getOpenAIChatModel();
   const completion = await client.chat.completions.create({
-    model: "gpt-4o-mini",
+    model,
     temperature: 0,
     messages: [
       { role: "system", content: SYSTEM_PROMPT },

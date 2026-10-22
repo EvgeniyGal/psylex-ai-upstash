@@ -3,7 +3,11 @@ import type { Locale } from "@/lib/i18n";
 import type { PostIntakeAgentKey } from "@/lib/pipeline/agent-keys";
 import { localeInstruction } from "@/lib/pipeline/locale";
 import { loadAgentPrompt } from "@/lib/pipeline/load-prompt";
-import { getOpenAIClient, parseJsonFromModelResponse } from "@/lib/pipeline/openai-client";
+import {
+  getOpenAIChatModel,
+  getOpenAIClient,
+  parseJsonFromModelResponse,
+} from "@/lib/pipeline/openai-client";
 import { agentOutputSchemas } from "@/lib/pipeline/schemas";
 
 type RunAgentParams<T extends PostIntakeAgentKey> = {
@@ -18,11 +22,12 @@ export async function runAgent<T extends PostIntakeAgentKey>(params: RunAgentPar
   const schema = agentOutputSchemas[params.agentKey];
   const systemPrompt = await loadAgentPrompt(params.agentKey, params.draftPrompt);
   const client = await getOpenAIClient();
+  const model = await getOpenAIChatModel();
   const localeSuffix = `\n\n${localeInstruction(params.targetLocale)}`;
 
   const callModel = async (extraInstruction?: string) => {
     const completion = await client.chat.completions.create({
-      model: "gpt-4o-mini",
+      model,
       temperature: 0,
       response_format: { type: "json_object" },
       messages: [
