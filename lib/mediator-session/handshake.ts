@@ -215,14 +215,7 @@ async function loadRoomHandshake(roomId: string): Promise<RoomHandshakeRow | nul
   return room ?? null;
 }
 
-async function finalizeMediatorSessionStart(roomId: string): Promise<Date | null> {
-  const room = await loadRoomHandshake(roomId);
-  if (!room || !isMediatorFacilitatedRoom(room) || !room.scheduledStartAt) return null;
-  if (!shouldStartSession(room)) return null;
-
-  const startedAt =
-    Date.now() > room.scheduledStartAt.getTime() ? new Date() : room.scheduledStartAt;
-
+async function markMediatorSessionStarted(roomId: string, startedAt: Date): Promise<Date | null> {
   const [updated] = await db
     .update(rooms)
     .set({
@@ -252,6 +245,45 @@ async function finalizeMediatorSessionStart(roomId: string): Promise<Date | null
   }
 
   return updated.mediationStartedAt;
+}
+
+async function finalizeMediatorSessionStart(roomId: string): Promise<Date | null> {
+  const room = await loadRoomHandshake(roomId);
+  if (!room || !isMediatorFacilitatedRoom(room) || !room.scheduledStartAt) return null;
+  if (!shouldStartSession(room)) return null;
+
+  const startedAt =
+    Date.now() > room.scheduledStartAt.getTime() ? new Date() : room.scheduledStartAt;
+
+  return markMediatorSessionStarted(roomId, startedAt);
+}
+
+/**
+ * Mediator-only early start: all three must have clicked Start Mediation.
+ * Skips waiting for scheduledStartAt.
+ */
+export async function forceStartMediatorSessionNow(
+  roomId: string,
+  mediatorUserId: string,
+): Promise<MediatorHandshakeState> {
+  const room = await loadRoomHandshake(roomId);
+  if (!room || !isMediatorFacilitatedRoom(room) || room.createdByUserId !== mediatorUserId) {
+    throw new Error("Unauthorized");
+  }
+
+  const prerequisitesMet = await areMediatorSessionPrerequisitesMet(roomId);
+
+  if (room.mediationStartedAt) {
+    return evaluateHandshake(room, "mediator", prerequisitesMet);
+  }
+
+  if (!prerequisitesMet || !allThreeClicked(room)) {
+    throw new Error("Start now requires all three participants to have clicked Start Mediation");
+  }
+
+  await markMediatorSessionStarted(roomId, new Date());
+  const fresh = (await loadRoomHandshake(roomId)) ?? room;
+  return evaluateHandshake(fresh, "mediator", true);
 }
 
 export async function tryFinalizeMediatorSession(roomId: string) {

@@ -35,12 +35,22 @@ Start Mediation SHALL become available 10 minutes before `scheduled_start_at` fo
 
 ### Requirement: Three-party handshake
 
-Session SHALL start only when Party A, Party B, and the mediator have clicked Start and `now >= scheduled_start_at`.
+Session SHALL start when Party A, Party B, and the mediator have clicked Start and either `now >= scheduled_start_at` or the mediating mediator force-starts via Start now.
 
 #### Scenario: Early clicks wait for clock
 
 - **WHEN** all three have clicked before scheduled time
-- **THEN** UI shows countdown and session does not start until scheduled time
+- **THEN** UI shows countdown and the session auto-starts at scheduled time unless the mediator uses Start now
+
+#### Scenario: Mediator Start now
+
+- **WHEN** all three have clicked Start Mediation before scheduled time
+- **THEN** the mediator can click Start now to start the session immediately
+
+#### Scenario: Start now gated on handshake
+
+- **WHEN** any of Party A, Party B, or the mediator has not clicked Start Mediation
+- **THEN** Start now is unavailable and the mediator is told all three must click first
 
 ### Requirement: Mediator question candidates
 

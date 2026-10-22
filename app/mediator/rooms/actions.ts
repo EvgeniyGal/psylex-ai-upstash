@@ -7,6 +7,7 @@ import { requireSessionUserId } from "@/lib/auth-session";
 import { scheduleMediatorSession as scheduleSession } from "@/lib/mediator-session/scheduling";
 import { getMediatorSchedulingReadiness } from "@/lib/mediator-session/scheduling";
 import {
+  forceStartMediatorSessionNow,
   getMediatorHandshakeForMediator,
   recordMediatorStartClick,
   tryFinalizeMediatorSession,
@@ -62,6 +63,15 @@ export async function fetchMediatorLobbyHandshake(roomId: string) {
 export async function clickMediatorStartMediation(roomId: string) {
   const userId = await requireMediator();
   const state = await recordMediatorStartClick(roomId, "mediator");
+  revalidatePath(`/mediator/rooms/${roomId}/lobby`);
+  revalidatePath(`/mediator/rooms/${roomId}/session`);
+  revalidatePath("/mediation");
+  return state;
+}
+
+export async function startMediatorSessionNow(roomId: string) {
+  const userId = await requireMediator();
+  const state = await forceStartMediatorSessionNow(roomId, userId);
   revalidatePath(`/mediator/rooms/${roomId}/lobby`);
   revalidatePath(`/mediator/rooms/${roomId}/session`);
   revalidatePath("/mediation");

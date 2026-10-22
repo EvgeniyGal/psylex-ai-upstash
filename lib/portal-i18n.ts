@@ -58,6 +58,8 @@ type PortalCopy = {
   mediationStatusNotReady: string;
   mediationOppositeNotReady: string;
   mediationStart: string;
+  mediationStartNow: string;
+  mediationStartNowHint: string;
   mediationYourStatus: string;
   mediationAgentsWorking: string;
   mediationRoomPreparing: string;
@@ -293,6 +295,9 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     mediationOppositeNotReady:
       "The opposite side is not ready for mediation yet. They may still be completing tests or answering the dispute questions.",
     mediationStart: "Start Mediation",
+    mediationStartNow: "Start now",
+    mediationStartNowHint:
+      "Available when Party A, Party B, and you have all clicked Start Mediation.",
     mediationYourStatus: "Your status",
     mediationAgentsWorking:
       "Our analysis agents are preparing your mediation session. This may take several minutes. Please wait — the Start Mediation button will become available when analysis is complete.",
@@ -316,7 +321,8 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     modeBWaitingPartyA: "Waiting for Party A",
     modeBWaitingPartyB: "Waiting for Party B",
     modeBSelfClicked: "You clicked Start Mediation.",
-    modeBAllReadyCountdown: "Everyone is ready. Session starts at the scheduled time.",
+    modeBAllReadyCountdown:
+      "Everyone is ready. The session starts at the scheduled time, or the mediator can start now.",
     modeBActionRequired: "Action required",
     modeBNotifyScheduled: "A mediation session has been scheduled.",
     modeBNotifyStartWindow: "You can now click Start Mediation.",
@@ -553,6 +559,9 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     mediationOppositeNotReady:
       "Інша сторона ще не готова до медіації. Вона може ще проходити тести або відповідати на запитання про спір.",
     mediationStart: "Почати медіацію",
+    mediationStartNow: "Почати зараз",
+    mediationStartNowHint:
+      "Доступно, коли сторона A, сторона B і ви всі натиснули «Почати медіацію».",
     mediationYourStatus: "Ваш статус",
     mediationAgentsWorking:
       "Агенти аналізу готують вашу сесію медіації. Це може зайняти кілька хвилин. Зачекайте — кнопка «Почати медіацію» стане доступною після завершення аналізу.",
@@ -576,7 +585,8 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     modeBWaitingPartyA: "Очікуємо сторону A",
     modeBWaitingPartyB: "Очікуємо сторону B",
     modeBSelfClicked: "Ви натиснули «Почати медіацію».",
-    modeBAllReadyCountdown: "Усі готові. Сесія почнеться у запланований час.",
+    modeBAllReadyCountdown:
+      "Усі готові. Сесія почнеться у запланований час, або медіатор може почати зараз.",
     modeBActionRequired: "Потрібна дія",
     modeBNotifyScheduled: "Сесію медіації заплановано.",
     modeBNotifyStartWindow: "Тепер можна натиснути «Почати медіацію».",

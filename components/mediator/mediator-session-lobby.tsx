@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   clickMediatorStartMediation,
   fetchMediatorLobbyHandshake,
+  startMediatorSessionNow,
 } from "@/app/mediator/rooms/actions";
 import { Spinner } from "@/components/ui/spinner";
 import { useLocale } from "@/components/locale-provider";
@@ -92,6 +93,17 @@ export function MediatorSessionLobby({
     });
   };
 
+  const onStartNow = () => {
+    startTransition(async () => {
+      try {
+        const next = await startMediatorSessionNow(roomId);
+        applyHandshake(next);
+      } catch {
+        await refresh();
+      }
+    });
+  };
+
   const showStartWindowCountdown =
     handshake.status === "too_early" && msUntilStartWindow !== null && msUntilStartWindow > 0;
   const showSessionCountdown =
@@ -101,6 +113,11 @@ export function MediatorSessionLobby({
     msUntilStart > 0;
   const showParticipantStatus =
     handshake.status === "waiting" || handshake.status === "countdown" || handshake.status === "idle";
+  const showStartNow =
+    handshake.status === "idle" ||
+    handshake.status === "waiting" ||
+    handshake.status === "countdown";
+  const canStartNow = handshake.status === "countdown";
 
   return (
     <section className="mx-auto max-w-2xl space-y-6">
@@ -163,6 +180,22 @@ export function MediatorSessionLobby({
             {pending ? <Spinner className="text-white" size="sm" /> : null}
             {t.mediationStart}
           </button>
+          {showStartNow ? (
+            <>
+              <button
+                className="btn-secondary inline-flex items-center gap-2 px-6 py-3 text-body-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!canStartNow || pending}
+                onClick={onStartNow}
+                type="button"
+              >
+                {pending && canStartNow ? <Spinner className="text-on-surface" size="sm" /> : null}
+                {t.mediationStartNow}
+              </button>
+              {!canStartNow ? (
+                <p className="text-body-sm text-on-surface-variant">{t.mediationStartNowHint}</p>
+              ) : null}
+            </>
+          ) : null}
           {handshake.status === "too_early" ? (
             <p className="text-body-sm text-on-surface-variant">{t.modeBStartAvailableHint}</p>
           ) : null}
