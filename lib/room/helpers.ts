@@ -262,10 +262,15 @@ export async function addRoomParticipant(params: {
 }
 
 export async function searchPartyUsers(query: string, limit = 20) {
-  const q = query.trim();
-  if (!q) return [];
+  const q = query.trim().replace(/[%_]/g, "");
+  const partyFilter = inArray(users.role, [...PARTY_ROLES]);
+  const filters = q
+    ? and(
+        partyFilter,
+        sql`(${users.login} ILIKE ${`%${q}%`} OR ${users.title} ILIKE ${`%${q}%`})`,
+      )
+    : partyFilter;
 
-  const pattern = `%${q.replace(/[%_]/g, "")}%`;
   return db
     .select({
       id: users.id,
@@ -278,11 +283,7 @@ export async function searchPartyUsers(query: string, limit = 20) {
       profileRefreshRequestedAt: users.profileRefreshRequestedAt,
     })
     .from(users)
-    .where(
-      and(
-        inArray(users.role, [...PARTY_ROLES]),
-        sql`(${users.login} ILIKE ${pattern} OR ${users.title} ILIKE ${pattern})`,
-      ),
-    )
+    .where(filters)
+    .orderBy(users.title, users.login)
     .limit(limit);
 }

@@ -280,6 +280,8 @@ export type AdminCopy = {
   addExistingParticipant: string;
   searchParticipant: string;
   searchParticipantPlaceholder: string;
+  selectParticipantHint: string;
+  noParticipantsFound: string;
   profileReadyLabel: string;
   profileNotReadyLabel: string;
   profileTestsDateLabel: string;
@@ -608,6 +610,8 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     addExistingParticipant: "Add existing participant",
     searchParticipant: "Search",
     searchParticipantPlaceholder: "Search by login or name…",
+    selectParticipantHint: "Select a participant from the list.",
+    noParticipantsFound: "No participants found.",
     profileReadyLabel: "Profile ready",
     profileNotReadyLabel: "Profile not ready",
     profileTestsDateLabel: "Tests",
@@ -1022,6 +1026,8 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     addExistingParticipant: "Додати існуючого учасника",
     searchParticipant: "Пошук",
     searchParticipantPlaceholder: "Пошук за логіном або ім’ям…",
+    selectParticipantHint: "Оберіть учасника зі списку.",
+    noParticipantsFound: "Учасників не знайдено.",
     profileReadyLabel: "Профіль готовий",
     profileNotReadyLabel: "Профіль не готовий",
     profileTestsDateLabel: "Тести",

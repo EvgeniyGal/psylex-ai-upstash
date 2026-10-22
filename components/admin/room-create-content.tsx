@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { createRoom, searchPartyUsersAction } from "@/app/admin/rooms/actions";
 import { Spinner } from "@/components/ui/spinner";
 import { useLocale } from "@/components/locale-provider";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import {
   USA_SUB_JURISDICTIONS_SORTED,
   getUsaSubJurisdictionLabel,
@@ -44,6 +45,7 @@ function PartySlotFields({
 }) {
   const { admin } = useLocale();
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebouncedValue(query, 300);
   const [hits, setHits] = useState<SearchHit[]>([]);
   const [searching, startSearch] = useTransition();
   const prefix = role === "party_a" ? "partyA" : "partyB";
@@ -51,12 +53,13 @@ function PartySlotFields({
   const descriptionLabel =
     role === "party_a" ? admin.partyADescriptionLabel : admin.partyBDescriptionLabel;
 
-  const runSearch = () => {
+  useEffect(() => {
+    if (mode !== "existing") return;
     startSearch(async () => {
-      const next = await searchPartyUsersAction(query);
+      const next = await searchPartyUsersAction(debouncedQuery);
       setHits(next);
     });
-  };
+  }, [mode, debouncedQuery]);
 
   return (
     <fieldset className="glass-panel space-y-4 rounded-xl p-6">
@@ -77,6 +80,8 @@ function PartySlotFields({
           onClick={() => {
             onModeChange("create");
             onSelect(null);
+            setQuery("");
+            setHits([]);
           }}
           type="button"
         >
@@ -118,40 +123,62 @@ function PartySlotFields({
             type="hidden"
             value={selected?.id ?? ""}
           />
-          <div className="flex gap-2">
-            <input
-              className={inputClass}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={admin.searchParticipantPlaceholder}
-              value={query}
-            />
-            <button
-              className="btn-secondary px-3 py-2 text-body-sm disabled:opacity-60"
-              disabled={searching || !query.trim()}
-              onClick={runSearch}
-              type="button"
-            >
-              {searching ? <Spinner size="sm" /> : admin.searchParticipant}
-            </button>
+          <div>
+            <label className="mb-1 block text-body-sm text-on-surface-variant" htmlFor={`${prefix}-search`}>
+              {admin.searchParticipant}
+            </label>
+            <div className="relative">
+              <input
+                autoFocus
+                className={inputClass}
+                id={`${prefix}-search`}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={admin.searchParticipantPlaceholder}
+                value={query}
+              />
+              {searching ? (
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+                  <Spinner size="sm" />
+                </span>
+              ) : null}
+            </div>
           </div>
           {selected ? (
             <p className="rounded-md border border-law/40 bg-law-fill/30 p-3 text-body-sm text-on-surface">
               {selected.title} ({selected.login})
               {selected.onboardingCompletedAt ? ` · ${admin.profileReadyLabel}` : ` · ${admin.profileNotReadyLabel}`}
             </p>
-          ) : null}
-          <ul className="max-h-40 space-y-1 overflow-auto text-body-sm">
-            {hits.map((hit) => (
-              <li key={hit.id}>
-                <button
-                  className="w-full rounded-md border border-hair px-3 py-2 text-left hover:border-law"
-                  onClick={() => onSelect(hit)}
-                  type="button"
-                >
-                  {hit.title} · {hit.login}
-                </button>
-              </li>
-            ))}
+          ) : (
+            <p className="text-body-sm text-on-surface-variant">{admin.selectParticipantHint}</p>
+          )}
+          <ul className="max-h-56 space-y-1 overflow-auto rounded-md border border-hair bg-paper p-1 text-body-sm">
+            {hits.length === 0 && !searching ? (
+              <li className="px-3 py-4 text-center text-on-surface-variant">{admin.noParticipantsFound}</li>
+            ) : (
+              hits.map((hit) => {
+                const isSelected = selected?.id === hit.id;
+                return (
+                  <li key={hit.id}>
+                    <button
+                      aria-pressed={isSelected}
+                      className={`w-full rounded-md px-3 py-2 text-left transition-colors ${
+                        isSelected
+                          ? "bg-law text-white"
+                          : "hover:bg-surface-container-high"
+                      }`}
+                      onClick={() => onSelect(hit)}
+                      type="button"
+                    >
+                      <span className="font-semibold">{hit.title || hit.login}</span>
+                      <span className={isSelected ? "opacity-90" : "text-on-surface-variant"}>
+                        {" "}
+                        · {hit.login}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })
+            )}
           </ul>
         </div>
       )}

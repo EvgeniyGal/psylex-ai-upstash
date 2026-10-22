@@ -211,6 +211,13 @@
       "when": 1784800000000,
       "tag": "0029_message_translations",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1784880000000,
+      "tag": "0030_openai_model",
+      "breakpoints": true
     }
   ]
 }
