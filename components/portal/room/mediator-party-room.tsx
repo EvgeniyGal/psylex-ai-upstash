@@ -237,13 +237,24 @@ export function MediatorPartyRoom({
                 agent: t.mediationAgent,
                 system: t.mediationSystem,
               }}
-              messages={state.messages.map((m) => ({
-                id: m.id,
-                senderType: m.senderType,
-                content: m.content,
-                createdAt: m.createdAt,
-                isOwn: m.isOwn,
-              }))}
+              messages={state.messages.map((m) => {
+                let senderLabel: string | null = null;
+                if (!m.isOwn) {
+                  if (m.isMediatorAuthored) {
+                    senderLabel = t.mediationMediatorLabel(state.mediatorTitle);
+                  } else if (m.senderType === "participant" && m.senderPartyRole) {
+                    senderLabel = t.roles[m.senderPartyRole] ?? m.senderPartyRole;
+                  }
+                }
+                return {
+                  id: m.id,
+                  senderType: m.senderType,
+                  content: m.content,
+                  createdAt: m.createdAt,
+                  isOwn: m.isOwn,
+                  senderLabel,
+                };
+              })}
               footer={
                 state.room.canReply && !review ? (
                   <MediationChatComposer

@@ -62,15 +62,22 @@ export async function insertAgentMessage(params: {
   canonicalContent: string;
   adaptations: PartyAdaptations;
   messageKind: MediationMessageKind;
-  /** When set, only this participant sees the agent message (e.g. dialogue questions). */
+  /** When set, only this participant sees the agent message (caucus). */
   addresseeUserId?: string | null;
+  /** shared = both parties; private = caucus to addressee. */
+  channel?: "shared" | "private";
+  /** Mediator user id when a human mediator authored the message. */
+  senderUserId?: string | null;
 }) {
+  const channel =
+    params.channel ?? (params.addresseeUserId ? "private" : "shared");
   const [row] = await db
     .insert(roomMessages)
     .values({
       roomId: params.roomId,
-      channel: "shared",
+      channel,
       senderType: "agent",
+      senderUserId: params.senderUserId ?? null,
       content: params.canonicalContent,
       canonicalContent: params.canonicalContent,
       adaptations: params.adaptations,
@@ -86,12 +93,13 @@ export async function insertParticipantMessage(params: {
   roomId: string;
   userId: string;
   content: string;
+  channel?: "shared" | "private";
 }) {
   const [row] = await db
     .insert(roomMessages)
     .values({
       roomId: params.roomId,
-      channel: "shared",
+      channel: params.channel ?? "shared",
       senderType: "participant",
       senderUserId: params.userId,
       content: params.content,
@@ -192,6 +200,16 @@ export function resolveAgentMessageTargetUserId(
   return resolveTargetUserId(message, allMessages, partyAUserId, partyBUserId);
 }
 
+export function isSharedBroadcastAgentMessage(message: RoomMessageRow) {
+  return (
+    message.senderType === "agent" &&
+    message.channel === "shared" &&
+    !message.participantUserId &&
+    (message.messageKind === "mediation_question" ||
+      message.messageKind === "mediation_moderation")
+  );
+}
+
 export function isMessageVisibleToViewer(
   message: RoomMessageRow,
   viewerUserId: string,
@@ -200,9 +218,17 @@ export function isMessageVisibleToViewer(
     partyAUserId: string;
     partyBUserId: string;
     includeRoundSummaries?: boolean;
+    /** Mode B shared channel: peers see each other's shared replies. */
+    shareParticipantReplies?: boolean;
   },
 ) {
   if (message.senderType === "participant") {
+    if (message.channel === "private") {
+      return message.senderUserId === viewerUserId;
+    }
+    if (context.shareParticipantReplies) {
+      return true;
+    }
     return message.senderUserId === viewerUserId;
   }
 
@@ -224,6 +250,9 @@ export function isMessageVisibleToViewer(
   }
 
   if (kind === "mediation_question" || kind === "mediation_moderation") {
+    if (isSharedBroadcastAgentMessage(message)) {
+      return true;
+    }
     const targetUserId = resolveTargetUserId(
       message,
       context.allMessages,
@@ -267,6 +296,42 @@ export function resolveMessageForViewer(
   return message.content;
 }
 
+function isQuestionForParty(
+  message: RoomMessageRow,
+  partyUserId: string,
+  messages: RoomMessageRow[],
+  partyAUserId: string,
+  partyBUserId: string,
+) {
+  if (message.messageKind !== "mediation_question") return false;
+  if (isSharedBroadcastAgentMessage(message)) return true;
+  const target = resolveTargetUserId(message, messages, partyAUserId, partyBUserId);
+  return target === partyUserId;
+}
+
+/** Latest unanswered mediation question for this party, if any. */
+export function latestUnansweredQuestionForParty(
+  messages: RoomMessageRow[],
+  partyUserId: string,
+  partyAUserId: string,
+  partyBUserId: string,
+) {
+  const questionsForParty = messages.filter((message) =>
+    isQuestionForParty(message, partyUserId, messages, partyAUserId, partyBUserId),
+  );
+  if (questionsForParty.length === 0) return null;
+
+  const latestQuestion = questionsForParty[questionsForParty.length - 1]!;
+  const latestQuestionAt = latestQuestion.createdAt.getTime();
+  const answered = messages.some(
+    (message) =>
+      message.senderType === "participant" &&
+      message.senderUserId === partyUserId &&
+      message.createdAt.getTime() > latestQuestionAt,
+  );
+  return answered ? null : latestQuestion;
+}
+
 /** True when the party has an unanswered mediation question addressed to them. */
 export function partyHasUnansweredQuestion(
   messages: RoomMessageRow[],
@@ -274,20 +339,10 @@ export function partyHasUnansweredQuestion(
   partyAUserId: string,
   partyBUserId: string,
 ) {
-  const questionsForParty = messages.filter((message) => {
-    if (message.messageKind !== "mediation_question") return false;
-    const target = resolveTargetUserId(message, messages, partyAUserId, partyBUserId);
-    return target === partyUserId;
-  });
-  if (questionsForParty.length === 0) return false;
-
-  const latestQuestion = questionsForParty[questionsForParty.length - 1]!;
-  const latestQuestionAt = latestQuestion.createdAt.getTime();
-
-  return !messages.some(
-    (message) =>
-      message.senderType === "participant" &&
-      message.senderUserId === partyUserId &&
-      message.createdAt.getTime() > latestQuestionAt,
+  return !!latestUnansweredQuestionForParty(
+    messages,
+    partyUserId,
+    partyAUserId,
+    partyBUserId,
   );
 }

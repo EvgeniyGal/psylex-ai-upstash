@@ -12,6 +12,8 @@ export type MediationChatMessage = {
   content: string;
   createdAt: string;
   isOwn: boolean;
+  /** Overrides default you/agent/system label when set. */
+  senderLabel?: string | null;
 };
 
 type MediationChatLabels = {
@@ -103,7 +105,13 @@ function MediationChatBubble({
     );
   }
 
-  const senderLabel = message.isOwn ? labels.you : isAgent ? labels.agent : labels.system;
+  const senderLabel = message.isOwn
+    ? labels.you
+    : message.senderLabel?.trim()
+      ? message.senderLabel
+      : isAgent
+        ? labels.agent
+        : labels.system;
 
   return (
     <motion.div

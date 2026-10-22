@@ -282,7 +282,7 @@ function participantMessageEvents(
 
     const user = participants.find((p) => p.id === message.senderUserId);
     const role = user?.role;
-    if (role !== "party_a" && role !== "party_b") continue;
+    if (!user || (role !== "party_a" && role !== "party_b")) continue;
 
     pushDerived(entries, {
       id: `message-${message.id}`,
@@ -294,6 +294,50 @@ function participantMessageEvents(
         channel: message.channel,
         messageKind: message.messageKind,
         content: message.canonicalContent ?? message.content,
+        sender: user.title?.trim() || user.login,
+      },
+    });
+  }
+}
+
+function mediationMessageEvents(
+  entries: RoomActivityEntry[],
+  messages: RoomMessageRow[],
+  participants: UserRow[],
+) {
+  for (const message of messages) {
+    if (message.senderType !== "agent" && message.senderType !== "system") continue;
+
+    const sender = message.senderUserId
+      ? participants.find((p) => p.id === message.senderUserId)
+      : null;
+    const addressee = message.participantUserId
+      ? participants.find((p) => p.id === message.participantUserId)
+      : null;
+
+    const senderLabel = sender
+      ? sender.title?.trim() || sender.login
+      : message.senderType === "system"
+        ? "System"
+        : "Mediation agent";
+
+    pushDerived(entries, {
+      id: `mediation-message-${message.id}`,
+      occurredAt: message.createdAt,
+      kind: "mediation_message",
+      partyRole:
+        addressee?.role === "party_a" || addressee?.role === "party_b"
+          ? addressee.role
+          : null,
+      userId: message.senderUserId,
+      payload: {
+        channel: message.channel,
+        messageKind: message.messageKind,
+        content: message.canonicalContent ?? message.content,
+        sender: senderLabel,
+        audience: message.participantUserId
+          ? addressee?.role ?? "party"
+          : "both",
       },
     });
   }
@@ -318,6 +362,7 @@ export function buildRoomActivityLog(params: {
   }
 
   participantMessageEvents(entries, params.participantMessages, params.participants);
+  mediationMessageEvents(entries, params.participantMessages, params.participants);
 
   for (const completion of params.testCompletions) {
     const user = params.participants.find((p) => p.id === completion.userId);
@@ -373,8 +418,19 @@ export async function getRoomActivityLog(roomId: string): Promise<RoomActivityEn
   const [room] = await db.select().from(rooms).where(eq(rooms.id, roomId)).limit(1);
   if (!room) return [];
 
-  const participants = await db.select().from(users).where(eq(users.roomId, roomId));
-  const participantIds = participants.map((p) => p.id);
+  const roomParticipants = await db.select().from(users).where(eq(users.roomId, roomId));
+  const mediator =
+    room.createdByUserId &&
+    !roomParticipants.some((p) => p.id === room.createdByUserId)
+      ? await db
+          .select()
+          .from(users)
+          .where(eq(users.id, room.createdByUserId))
+          .limit(1)
+          .then((rows) => rows[0] ?? null)
+      : null;
+  const participants = mediator ? [...roomParticipants, mediator] : roomParticipants;
+  const participantIds = roomParticipants.map((p) => p.id);
 
   const [pipelineEvents, testCompletions, filingReceipts, participantMessages] =
     await Promise.all([

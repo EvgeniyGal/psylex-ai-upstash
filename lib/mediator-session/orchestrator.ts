@@ -1,6 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { rooms } from "@/drizzle/schema";
+import { rooms, users } from "@/drizzle/schema";
 import {
   assembleMediationContext,
   isAttackHeuristic,
@@ -12,6 +12,8 @@ import {
   insertParticipantMessage,
   insertSystemMessage,
   isMessageVisibleToViewer,
+  isSharedBroadcastAgentMessage,
+  latestUnansweredQuestionForParty,
   listRoomMessages,
   partyHasUnansweredQuestion,
   resolveAgentMessageTargetUserId,
@@ -179,22 +181,34 @@ export async function generateQuestionCandidates(roomId: string, mediatorUserId:
   }
 }
 
+export type MediatorAudience = PartyRole | "both";
+
 async function deliverMediatorQuestion(params: {
   roomId: string;
-  partyRole: PartyRole;
+  audience: MediatorAudience;
+  mediatorUserId: string;
   canonicalContent: string;
   adaptations: PartyAdaptations;
 }) {
   const { partyA, partyB } = await getRoomPartiesForPipeline(params.roomId);
-  const addressee = params.partyRole === "party_a" ? partyA : partyB;
-  if (!addressee) throw new Error("Party not found.");
+  if (!partyA || !partyB) throw new Error("Party not found.");
+
+  const isBoth = params.audience === "both";
+  const addressee = isBoth
+    ? null
+    : params.audience === "party_a"
+      ? partyA
+      : partyB;
+  if (!isBoth && !addressee) throw new Error("Party not found.");
 
   await insertAgentMessage({
     roomId: params.roomId,
     canonicalContent: params.canonicalContent,
     adaptations: params.adaptations,
     messageKind: "mediation_question",
-    addresseeUserId: addressee.id,
+    addresseeUserId: addressee?.id ?? null,
+    channel: isBoth ? "shared" : "private",
+    senderUserId: params.mediatorUserId,
   });
 
   await db
@@ -209,13 +223,22 @@ async function deliverMediatorQuestion(params: {
   await setPartyNotification({
     roomId: params.roomId,
     type: "question_received",
-    targetRole: params.partyRole,
+    targetRole: isBoth ? "all" : (params.audience as PartyRole),
   });
 }
 
-function assertDialoguePhase(phase: string | null) {
+function assertCanGenerateQuestions(phase: string | null) {
   if (phase !== "dialogue" && phase !== "opening") {
     throw new Error("Dialogue is not active.");
+  }
+}
+
+function assertSessionAllowsMediatorSend(phase: string | null) {
+  if (phase === "completed" || phase === "agreement") {
+    throw new Error("Session already ended.");
+  }
+  if (!phase) {
+    throw new Error("Session has not started.");
   }
 }
 
@@ -227,7 +250,7 @@ export async function sendMediatorQuestion(params: {
   editedText?: string;
 }) {
   const room = await assertMediatorOwnsRoom(params.roomId, params.mediatorUserId);
-  assertDialoguePhase(room.mediationPhase);
+  assertCanGenerateQuestions(room.mediationPhase);
 
   const stored = (room.mediatorQuestionCandidates as MediatorQuestionCandidates | null) ?? {
     party_a: [],
@@ -252,7 +275,8 @@ export async function sendMediatorQuestion(params: {
 
   await deliverMediatorQuestion({
     roomId: params.roomId,
-    partyRole: params.partyRole,
+    audience: params.partyRole,
+    mediatorUserId: params.mediatorUserId,
     canonicalContent,
     adaptations,
   });
@@ -271,18 +295,19 @@ export async function sendMediatorQuestion(params: {
 export async function sendCustomMediatorQuestion(params: {
   roomId: string;
   mediatorUserId: string;
-  partyRole: PartyRole;
+  audience: MediatorAudience;
   text: string;
 }) {
   const room = await assertMediatorOwnsRoom(params.roomId, params.mediatorUserId);
-  assertDialoguePhase(room.mediationPhase);
+  assertSessionAllowsMediatorSend(room.mediationPhase);
 
   const text = params.text.trim();
   if (!text) throw new Error("Question cannot be empty.");
 
   await deliverMediatorQuestion({
     roomId: params.roomId,
-    partyRole: params.partyRole,
+    audience: params.audience,
+    mediatorUserId: params.mediatorUserId,
     canonicalContent: text,
     adaptations: { party_a: text, party_b: text },
   });
@@ -295,20 +320,20 @@ export async function submitMediatorPartyReply(userId: string, content: string) 
 
   const room = await loadRoom(participant.roomId);
   if (!room || !isMediatorFacilitatedRoom(room)) throw new Error("Not a mediator room.");
-  if (room.mediationPhase !== "dialogue") throw new Error("Dialogue is not active.");
+  assertSessionAllowsMediatorSend(room.mediationPhase);
 
   const role = partyRoleFromUser(participant.user);
   const { partyA, partyB } = await getRoomPartiesForPipeline(room.id);
   if (!partyA || !partyB) throw new Error("Parties not found.");
 
   const messages = await listRoomMessages(room.id);
-  const hasPending = partyHasUnansweredQuestion(
+  const pendingQuestion = latestUnansweredQuestionForParty(
     messages,
     userId,
     partyA.id,
     partyB.id,
   );
-  if (!hasPending) {
+  if (!pendingQuestion) {
     throw new Error("No open question to answer.");
   }
 
@@ -330,15 +355,22 @@ export async function submitMediatorPartyReply(userId: string, content: string) 
       adaptations: toPartyAdaptations(redirect),
       messageKind: "mediation_moderation",
       addresseeUserId: userId,
+      channel: "private",
     });
 
     return { moderated: true as const };
   }
 
+  const replyChannel =
+    pendingQuestion.channel === "private" || pendingQuestion.participantUserId
+      ? "private"
+      : "shared";
+
   await insertParticipantMessage({
     roomId: room.id,
     userId,
     content: trimmed,
+    channel: replyChannel,
   });
 
   return { moderated: false as const };
@@ -728,6 +760,17 @@ async function buildSessionState(
   const compromiseDraft = room.mediatorCompromiseDraft as MediationOption | null;
   const candidates = (room.mediatorQuestionCandidates as MediatorQuestionCandidates | null) ?? emptyCandidates();
 
+  const [mediatorUser] = room.createdByUserId
+    ? await db
+        .select({ id: users.id, title: users.title, login: users.login })
+        .from(users)
+        .where(eq(users.id, room.createdByUserId))
+        .limit(1)
+    : [];
+
+  const mediatorTitle =
+    mediatorUser?.title?.trim() || mediatorUser?.login?.trim() || "Mediator";
+
   const role =
     viewerKind === "mediator"
       ? null
@@ -741,6 +784,7 @@ async function buildSessionState(
     allMessages: messages,
     partyAUserId: partyA?.id ?? "",
     partyBUserId: partyB?.id ?? "",
+    shareParticipantReplies: true,
   };
 
   const roleForUserId = (userId: string | null | undefined): PartyRole | null => {
@@ -750,48 +794,51 @@ async function buildSessionState(
     return null;
   };
 
+  const mapMessage = (message: (typeof messages)[number], forMediator: boolean) => {
+    const isBroadcast = isSharedBroadcastAgentMessage(message);
+    const addresseeUserId = isBroadcast
+      ? null
+      : message.senderType === "agent" && partyA?.id && partyB?.id
+        ? resolveAgentMessageTargetUserId(message, messages, partyA.id, partyB.id)
+        : message.participantUserId;
+    const isMediatorAuthored =
+      message.senderType === "agent" &&
+      !!message.senderUserId &&
+      message.senderUserId === room.createdByUserId;
+
+    return {
+      id: message.id,
+      senderType: message.senderType,
+      messageKind: message.messageKind,
+      channel: message.channel,
+      content: forMediator
+        ? message.messageKind === "mediation_system"
+          ? resolveLocalizedSystemMessage(
+              message.canonicalContent ?? message.content,
+              locale,
+            )
+          : (message.canonicalContent ?? message.content)
+        : resolveMessageForViewer(message, role!, locale),
+      createdAt: message.createdAt.toISOString(),
+      isOwn: message.senderUserId === viewerUserId,
+      addresseeUserId,
+      senderPartyRole: roleForUserId(message.senderUserId),
+      addresseePartyRole: roleForUserId(addresseeUserId),
+      isMediatorAuthored,
+      isBroadcast,
+    };
+  };
+
   const viewerMessages = dedupeConsecutiveViewerMessages(
     viewerKind === "mediator"
-      ? messages.map((message) => {
-          const addresseeUserId =
-            message.senderType === "agent" && partyA?.id && partyB?.id
-              ? resolveAgentMessageTargetUserId(message, messages, partyA.id, partyB.id)
-              : message.participantUserId;
-          return {
-            id: message.id,
-            senderType: message.senderType,
-            messageKind: message.messageKind,
-            content:
-              message.messageKind === "mediation_system"
-                ? resolveLocalizedSystemMessage(
-                    message.canonicalContent ?? message.content,
-                    locale,
-                  )
-                : (message.canonicalContent ?? message.content),
-            createdAt: message.createdAt.toISOString(),
-            isOwn: false,
-            addresseeUserId,
-            senderPartyRole: roleForUserId(message.senderUserId),
-            addresseePartyRole: roleForUserId(addresseeUserId),
-          };
-        })
+      ? messages.map((message) => mapMessage(message, true))
       : messages
           .filter((message) =>
             partyA?.id && partyB?.id
               ? isMessageVisibleToViewer(message, viewerUserId, visibilityContext)
               : message.senderUserId === viewerUserId || message.senderType !== "participant",
           )
-          .map((message) => ({
-            id: message.id,
-            senderType: message.senderType,
-            messageKind: message.messageKind,
-            content: resolveMessageForViewer(message, role!, locale),
-            createdAt: message.createdAt.toISOString(),
-            isOwn: message.senderUserId === viewerUserId,
-            addresseeUserId: message.participantUserId,
-            senderPartyRole: roleForUserId(message.senderUserId),
-            addresseePartyRole: roleForUserId(message.participantUserId),
-          })),
+          .map((message) => mapMessage(message, false)),
   );
 
   const mapOption = (option: MediationOption) => ({
@@ -815,12 +862,17 @@ async function buildSessionState(
     room.mediationPhase === "agreement" ||
     room.mediationPhase === "completed";
 
+  const sessionAllowsReply =
+    !!room.mediationPhase &&
+    room.mediationPhase !== "completed" &&
+    room.mediationPhase !== "agreement";
+
   const pendingQuestion =
     viewerKind === "party" &&
     !!role &&
     !!partyA?.id &&
     !!partyB?.id &&
-    room.mediationPhase === "dialogue" &&
+    sessionAllowsReply &&
     partyHasUnansweredQuestion(messages, viewerUserId, partyA.id, partyB.id);
 
   const canReply = pendingQuestion;
@@ -912,6 +964,7 @@ async function buildSessionState(
         : null,
     viewerRole: role,
     viewerKind,
+    mediatorTitle,
   };
 
   if (room.mediationPhase === "completed" && role) {

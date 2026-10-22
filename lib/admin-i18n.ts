@@ -257,6 +257,9 @@ export type AdminCopy = {
   mediatorProfilesTitle: string;
   mediatorMessageKinds: Record<string, string>;
   mediatorMessageToParty: string;
+  mediatorMessageToBoth: string;
+  mediatorAudienceBoth: string;
+  mediatorLabel: (name: string) => string;
   activityLogSourcePipeline: string;
   activityLogSourceMilestone: string;
   activityLogEvents: Record<string, string>;
@@ -553,6 +556,9 @@ export const adminCopy: Record<Locale, AdminCopy> = {
       mediation_options: "Options",
     },
     mediatorMessageToParty: "to",
+    mediatorMessageToBoth: "to both parties",
+    mediatorAudienceBoth: "Both",
+    mediatorLabel: (name) => `Mediator: ${name}`,
     activityLogSourcePipeline: "Pipeline",
     activityLogSourceMilestone: "Milestone",
     activityLogEvents: {
@@ -578,6 +584,7 @@ export const adminCopy: Record<Locale, AdminCopy> = {
       compromise_votes_recorded: "Compromise votes recorded",
       filing_receipt_saved: "Filing receipt saved",
       participant_message: "Participant message",
+      mediation_message: "Mediation message",
     },
     activityLogPipelineEvents: {
       pipeline_triggered: "Pipeline triggered",
@@ -603,6 +610,8 @@ export const adminCopy: Record<Locale, AdminCopy> = {
       channel: "Channel",
       messageKind: "Message type",
       message: "Message",
+      sender: "Sender",
+      audience: "Audience",
       personalBotPrompt: "Personal bot prompt",
       phase: "Phase",
       reason: "Reason",
@@ -913,6 +922,9 @@ export const adminCopy: Record<Locale, AdminCopy> = {
       mediation_options: "Варіанти",
     },
     mediatorMessageToParty: "до",
+    mediatorMessageToBoth: "до обох сторін",
+    mediatorAudienceBoth: "Обидві",
+    mediatorLabel: (name) => `Медіатор: ${name}`,
     activityLogSourcePipeline: "Пайплайн",
     activityLogSourceMilestone: "Етап",
     activityLogEvents: {
@@ -938,6 +950,7 @@ export const adminCopy: Record<Locale, AdminCopy> = {
       compromise_votes_recorded: "Голоси за компроміс зафіксовано",
       filing_receipt_saved: "Квитанцію подання збережено",
       participant_message: "Повідомлення учасника",
+      mediation_message: "Повідомлення медіації",
     },
     activityLogPipelineEvents: {
       pipeline_triggered: "Пайплайн запущено",
@@ -963,6 +976,8 @@ export const adminCopy: Record<Locale, AdminCopy> = {
       channel: "Канал",
       messageKind: "Тип повідомлення",
       message: "Повідомлення",
+      sender: "Відправник",
+      audience: "Аудиторія",
       personalBotPrompt: "Промпт особистого бота",
       phase: "Фаза",
       reason: "Причина",

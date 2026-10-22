@@ -24,6 +24,7 @@ import {
   publishMediatorCompromise,
   sendCustomMediatorQuestion,
   sendMediatorQuestion,
+  type MediatorAudience,
 } from "@/lib/mediator-session/orchestrator";
 import type { MediationOption } from "@/lib/mediation/types";
 import type { PartyRole } from "@/lib/participant-roles";
@@ -124,7 +125,7 @@ export async function sendMediatorQuestionAction(params: {
 
 export async function sendCustomMediatorQuestionAction(params: {
   roomId: string;
-  partyRole: PartyRole;
+  audience: MediatorAudience;
   text: string;
 }) {
   const userId = await requireMediator();
@@ -132,7 +133,7 @@ export async function sendCustomMediatorQuestionAction(params: {
     await sendCustomMediatorQuestion({
       roomId: params.roomId,
       mediatorUserId: userId,
-      partyRole: params.partyRole,
+      audience: params.audience,
       text: params.text,
     });
   } catch (error) {

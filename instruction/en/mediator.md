@@ -280,6 +280,15 @@ Check neutrality and accuracy, edit if needed, click **Publish compromise**. The
 
 The session normally ends when the parties accept the agreement or reject the compromise (no mutual agreement). You can also click **End session** on the live console (with confirmation) to close early without an agreement.
 
+### Audience tabs (shared vs caucus)
+
+On the live console, choose who receives your message:
+
+- **Both** — shared channel; both parties see the message and each other’s replies.
+- **Party A** / **Party B** — caucus; only that side (and you) see the Q&A.
+
+Your messages appear to parties as **Mediator: {your title}**. Custom messages stay available in every phase, including Voting. Solution options and both parties’ votes are shown on your console.
+
 ---
 
 ## 11. Ending the session and results

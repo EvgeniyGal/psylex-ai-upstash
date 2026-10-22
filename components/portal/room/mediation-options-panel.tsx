@@ -25,6 +25,8 @@ type MediationOptionsPanelProps = {
   selectedOptionId: string | null;
   review?: boolean;
   showHeading?: boolean;
+  /** When true, always show both parties' votes (mediator console). */
+  showAllVotes?: boolean;
   canVote?: boolean;
   pending?: boolean;
   onVote?: (optionId: string) => void;
@@ -53,6 +55,7 @@ export function MediationOptionsPanel({
   selectedOptionId,
   review = false,
   showHeading = true,
+  showAllVotes: showAllVotesProp = false,
   canVote = false,
   pending = false,
   onVote,
@@ -62,6 +65,7 @@ export function MediationOptionsPanel({
   if (options.length === 0) return null;
 
   const showAllVotes =
+    showAllVotesProp ||
     review ||
     phase === "voting_discrepancy" ||
     phase === "agreement" ||

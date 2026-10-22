@@ -129,6 +129,7 @@ type PortalCopy = {
   mediationQuestionIncoming: string;
   mediationYou: string;
   mediationAgent: string;
+  mediationMediatorLabel: (name: string) => string;
   mediationSystem: string;
   mediationReplyPlaceholder: string;
   mediationSendReply: string;
@@ -374,6 +375,7 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     mediationQuestionIncoming: "Your question is being prepared…",
     mediationYou: "You",
     mediationAgent: "Mediation agent",
+    mediationMediatorLabel: (name) => `Mediator: ${name}`,
     mediationSystem: "System",
     mediationReplyPlaceholder: "Type your substantive reply…",
     mediationSendReply: "Send reply",
@@ -638,6 +640,7 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     mediationQuestionIncoming: "Ваше запитання готується…",
     mediationYou: "Ви",
     mediationAgent: "Агент медіації",
+    mediationMediatorLabel: (name) => `Медіатор: ${name}`,
     mediationSystem: "Система",
     mediationReplyPlaceholder: "Введіть змістовну відповідь…",
     mediationSendReply: "Надіслати відповідь",

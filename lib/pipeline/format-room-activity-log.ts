@@ -2,18 +2,18 @@ import type { AdminCopy } from "@/lib/admin-i18n";
 import { AGENT_KEY_LABELS } from "@/lib/pipeline/agent-keys";
 import type { RoomActivityEntry } from "@/lib/pipeline/room-activity-log";
 
-const MAX_TEXT_LENGTH = 600;
+const MAX_JSON_LENGTH = 4000;
 
-function truncate(value: string) {
-  if (value.length <= MAX_TEXT_LENGTH) return value;
-  return `${value.slice(0, MAX_TEXT_LENGTH)}…`;
+function truncateJson(value: string) {
+  if (value.length <= MAX_JSON_LENGTH) return value;
+  return `${value.slice(0, MAX_JSON_LENGTH)}…`;
 }
 
-function formatPayloadValue(value: unknown): string {
+function formatPayloadValue(value: unknown, options?: { fullText?: boolean }): string {
   if (value === null || value === undefined) return "—";
-  if (typeof value === "string") return truncate(value);
+  if (typeof value === "string") return options?.fullText ? value : truncateJson(value);
   if (typeof value === "number" || typeof value === "boolean") return String(value);
-  return truncate(JSON.stringify(value, null, 2));
+  return truncateJson(JSON.stringify(value, null, 2));
 }
 
 function eventLabel(admin: AdminCopy, entry: RoomActivityEntry): string {
@@ -69,15 +69,23 @@ function formatPayloadLines(
     return lines;
   }
 
-  if (entry.kind === "participant_message") {
+  if (entry.kind === "participant_message" || entry.kind === "mediation_message") {
+    if (payload.sender) {
+      lines.push(`${admin.activityLogFields.sender ?? "Sender"}: ${String(payload.sender)}`);
+    }
     if (payload.channel) {
       lines.push(`${admin.activityLogFields.channel}: ${String(payload.channel)}`);
+    }
+    if (payload.audience) {
+      lines.push(`${admin.activityLogFields.audience ?? "Audience"}: ${String(payload.audience)}`);
     }
     if (payload.messageKind) {
       lines.push(`${admin.activityLogFields.messageKind}: ${String(payload.messageKind)}`);
     }
     if (payload.content) {
-      lines.push(`${admin.activityLogFields.message}: ${formatPayloadValue(payload.content)}`);
+      lines.push(
+        `${admin.activityLogFields.message}: ${formatPayloadValue(payload.content, { fullText: true })}`,
+      );
     }
     return lines;
   }

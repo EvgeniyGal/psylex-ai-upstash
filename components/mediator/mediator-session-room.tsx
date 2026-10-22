@@ -14,12 +14,16 @@ import {
   sendMediatorQuestionAction,
 } from "@/app/mediator/rooms/actions";
 import { SessionElapsedTimer } from "@/components/mediator/session-elapsed-timer";
+import { MediationOptionsPanel } from "@/components/portal/room/mediation-options-panel";
 import { Spinner } from "@/components/ui/spinner";
 import { useLocale } from "@/components/locale-provider";
 import { useRoomRealtime } from "@/hooks/use-room-realtime";
 import { SESSION_END_REDIRECT_MS } from "@/lib/mediator-session/constants";
 import { isMediatorSessionEnded } from "@/lib/mediator-session/room-mode";
-import type { MediatorSessionRoomState } from "@/lib/mediator-session/orchestrator";
+import type {
+  MediatorAudience,
+  MediatorSessionRoomState,
+} from "@/lib/mediator-session/orchestrator";
 import type { PartyRole } from "@/lib/participant-roles";
 import type { MediationOption } from "@/lib/mediation/types";
 import { psychodynamicProfileLabels } from "@/lib/mediation/format-pdf-content";
@@ -60,6 +64,7 @@ function formatMessageMeta(
     roles: Record<string, string>;
   },
   profiles: MediatorSessionRoomState["profiles"],
+  mediatorTitle: string,
 ) {
   const kindLabel = message.messageKind
     ? (admin.mediatorMessageKinds[message.messageKind] ?? null)
@@ -77,10 +82,24 @@ function formatMessageMeta(
     return kindLabel ? `${labels.system} · ${kindLabel}` : labels.system;
   }
 
-  const base = kindLabel ? `${labels.agent} · ${kindLabel}` : labels.agent;
-  const addressee = partyDisplayName(message.addresseePartyRole, profiles, labels.roles);
-  if (addressee && (message.messageKind === "mediation_question" || message.messageKind === "mediation_moderation" || message.messageKind === "mediation_nudge")) {
-    return `${base} · ${admin.mediatorMessageToParty} ${addressee}`;
+  const base = message.isMediatorAuthored
+    ? admin.mediatorLabel(mediatorTitle)
+    : kindLabel
+      ? `${labels.agent} · ${kindLabel}`
+      : labels.agent;
+
+  if (
+    message.messageKind === "mediation_question" ||
+    message.messageKind === "mediation_moderation" ||
+    message.messageKind === "mediation_nudge"
+  ) {
+    if (message.isBroadcast) {
+      return `${base} · ${admin.mediatorMessageToBoth}`;
+    }
+    const addressee = partyDisplayName(message.addresseePartyRole, profiles, labels.roles);
+    if (addressee) {
+      return `${base} · ${admin.mediatorMessageToParty} ${addressee}`;
+    }
   }
   return base;
 }
@@ -90,11 +109,14 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
   const router = useRouter();
   const [state, setState] = useState(initialState);
   const [pending, startTransition] = useTransition();
-  const [selectedParty, setSelectedParty] = useState<PartyRole>("party_a");
+  const [selectedAudience, setSelectedAudience] = useState<MediatorAudience>("both");
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [customText, setCustomText] = useState("");
   const [compromiseEdit, setCompromiseEdit] = useState<MediationOption | null>(null);
+  const selectedParty: PartyRole =
+    selectedAudience === "party_b" ? "party_b" : "party_a";
+  const isPartyAudience = selectedAudience === "party_a" || selectedAudience === "party_b";
 
   const sessionEnded = isMediatorSessionEnded(state.room.phase);
 
@@ -141,8 +163,10 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
   }, [sessionEnded, roomId, router]);
 
   const canGenerateQuestions =
+    isPartyAudience &&
     (state.room.phase === "opening" || state.room.phase === "dialogue") &&
     (state.options?.length ?? 0) === 0;
+  const canSendCustom = !sessionEnded;
 
   const candidates =
     selectedParty === "party_a"
@@ -195,7 +219,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
       try {
         const next = await sendCustomMediatorQuestionAction({
           roomId,
-          partyRole: selectedParty,
+          audience: selectedAudience,
           text: customText,
         });
         if (next) setState(next);
@@ -323,6 +347,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
                       roles: t.roles,
                     },
                     state.profiles,
+                    state.mediatorTitle,
                   )}
                 </p>
                 <p className="whitespace-pre-wrap">
@@ -333,84 +358,112 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
               </div>
             ))}
           </div>
+
+          {state.options.length > 0 ? (
+            <div className="mt-4 border-t border-hair pt-4">
+              <MediationOptionsPanel
+                canVote={false}
+                options={state.options}
+                partyAVoteOptionId={state.room.partyAVote ?? null}
+                partyBVoteOptionId={state.room.partyBVote ?? null}
+                phase={state.room.phase}
+                selectedOptionId={state.room.selectedOptionId}
+                selfVote={null}
+                showAllVotes
+                viewerRole="party_a"
+              />
+            </div>
+          ) : null}
         </div>
 
         <aside className="glass-panel space-y-4 rounded-xl p-4">
-          <div className="flex gap-2">
-            {(["party_a", "party_b"] as const).map((role) => (
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                { id: "both" as const, label: admin.mediatorAudienceBoth },
+                { id: "party_a" as const, label: t.roles.party_a },
+                { id: "party_b" as const, label: t.roles.party_b },
+              ] as const
+            ).map((tab) => (
               <button
                 className={`rounded-md px-3 py-1.5 text-body-sm ${
-                  selectedParty === role ? "bg-law text-white" : "bg-surface-container-high text-on-surface"
+                  selectedAudience === tab.id
+                    ? "bg-law text-white"
+                    : "bg-surface-container-high text-on-surface"
                 }`}
-                key={role}
+                key={tab.id}
                 onClick={() => {
-                  setSelectedParty(role);
+                  setSelectedAudience(tab.id);
                   setSelectedCandidateId(null);
                   setEditText("");
                 }}
                 type="button"
               >
-                {t.roles[role]}
+                {tab.label}
               </button>
             ))}
           </div>
 
-          <button
-            className="btn-primary flex w-full items-center justify-center gap-2 px-3 py-2 text-body-sm disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={pending || !canGenerateQuestions}
-            onClick={onGenerateQuestions}
-            type="button"
-          >
-            {pending ? <Spinner className="text-white" size="sm" /> : null}
-            {admin.mediatorGenerateQuestions}
-          </button>
-
-          <div className="space-y-2">
-            <p className="text-label-md uppercase text-on-surface-variant">
-              {admin.mediatorQuestionCandidates}
-            </p>
-            {candidates.length === 0 ? (
-              <p className="text-body-sm text-on-surface-variant">{admin.mediatorSelectCandidate}</p>
-            ) : (
-              candidates.map((candidate) => (
-                <button
-                  className={`block w-full rounded-md border px-3 py-2 text-left text-body-sm disabled:cursor-not-allowed disabled:opacity-60 ${
-                    selectedCandidateId === candidate.id
-                      ? "border-law bg-law/10"
-                      : "border-hair bg-paper"
-                  }`}
-                  disabled={!canGenerateQuestions}
-                  key={candidate.id}
-                  onClick={() => onSelectCandidate(candidate.id)}
-                  type="button"
-                >
-                  {selectedParty === "party_a" ? candidate.partyA : candidate.partyB}
-                </button>
-              ))
-            )}
-          </div>
-
-          {selectedCandidateId && canGenerateQuestions ? (
-            <div className="space-y-2">
-              <label className="text-body-sm text-on-surface-variant">{admin.mediatorEditQuestion}</label>
-              <textarea
-                className="w-full rounded-md border border-hair bg-paper px-3 py-2 text-body-sm"
-                onChange={(event) => setEditText(event.target.value)}
-                rows={4}
-                value={editText}
-              />
+          {isPartyAudience ? (
+            <>
               <button
-                className="btn-primary flex w-full items-center justify-center gap-2 px-3 py-2 text-body-sm disabled:opacity-60"
-                disabled={pending || !editText.trim()}
-                onClick={onSendQuestion}
+                className="btn-primary flex w-full items-center justify-center gap-2 px-3 py-2 text-body-sm disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={pending || !canGenerateQuestions}
+                onClick={onGenerateQuestions}
                 type="button"
               >
-                {admin.mediatorSendQuestion}
+                {pending ? <Spinner className="text-white" size="sm" /> : null}
+                {admin.mediatorGenerateQuestions}
               </button>
-            </div>
+
+              <div className="space-y-2">
+                <p className="text-label-md uppercase text-on-surface-variant">
+                  {admin.mediatorQuestionCandidates}
+                </p>
+                {candidates.length === 0 ? (
+                  <p className="text-body-sm text-on-surface-variant">{admin.mediatorSelectCandidate}</p>
+                ) : (
+                  candidates.map((candidate) => (
+                    <button
+                      className={`block w-full rounded-md border px-3 py-2 text-left text-body-sm disabled:cursor-not-allowed disabled:opacity-60 ${
+                        selectedCandidateId === candidate.id
+                          ? "border-law bg-law/10"
+                          : "border-hair bg-paper"
+                      }`}
+                      disabled={!canGenerateQuestions}
+                      key={candidate.id}
+                      onClick={() => onSelectCandidate(candidate.id)}
+                      type="button"
+                    >
+                      {selectedParty === "party_a" ? candidate.partyA : candidate.partyB}
+                    </button>
+                  ))
+                )}
+              </div>
+
+              {selectedCandidateId && canGenerateQuestions ? (
+                <div className="space-y-2">
+                  <label className="text-body-sm text-on-surface-variant">{admin.mediatorEditQuestion}</label>
+                  <textarea
+                    className="w-full rounded-md border border-hair bg-paper px-3 py-2 text-body-sm"
+                    onChange={(event) => setEditText(event.target.value)}
+                    rows={4}
+                    value={editText}
+                  />
+                  <button
+                    className="btn-primary flex w-full items-center justify-center gap-2 px-3 py-2 text-body-sm disabled:opacity-60"
+                    disabled={pending || !editText.trim()}
+                    onClick={onSendQuestion}
+                    type="button"
+                  >
+                    {admin.mediatorSendQuestion}
+                  </button>
+                </div>
+              ) : null}
+            </>
           ) : null}
 
-          {canGenerateQuestions ? (
+          {canSendCustom ? (
             <div className="space-y-2">
               <label className="text-body-sm text-on-surface-variant">{admin.mediatorOwnQuestion}</label>
               <textarea
