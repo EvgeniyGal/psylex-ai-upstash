@@ -34,6 +34,10 @@ import {
   type ScheduleDurationOption,
   type ScheduleMinuteOption,
 } from "@/lib/mediator-session/schedule-options";
+import {
+  isScheduleIsoInPast,
+  messageForScheduleSaveError,
+} from "@/lib/mediator-session/schedule-save-ui";
 import { cn } from "@/lib/utils";
 import { isMediatorSessionEnded } from "@/lib/mediator-session/room-mode";
 import "./mediator-calendar.css";
@@ -142,9 +146,18 @@ export function MediatorCalendarContent({
 
   const persistSchedule = useCallback(
     (roomId: string, nextStartIso: string, nextDuration: ScheduleDurationOption) => {
+      if (isScheduleIsoInPast(nextStartIso)) {
+        toast.error(admin.scheduleMustBeFuture);
+        return;
+      }
       startTransition(async () => {
         try {
-          await saveMediatorSchedule(roomId, nextStartIso, nextDuration);
+          const result = await saveMediatorSchedule(roomId, nextStartIso, nextDuration);
+          if (!result.ok) {
+            toast.error(messageForScheduleSaveError(result.code, admin));
+            router.refresh();
+            return;
+          }
           setSessions((prev) =>
             prev.map((session) =>
               session.id === roomId
@@ -158,13 +171,13 @@ export function MediatorCalendarContent({
           );
           toast.success(admin.scheduleSaved);
           router.refresh();
-        } catch (error) {
-          toast.error(error instanceof Error ? error.message : admin.scheduleError);
+        } catch {
+          toast.error(admin.scheduleError);
           router.refresh();
         }
       });
     },
-    [admin.scheduleError, admin.scheduleSaved, router],
+    [admin, router],
   );
 
   const selectSession = (session: CalendarSession) => {

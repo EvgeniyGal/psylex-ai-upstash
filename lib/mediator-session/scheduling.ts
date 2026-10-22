@@ -26,6 +26,29 @@ export type MediatorSchedulingReadiness = {
   mediationCompletedAt: string | null;
 };
 
+export type ScheduleSaveErrorCode =
+  | "past"
+  | "invalid_time"
+  | "invalid_minutes"
+  | "invalid_duration"
+  | "already_started"
+  | "unauthorized"
+  | "unknown";
+
+export type ScheduleSaveResult =
+  | { ok: true }
+  | { ok: false; code: ScheduleSaveErrorCode };
+
+export function scheduleErrorCodeFromMessage(message: string): ScheduleSaveErrorCode {
+  if (message.includes("must be in the future")) return "past";
+  if (message.includes("Invalid schedule time")) return "invalid_time";
+  if (message.includes("multiple of 5")) return "invalid_minutes";
+  if (message.includes("Invalid session duration")) return "invalid_duration";
+  if (message.includes("Cannot reschedule")) return "already_started";
+  if (message.includes("Unauthorized")) return "unauthorized";
+  return "unknown";
+}
+
 export async function getMediatorSchedulingReadiness(
   roomId: string,
 ): Promise<MediatorSchedulingReadiness | null> {

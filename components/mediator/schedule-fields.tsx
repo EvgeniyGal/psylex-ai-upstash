@@ -44,6 +44,13 @@ export function ScheduleFields({
     () => Array.from({ length: 60 / SCHEDULE_MINUTE_STEP }, (_, i) => i * SCHEDULE_MINUTE_STEP),
     [],
   );
+  const timeZone = useMemo(() => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    } catch {
+      return "UTC";
+    }
+  }, []);
 
   return (
     <div className="space-y-3">
@@ -122,6 +129,8 @@ export function ScheduleFields({
           ))}
         </select>
       </div>
+
+      <p className="text-body-sm text-on-surface-variant">{admin.scheduleTimezoneHint(timeZone)}</p>
     </div>
   );
 }

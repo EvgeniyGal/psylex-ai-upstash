@@ -4,8 +4,12 @@ import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { requireSessionUserId } from "@/lib/auth-session";
-import { scheduleMediatorSession as scheduleSession } from "@/lib/mediator-session/scheduling";
-import { getMediatorSchedulingReadiness } from "@/lib/mediator-session/scheduling";
+import {
+  getMediatorSchedulingReadiness,
+  scheduleErrorCodeFromMessage,
+  scheduleMediatorSession as scheduleSession,
+  type ScheduleSaveResult,
+} from "@/lib/mediator-session/scheduling";
 import {
   forceStartMediatorSessionNow,
   getMediatorHandshakeForMediator,
@@ -41,17 +45,23 @@ export async function saveMediatorSchedule(
   roomId: string,
   scheduledStartAtIso: string,
   durationMinutes: number,
-) {
-  const userId = await requireMediator();
-  await scheduleSession({
-    roomId,
-    mediatorUserId: userId,
-    scheduledStartAt: new Date(scheduledStartAtIso),
-    durationMinutes,
-  });
+): Promise<ScheduleSaveResult> {
+  try {
+    const userId = await requireMediator();
+    await scheduleSession({
+      roomId,
+      mediatorUserId: userId,
+      scheduledStartAt: new Date(scheduledStartAtIso),
+      durationMinutes,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    return { ok: false, code: scheduleErrorCodeFromMessage(message) };
+  }
   revalidatePath(`/mediator/rooms/${roomId}`);
   revalidatePath(`/mediator/rooms/${roomId}/lobby`);
   revalidatePath("/mediation");
+  return { ok: true };
 }
 
 export async function fetchMediatorLobbyHandshake(roomId: string) {

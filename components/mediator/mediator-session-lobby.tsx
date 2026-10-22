@@ -17,6 +17,7 @@ import {
 } from "@/hooks/use-scheduled-session-clock";
 import { formatDateTime } from "@/lib/format-datetime";
 import type { MediatorHandshakeState } from "@/lib/mediator-session/handshake";
+import { waitingForStartMessages } from "@/lib/mediator-session/waiting-for";
 import { cn } from "@/lib/utils";
 
 type MediatorSessionLobbyProps = {
@@ -167,7 +168,14 @@ export function MediatorSessionLobby({
         ) : null}
 
         {handshake.selfClicked && handshake.status === "waiting" ? (
-          <p className="text-body-sm text-success">{t.modeBSelfClicked}</p>
+          <div className="space-y-1">
+            <p className="text-body-sm text-success">{t.modeBSelfClicked}</p>
+            {waitingForStartMessages(handshake, t).map((message) => (
+              <p className="text-body-sm text-on-surface-variant" key={message}>
+                {message}
+              </p>
+            ))}
+          </div>
         ) : null}
 
         <div className="space-y-2">

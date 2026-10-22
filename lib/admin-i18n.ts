@@ -198,6 +198,9 @@ export type AdminCopy = {
   scheduleDurationOption: (minutes: number) => string;
   scheduleSave: string;
   scheduleSaved: string;
+  scheduleMustBeFuture: string;
+  scheduleTimezoneHint: (timeZone: string) => string;
+  scheduleAlreadyStarted: string;
   scheduleNotSet: string;
   scheduleReadinessPartyA: string;
   scheduleReadinessPartyB: string;
@@ -477,6 +480,9 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     },
     scheduleSave: "Save schedule",
     scheduleSaved: "Schedule saved",
+    scheduleMustBeFuture: "Scheduled time must be in the future.",
+    scheduleTimezoneHint: (timeZone) => `Times are in your local timezone (${timeZone}).`,
+    scheduleAlreadyStarted: "Cannot reschedule a started session.",
     scheduleNotSet: "Not scheduled yet",
     scheduleReadinessPartyA: "Party A ready",
     scheduleReadinessPartyB: "Party B ready",
@@ -830,6 +836,9 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     },
     scheduleSave: "Зберегти розклад",
     scheduleSaved: "Розклад збережено",
+    scheduleMustBeFuture: "Час має бути в майбутньому.",
+    scheduleTimezoneHint: (timeZone) => `Час вказується у вашому місцевому часовому поясі (${timeZone}).`,
+    scheduleAlreadyStarted: "Не можна змінити розклад після старту сесії.",
     scheduleNotSet: "Ще не заплановано",
     scheduleReadinessPartyA: "Сторона A готова",
     scheduleReadinessPartyB: "Сторона B готова",

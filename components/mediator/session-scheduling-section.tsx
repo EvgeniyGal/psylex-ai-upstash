@@ -22,6 +22,10 @@ import {
   type ScheduleDurationOption,
   type ScheduleMinuteOption,
 } from "@/lib/mediator-session/schedule-options";
+import {
+  isScheduleIsoInPast,
+  messageForScheduleSaveError,
+} from "@/lib/mediator-session/schedule-save-ui";
 
 type SessionSchedulingSectionProps = {
   roomId: string;
@@ -109,13 +113,21 @@ export function SessionSchedulingSection({
 
   const onSave = () => {
     if (!scheduleIso) return;
+    if (isScheduleIsoInPast(scheduleIso)) {
+      toast.error(admin.scheduleMustBeFuture);
+      return;
+    }
     startTransition(async () => {
       try {
-        await saveMediatorSchedule(roomId, scheduleIso, durationMinutes);
+        const result = await saveMediatorSchedule(roomId, scheduleIso, durationMinutes);
+        if (!result.ok) {
+          toast.error(messageForScheduleSaveError(result.code, admin));
+          return;
+        }
         setScheduledStartAt(scheduleIso);
         toast.success(admin.scheduleSaved);
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : admin.scheduleError);
+      } catch {
+        toast.error(admin.scheduleError);
       }
     });
   };

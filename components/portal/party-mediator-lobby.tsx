@@ -20,6 +20,7 @@ import {
 import { formatDateTime } from "@/lib/format-datetime";
 import type { MediatorHandshakeState } from "@/lib/mediator-session/handshake";
 import type { PartyNotification } from "@/lib/mediator-session/types";
+import { waitingForStartMessages } from "@/lib/mediator-session/waiting-for";
 import type { PartyRole } from "@/lib/participant-roles";
 import type { ParticipantFlowStepId } from "@/lib/participant-flow";
 import { cn } from "@/lib/utils";
@@ -180,7 +181,14 @@ export function PartyMediatorLobby({
           ) : null}
 
           {handshake.selfClicked && handshake.status === "waiting" ? (
-            <p className="text-body-sm text-success">{t.modeBSelfClicked}</p>
+            <div className="space-y-1">
+              <p className="text-body-sm text-success">{t.modeBSelfClicked}</p>
+              {waitingForStartMessages(handshake, t).map((message) => (
+                <p className="text-body-sm text-on-surface-variant" key={message}>
+                  {message}
+                </p>
+              ))}
+            </div>
           ) : null}
 
           <div className="space-y-2">
