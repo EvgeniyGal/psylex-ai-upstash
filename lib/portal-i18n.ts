@@ -91,6 +91,16 @@ type PortalCopy = {
   modeBNotifyCompleted: string;
   modeBWaitingCompromisePublish: string;
   modeBWaitingAgreementPublish: string;
+  myRoomsTitle: string;
+  myRoomsSubtitle: string;
+  myRoomsEmpty: string;
+  myRoomsStatusCompleted: string;
+  myRoomsStatusLive: string;
+  myRoomsStatusScheduled: string;
+  myRoomsStatusPrep: string;
+  myRoomsStatusIntake: string;
+  myRoomsNav: string;
+  profileRefreshBanner: string;
   backToStart: string;
   logout: string;
   helpTitle: string;
@@ -337,6 +347,17 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     modeBNotifyCompleted: "The mediation session has completed.",
     modeBWaitingCompromisePublish: "Waiting for the mediator to publish a compromise option.",
     modeBWaitingAgreementPublish: "Waiting for the mediator to finalize the agreement.",
+    myRoomsTitle: "My rooms",
+    myRoomsSubtitle: "Select a mediation room to continue.",
+    myRoomsEmpty: "You are not assigned to any rooms yet.",
+    myRoomsStatusCompleted: "Completed",
+    myRoomsStatusLive: "In session",
+    myRoomsStatusScheduled: "Scheduled",
+    myRoomsStatusPrep: "Preparing",
+    myRoomsStatusIntake: "Needs dispute intake",
+    myRoomsNav: "My rooms",
+    profileRefreshBanner:
+      "Your mediator asked you to update your profile. Please complete the tests again.",
     backToStart: "Back to start",
     logout: "Logout",
     helpTitle: "Help",
@@ -603,6 +624,17 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     modeBNotifyCompleted: "Сесію медіації завершено.",
     modeBWaitingCompromisePublish: "Очікуємо, поки медіатор опублікує компромісний варіант.",
     modeBWaitingAgreementPublish: "Очікуємо, поки медіатор фіналізує угоду.",
+    myRoomsTitle: "Мої кімнати",
+    myRoomsSubtitle: "Оберіть кімнату медіації, щоб продовжити.",
+    myRoomsEmpty: "Вас ще не додано до жодної кімнати.",
+    myRoomsStatusCompleted: "Завершено",
+    myRoomsStatusLive: "У сесії",
+    myRoomsStatusScheduled: "Заплановано",
+    myRoomsStatusPrep: "Підготовка",
+    myRoomsStatusIntake: "Потрібен опис спору",
+    myRoomsNav: "Мої кімнати",
+    profileRefreshBanner:
+      "Медіатор попросив оновити профіль. Будь ласка, пройдіть тести знову.",
     backToStart: "На головну",
     logout: "Вийти",
     helpTitle: "Довідка",

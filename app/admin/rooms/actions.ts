@@ -5,13 +5,15 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { db } from "@/lib/db";
-import { rooms, users } from "@/drizzle/schema";
+import { roomParticipants, rooms, userTestCompletions, users } from "@/drizzle/schema";
 import { authOptions } from "@/lib/auth";
 import { requireSessionUserId } from "@/lib/auth-session";
 import { generateLogin, generatePassword } from "@/lib/generate-credentials";
 import type { Locale } from "@/lib/i18n";
 import { buildAdminAgreementDownload } from "@/lib/mediation/pdf";
+import { isPartyRole, type PartyRole } from "@/lib/participant-roles";
 import { isRoomJurisdiction } from "@/lib/room/jurisdiction";
+import { addRoomParticipant, searchPartyUsers } from "@/lib/room/helpers";
 import { isUsaSubJurisdiction, parseUsaSubJurisdiction } from "@/lib/rag/usa-jurisdictions";
 import { notifyRoom, notifyUser } from "@/lib/realtime/notify";
 
@@ -53,10 +55,8 @@ export async function createRoom(formData: FormData) {
 
   const title = required(formData.get("title"), "title");
   const description = required(formData.get("description"), "description");
-  const partyATitle = required(formData.get("partyATitle"), "partyATitle");
-  const partyADescription = required(formData.get("partyADescription"), "partyADescription");
-  const partyBTitle = required(formData.get("partyBTitle"), "partyBTitle");
-  const partyBDescription = required(formData.get("partyBDescription"), "partyBDescription");
+  const partyAMode = String(formData.get("partyAMode") ?? "create");
+  const partyBMode = String(formData.get("partyBMode") ?? "create");
   const jurisdictionRaw = required(formData.get("jurisdiction"), "jurisdiction");
   if (!isRoomJurisdiction(jurisdictionRaw)) {
     throw new Error("Invalid jurisdiction");
@@ -88,24 +88,62 @@ export async function createRoom(formData: FormData) {
     })
     .returning();
 
-  await db.insert(users).values([
-    {
-      login: generateLogin(),
-      password: generatePassword(),
-      role: "party_a",
-      title: partyATitle,
-      description: partyADescription,
+  async function resolvePartySlot(
+    mode: string,
+    partyRole: PartyRole,
+    titleKey: string,
+    descriptionKey: string,
+    existingIdKey: string,
+  ) {
+    if (mode === "existing") {
+      const existingId = required(formData.get(existingIdKey), existingIdKey);
+      await addRoomParticipant({ roomId: room.id, userId: existingId, partyRole });
+      return;
+    }
+    const partyTitle = required(formData.get(titleKey), titleKey);
+    const partyDescription = required(formData.get(descriptionKey), descriptionKey);
+    const [created] = await db
+      .insert(users)
+      .values({
+        login: generateLogin(),
+        password: generatePassword(),
+        role: partyRole,
+        title: partyTitle,
+        description: partyDescription,
+        roomId: room.id,
+      })
+      .returning();
+    await db.insert(roomParticipants).values({
       roomId: room.id,
-    },
-    {
-      login: generateLogin(),
-      password: generatePassword(),
-      role: "party_b",
-      title: partyBTitle,
-      description: partyBDescription,
-      roomId: room.id,
-    },
-  ]);
+      userId: created.id,
+      partyRole,
+    });
+  }
+
+  await resolvePartySlot(
+    partyAMode,
+    "party_a",
+    "partyATitle",
+    "partyADescription",
+    "partyAExistingUserId",
+  );
+  await resolvePartySlot(
+    partyBMode,
+    "party_b",
+    "partyBTitle",
+    "partyBDescription",
+    "partyBExistingUserId",
+  );
+
+  const sides = await db
+    .select({ userId: roomParticipants.userId })
+    .from(roomParticipants)
+    .where(eq(roomParticipants.roomId, room.id));
+  if (sides[0]?.userId && sides[1]?.userId && sides[0].userId === sides[1].userId) {
+    await db.delete(rooms).where(eq(rooms.id, room.id));
+    throw new Error("The same participant cannot fill both party slots.");
+  }
+
   notifyRoom(room.id);
 
   revalidatePath("/admin/rooms");
@@ -147,7 +185,18 @@ export async function deleteRoom(formData: FormData) {
   const { role } = await assertCanManageRooms();
   await assertCanAccessRoom(roomId);
 
-  await db.delete(users).where(eq(users.roomId, roomId));
+  // Detach only: clear lastActiveRoomId for members of this room, keep user accounts.
+  const members = await db
+    .select({ userId: roomParticipants.userId })
+    .from(roomParticipants)
+    .where(eq(roomParticipants.roomId, roomId));
+  for (const member of members) {
+    await db
+      .update(users)
+      .set({ roomId: null })
+      .where(and(eq(users.id, member.userId), eq(users.roomId, roomId)));
+  }
+
   await db.delete(rooms).where(eq(rooms.id, roomId));
   notifyRoom(roomId);
 
@@ -155,4 +204,42 @@ export async function deleteRoom(formData: FormData) {
   revalidatePath("/admin/mediators");
   revalidatePath("/mediator/rooms");
   redirect(role === "mediator" ? "/mediator/rooms" : "/admin/rooms");
+}
+
+export async function searchPartyUsersAction(query: string) {
+  await assertCanManageRooms();
+  return searchPartyUsers(query);
+}
+
+export async function requestProfileRefresh(userId: string) {
+  await assertCanManageRooms();
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user || !isPartyRole(user.role)) {
+    throw new Error("User is not a party participant.");
+  }
+
+  await db.delete(userTestCompletions).where(eq(userTestCompletions.userId, userId));
+  await db
+    .update(users)
+    .set({
+      onboardingCompletedAt: null,
+      personalBotPrompt: null,
+      personalBotReadyAt: null,
+      psychodynamicProfile: null,
+      psychodynamicProfileAt: null,
+      emotionalTriggers: null,
+      emotionalTriggersAt: null,
+      profileRefreshRequestedAt: new Date(),
+      welcomeSeenAt: user.welcomeSeenAt ?? new Date(),
+      disclaimerAcceptedAt: user.disclaimerAcceptedAt ?? new Date(),
+    })
+    .where(eq(users.id, userId));
+  notifyUser(userId);
+  if (user.roomId) {
+    notifyRoom(user.roomId);
+    revalidatePath(`/admin/rooms/${user.roomId}`);
+    revalidatePath(`/mediator/rooms/${user.roomId}`);
+  }
+  revalidatePath("/admin/rooms");
+  revalidatePath("/mediator/rooms");
 }

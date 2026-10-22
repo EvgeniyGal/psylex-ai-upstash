@@ -28,13 +28,17 @@ export default withAuth(
         path.startsWith("/dashboard") ||
         path.startsWith("/dispute-intake") ||
         path.startsWith("/mediation") ||
+        path.startsWith("/rooms") ||
         path.startsWith("/room")) &&
       token?.role === "admin"
     ) {
       return NextResponse.redirect(new URL("/admin/rooms", req.url));
     }
 
-    if (path.startsWith("/dashboard") && token?.role === "mediator") {
+    if (
+      (path.startsWith("/dashboard") || path === "/rooms" || path.startsWith("/rooms/")) &&
+      token?.role === "mediator"
+    ) {
       return NextResponse.redirect(new URL("/mediator/rooms", req.url));
     }
 
@@ -58,6 +62,7 @@ export default withAuth(
           path.startsWith("/dashboard") ||
           path.startsWith("/dispute-intake") ||
           path.startsWith("/mediation") ||
+          path.startsWith("/rooms") ||
           path.startsWith("/room")
         ) {
           return (
@@ -80,6 +85,8 @@ export const config = {
     "/dashboard/:path*",
     "/dispute-intake/:path*",
     "/mediation/:path*",
+    "/rooms",
+    "/rooms/:path*",
     "/room/:path*",
   ],
 };

@@ -96,7 +96,10 @@ export async function completeOnboarding() {
 
   await db
     .update(users)
-    .set({ onboardingCompletedAt: new Date() })
+    .set({
+      onboardingCompletedAt: new Date(),
+      profileRefreshRequestedAt: null,
+    })
     .where(eq(users.id, user.id));
   notifyUser(user.id);
   notifyRoom(user.roomId);

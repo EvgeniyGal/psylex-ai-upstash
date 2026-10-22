@@ -57,7 +57,13 @@ export async function submitDisputeIntake(formData: FormData) {
     redirect("/onboarding/tests");
   }
 
-  if (hasSubmittedDisputeIntake(user)) {
+  const { getParticipantRoom } = await import("@/lib/room/helpers");
+  const participant = await getParticipantRoom(user.id);
+  if (!participant) {
+    redirect("/rooms");
+  }
+
+  if (hasSubmittedDisputeIntake(participant.user)) {
     redirect("/mediation");
   }
 
@@ -71,21 +77,20 @@ export async function submitDisputeIntake(formData: FormData) {
     return;
   }
 
+  const { roomParticipants } = await import("@/drizzle/schema");
   await db
-    .update(users)
+    .update(roomParticipants)
     .set({
       disputeDescription: parsed.data.disputeDescription,
       disputePriority: parsed.data.disputePriority,
       disputeAcceptableOutcome: parsed.data.disputeAcceptableOutcome,
       disputeIntakeSubmittedAt: new Date(),
     })
-    .where(eq(users.id, user.id));
+    .where(eq(roomParticipants.id, participant.membership.id));
   notifyUser(user.id);
-  notifyRoom(user.roomId);
+  notifyRoom(participant.roomId);
 
-  if (user.roomId) {
-    tryRunPostIntakePipeline(user.roomId);
-  }
+  tryRunPostIntakePipeline(participant.roomId);
 
   revalidatePath("/dispute-intake");
   revalidatePath("/mediation");
@@ -95,21 +100,23 @@ export async function submitDisputeIntake(formData: FormData) {
 export async function clickStartMediation(): Promise<HandshakeStatusResponse> {
   const { user, role } = await requireSideParticipant();
 
-  if (!hasSubmittedDisputeIntake(user)) {
+  const { getParticipantRoom } = await import("@/lib/room/helpers");
+  const participant = await getParticipantRoom(user.id);
+  if (!participant || !hasSubmittedDisputeIntake(participant.user)) {
     return { status: "ineligible", selfClicked: false, oppositeClicked: false };
   }
 
   const { getMediationLobbyData } = await import("@/lib/dispute-intake");
   const lobby = await getMediationLobbyData(user.id);
 
-  if (!lobby || !user.roomId) {
+  if (!lobby) {
     return { status: "ineligible", selfClicked: false, oppositeClicked: false };
   }
 
   if (lobby.isMediatorFacilitated) {
     const { recordMediatorStartClick } = await import("@/lib/mediator-session/handshake");
-    const partyRole = isPartyRole(user.role) ? user.role : (role as "party_a" | "party_b");
-    const state = await recordMediatorStartClick(user.roomId, partyRole);
+    const partyRole = participant.user.role;
+    const state = await recordMediatorStartClick(participant.roomId, partyRole);
     revalidatePath("/mediation");
     revalidatePath("/room");
     return {
@@ -131,10 +138,7 @@ export async function clickStartMediation(): Promise<HandshakeStatusResponse> {
     return { status: "ineligible", selfClicked: false, oppositeClicked: false };
   }
 
-  const result = await recordStartClick(
-    user.roomId,
-    isPartyRole(user.role) ? user.role : (role as "party_a" | "party_b"),
-  );
+  const result = await recordStartClick(participant.roomId, participant.user.role);
 
   revalidatePath("/mediation");
   revalidatePath("/room");
@@ -157,7 +161,9 @@ export async function runPostIntakePipelineForRoom(
 ): Promise<{ status: "complete" | "ran" | "ineligible" }> {
   const { user } = await requireSideParticipant();
 
-  if (!roomId || !user.roomId || user.roomId !== roomId) {
+  const { getParticipantRoom } = await import("@/lib/room/helpers");
+  const participant = await getParticipantRoom(user.id);
+  if (!roomId || !participant || participant.roomId !== roomId) {
     throw new Error("Unauthorized");
   }
 
@@ -192,7 +198,9 @@ export async function prepareMediationOpeningForRoom(
 ): Promise<{ status: "complete" | "ran" | "ineligible" }> {
   const { user } = await requireSideParticipant();
 
-  if (!roomId || !user.roomId || user.roomId !== roomId) {
+  const { getParticipantRoom } = await import("@/lib/room/helpers");
+  const participant = await getParticipantRoom(user.id);
+  if (!roomId || !participant || participant.roomId !== roomId) {
     throw new Error("Unauthorized");
   }
 

@@ -1,7 +1,8 @@
-import { desc, eq, inArray } from "drizzle-orm";
+import { desc, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { rooms, users } from "@/drizzle/schema";
 import { RoomsContent } from "@/components/admin/rooms-content";
+import { getPartiesByRoomIds } from "@/lib/room/helpers";
 import { getRoomsPreparationReadyMap } from "@/lib/room/list-readiness";
 
 export default async function AdminRoomsPage() {
@@ -30,12 +31,11 @@ export default async function AdminRoomsPage() {
     preparationReady: readyByRoomId.get(room.id) ?? false,
   }));
 
-  const participantsByRoom = await Promise.all(
-    roomRows.map(async (room) => ({
-      roomId: room.id,
-      users: await db.select().from(users).where(eq(users.roomId, room.id)),
-    })),
-  );
+  const partiesByRoom = await getPartiesByRoomIds(roomRows.map((room) => room.id));
+  const participantsByRoom = roomRows.map((room) => ({
+    roomId: room.id,
+    users: partiesByRoom.get(room.id) ?? [],
+  }));
 
   return (
     <RoomsContent

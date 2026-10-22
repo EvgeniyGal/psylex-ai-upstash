@@ -120,10 +120,12 @@ Click a row to open the room card.
    - **Room title**, **Room description**;
    - **Jurisdiction**: **Ukraine** (*Ukrainian law and legal practice*) or **United States** (*United States law and legal practice*).
    - For the United States you must select **State / territory / Federal**. Jurisdiction determines which legal sources AI will retrieve. It cannot be changed after creation.
-3. Fill in **Party A** and **Party B**: **Title / Name** and **Description**.
+3. For **Party A** and **Party B**, choose either:
+   - **Create new** — enter **Title / Name** and **Description** (a new login `psylex_…` and password are generated); or
+   - **Add existing** — search by login or title and attach a returning participant (their tests and personal bot stay; they only fill dispute intake for this room).
 4. Click **Create Room** (or **Cancel**).
 
-The system automatically creates two party accounts (login `psylex_…` and a password). You land on the room card.
+The same person cannot fill both party slots in one room. You land on the room card.
 
 ### How to give parties access
 
@@ -149,12 +151,15 @@ On the card:
 | **Mediation schedule** | Date, time, duration, readiness indicators, links to the lobby / live session |
 | **Pipeline & mediation log** | Timeline: tests, dispute intake, AI agents, start and completion |
 | **Room details** | Title and description **view only** (cannot be edited after creation) |
-| **Participants** | Party details, login/password, **Copy Credentials** |
-| **Delete Room** | Deletes the room and the party accounts. This cannot be undone |
+| **Participants** | Party details, profile readiness (profile ready date + tests date), **Request profile update**, login/password, **Copy Credentials** |
+| **Delete Room** | Removes the room and memberships only. Party accounts stay for reuse. This cannot be undone |
+
+**Request profile update** clears the participant’s tests, personal bot prompt, and related profile data and asks them to retake onboarding. Use it when tests are outdated; confirm before sending.
 
 Indicators in the schedule:
 
-- **Party A ready** / **Party B ready** — **Ready** or **Not ready**;
+- **Party A ready** / **Party B ready** — **Ready** or **Not ready** (dispute intake + mediation readiness for this room);
+- Profile lines show **Profile ready** / **Not ready** with dates when available;
 - **AI analysis complete** — the post-intake pipeline (profiles, interests, legal analysis).
 
 Tip: you can schedule a time before full readiness, but the parties can **start the session** only when tests, the dispute description, and analysis are complete.
@@ -171,6 +176,8 @@ In the **Mediation schedule** block:
 4. Click **Save schedule**. You will see confirmation **Schedule saved**.
 
 The parties receive the notification **A mediation session has been scheduled.** If you change a time that is already saved, previous **Start Mediation** clicks are reset — all three participants must click again.
+
+A participant may belong to several rooms, but **cannot** have two overlapping scheduled or live sessions. If save fails with an overlap message, pick another time (or wait until their other session ends).
 
 You can change the schedule until the session starts. After start, the fields are locked.
 

@@ -1,6 +1,6 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { rooms, users, type rooms as roomsTable } from "@/drizzle/schema";
+import { rooms, type rooms as roomsTable } from "@/drizzle/schema";
 import { isPartyRole, type PartyRole } from "@/lib/participant-roles";
 import { notifyRoom } from "@/lib/realtime/notify";
 
@@ -60,6 +60,9 @@ function toResponse(state: HandshakeState): HandshakeStatusResponse {
 }
 
 async function finalizeMediationStart(roomId: string): Promise<Date | null> {
+  const { assertRoomPartiesNoOverlap } = await import("@/lib/room/helpers");
+  await assertRoomPartiesNoOverlap({ roomId, checkLive: true });
+
   const [updated] = await db
     .update(rooms)
     .set({ mediationStartedAt: new Date() })
@@ -143,22 +146,19 @@ export async function recordStartClick(roomId: string, role: PartyRole): Promise
 }
 
 export async function getHandshakeStatusForUser(userId: string): Promise<HandshakeStatusResponse> {
-  const [viewer] = await db
-    .select({
-      roomId: users.roomId,
-      role: users.role,
-      disputeIntakeSubmittedAt: users.disputeIntakeSubmittedAt,
-    })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-
-  if (!viewer?.roomId || !isPartyRole(viewer.role) || !viewer.disputeIntakeSubmittedAt) {
+  const { getParticipantRoom } = await import("@/lib/room/helpers");
+  const participant = await getParticipantRoom(userId);
+  if (
+    !participant ||
+    !isPartyRole(participant.user.role) ||
+    !participant.user.disputeIntakeSubmittedAt
+  ) {
     return { status: "ineligible", selfClicked: false, oppositeClicked: false };
   }
 
-  const role = viewer.role;
-  const room = await loadRoomHandshake(viewer.roomId);
+  const role = participant.user.role;
+  const roomId = participant.roomId;
+  const room = await loadRoomHandshake(roomId);
   if (!room) {
     return { status: "ineligible", selfClicked: false, oppositeClicked: false };
   }
@@ -169,8 +169,8 @@ export async function getHandshakeStatusForUser(userId: string): Promise<Handsha
 
   const bothClicked = !!room.partyAMediationStartClickedAt && !!room.partyBMediationStartClickedAt;
   if (bothClicked) {
-    await finalizeMediationStart(viewer.roomId);
-    const fresh = await loadRoomHandshake(viewer.roomId);
+    await finalizeMediationStart(roomId);
+    const fresh = await loadRoomHandshake(roomId);
     if (fresh) return toResponse(evaluateHandshake(fresh, role));
   }
 

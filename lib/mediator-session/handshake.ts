@@ -216,6 +216,9 @@ async function loadRoomHandshake(roomId: string): Promise<RoomHandshakeRow | nul
 }
 
 async function markMediatorSessionStarted(roomId: string, startedAt: Date): Promise<Date | null> {
+  const { assertRoomPartiesNoOverlap } = await import("@/lib/room/helpers");
+  await assertRoomPartiesNoOverlap({ roomId, checkLive: true });
+
   const [updated] = await db
     .update(rooms)
     .set({
@@ -361,38 +364,33 @@ export async function recordMediatorStartClick(
 }
 
 export async function getMediatorHandshakeForParty(userId: string): Promise<MediatorHandshakeState | null> {
-  const [viewer] = await db
-    .select({
-      roomId: users.roomId,
-      role: users.role,
-      disputeIntakeSubmittedAt: users.disputeIntakeSubmittedAt,
-    })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-
-  if (!viewer?.roomId || !isPartyRole(viewer.role) || !viewer.disputeIntakeSubmittedAt) {
+  const { getParticipantRoom } = await import("@/lib/room/helpers");
+  const participant = await getParticipantRoom(userId);
+  if (!participant || !participant.user.disputeIntakeSubmittedAt) {
     return null;
   }
 
-  const room = await loadRoomHandshake(viewer.roomId);
+  const roomId = participant.roomId;
+  const partyRole = participant.user.role;
+
+  const room = await loadRoomHandshake(roomId);
   if (!room || !isMediatorFacilitatedRoom(room)) return null;
 
-  await tryFinalizeMediatorSession(viewer.roomId);
-  const fresh = (await loadRoomHandshake(viewer.roomId)) ?? room;
-  const prerequisitesMet = await areMediatorSessionPrerequisitesMet(viewer.roomId);
-  const state = evaluateHandshake(fresh, viewer.role, prerequisitesMet);
+  await tryFinalizeMediatorSession(roomId);
+  const fresh = (await loadRoomHandshake(roomId)) ?? room;
+  const prerequisitesMet = await areMediatorSessionPrerequisitesMet(roomId);
+  const state = evaluateHandshake(fresh, partyRole, prerequisitesMet);
 
   if (state.status === "idle" && state.canClickStart) {
     const [current] = await db
       .select({ partyNotification: rooms.partyNotification })
       .from(rooms)
-      .where(eq(rooms.id, viewer.roomId))
+      .where(eq(rooms.id, roomId))
       .limit(1);
     const existing = current?.partyNotification as { type?: string } | null;
     if (existing?.type !== "start_window_open") {
       await setPartyNotification({
-        roomId: viewer.roomId,
+        roomId,
         type: "start_window_open",
         targetRole: "all",
       });
@@ -403,7 +401,7 @@ export async function getMediatorHandshakeForParty(userId: string): Promise<Medi
     state.status === "started"
   ) {
     // Rooms already stuck with a stale banner after clicks / countdown.
-    await clearPartyNotificationIfType(viewer.roomId, "start_window_open");
+    await clearPartyNotificationIfType(roomId, "start_window_open");
   }
 
   return state;

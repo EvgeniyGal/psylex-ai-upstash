@@ -151,8 +151,34 @@ export const users = pgTable("users", {
   psychodynamicProfileAt: timestamp("psychodynamic_profile_at", { withTimezone: true }),
   emotionalTriggers: jsonb("emotional_triggers"),
   emotionalTriggersAt: timestamp("emotional_triggers_at", { withTimezone: true }),
+  /** Set when mediator/admin requests profile retest; cleared when onboarding completes again. */
+  profileRefreshRequestedAt: timestamp("profile_refresh_requested_at", { withTimezone: true }),
   preferredLocale: preferredLocale("preferred_locale").notNull().default("en"),
 });
+
+/** Party membership in a room. Dispute intake is per membership; profile data stays on users. */
+export const roomParticipants = pgTable(
+  "room_participants",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    roomId: uuid("room_id")
+      .notNull()
+      .references(() => rooms.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    partyRole: userRole("party_role").notNull(),
+    disputeDescription: text("dispute_description"),
+    disputePriority: text("dispute_priority"),
+    disputeAcceptableOutcome: text("dispute_acceptable_outcome"),
+    disputeIntakeSubmittedAt: timestamp("dispute_intake_submitted_at", { withTimezone: true }),
+    joinedAt: timestamp("joined_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("room_participants_room_role_unique").on(table.roomId, table.partyRole),
+    unique("room_participants_room_user_unique").on(table.roomId, table.userId),
+  ],
+);
 
 export const userTestCompletions = pgTable(
   "user_test_completions",
@@ -180,8 +206,20 @@ export const magicTokens = pgTable("magic_tokens", {
 
 export const roomsRelations = relations(rooms, ({ many }) => ({
   participants: many(users),
+  memberships: many(roomParticipants),
   messages: many(roomMessages),
   filingReceipts: many(mediationFilingReceipts),
+}));
+
+export const roomParticipantsRelations = relations(roomParticipants, ({ one }) => ({
+  room: one(rooms, {
+    fields: [roomParticipants.roomId],
+    references: [rooms.id],
+  }),
+  user: one(users, {
+    fields: [roomParticipants.userId],
+    references: [users.id],
+  }),
 }));
 
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -189,6 +227,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     fields: [users.roomId],
     references: [rooms.id],
   }),
+  memberships: many(roomParticipants),
   magicTokens: many(magicTokens),
   testCompletions: many(userTestCompletions),
 }));

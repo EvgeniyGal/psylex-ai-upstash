@@ -106,10 +106,21 @@ export async function listUsersWithPersonalBot() {
 }
 
 export async function listUsersForEmotionalTriggersTest() {
+  const { listParticipantMemberships } = await import("@/lib/room/helpers");
   const rows = await db.select().from(users);
-  return rows.filter(
-    (user) => isPersonalBotReady(user) && hasSubmittedDisputeIntake(user),
-  );
+  const eligible = [];
+  for (const user of rows) {
+    if (!isPersonalBotReady(user)) continue;
+    if (hasSubmittedDisputeIntake(user)) {
+      eligible.push(user);
+      continue;
+    }
+    const memberships = await listParticipantMemberships(user.id);
+    if (memberships.some((row) => hasSubmittedDisputeIntake(row.membership))) {
+      eligible.push(user);
+    }
+  }
+  return eligible;
 }
 
 export async function listRoomsWithBothSidesIntakeComplete() {

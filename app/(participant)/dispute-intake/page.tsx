@@ -1,8 +1,5 @@
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
 import { DisputeIntakeForm } from "@/components/portal/dispute-intake-form";
-import { db } from "@/lib/db";
-import { users } from "@/drizzle/schema";
 import { hasSubmittedDisputeIntake } from "@/lib/dispute-intake";
 import { getUserOnboardingStatus } from "@/lib/onboarding";
 import { isPartyRole } from "@/lib/participant-roles";
@@ -20,20 +17,26 @@ export default async function DisputeIntakePage({ searchParams }: DisputeIntakeP
     redirect("/mediator/rooms");
   }
 
-  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-  if (!user) redirect("/login");
+  const { getParticipantRoom, listParticipantMemberships } = await import("@/lib/room/helpers");
+  const memberships = await listParticipantMemberships(userId);
+  if (memberships.length === 0) {
+    redirect("/rooms");
+  }
+
+  const participant = await getParticipantRoom(userId);
+  if (!participant) redirect("/rooms");
 
   if (review) {
-    if (!hasSubmittedDisputeIntake(user)) {
+    if (!hasSubmittedDisputeIntake(participant.user)) {
       redirect("/dispute-intake");
     }
 
     return (
       <DisputeIntakeForm
         answers={{
-          disputeDescription: user.disputeDescription ?? "",
-          disputePriority: user.disputePriority ?? "",
-          disputeAcceptableOutcome: user.disputeAcceptableOutcome ?? "",
+          disputeDescription: participant.user.disputeDescription ?? "",
+          disputePriority: participant.user.disputePriority ?? "",
+          disputeAcceptableOutcome: participant.user.disputeAcceptableOutcome ?? "",
         }}
         review
       />
@@ -45,7 +48,7 @@ export default async function DisputeIntakePage({ searchParams }: DisputeIntakeP
     redirect("/onboarding/tests");
   }
 
-  if (hasSubmittedDisputeIntake(user)) {
+  if (hasSubmittedDisputeIntake(participant.user)) {
     redirect("/mediation");
   }
 

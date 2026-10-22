@@ -61,7 +61,7 @@ Open the link from the email or message. The system signs you in automatically a
 
 > **The link is one-time** and valid for **72 hours**. If it has expired or already been used, you will see: **This magic link is invalid or has expired.** Ask for a new link or sign in with login and password.
 
-After sign-in, the system opens the screen you need: welcome, tests, dispute description, lobby, or mediation room.
+After sign-in, the system opens the screen you need: welcome, tests, dispute description, lobby, or mediation room. If you take part in more than one room, you first see **My rooms** and choose which case to continue.
 
 ---
 

@@ -1,6 +1,6 @@
-import { inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { rooms, userTestCompletions, users } from "@/drizzle/schema";
+import { roomParticipants, rooms, userTestCompletions, users } from "@/drizzle/schema";
 import { TEST_KEYS } from "@/lib/test-keys";
 import {
   isRoomInterestsComplete,
@@ -10,14 +10,19 @@ import {
   isPersonalBotReady,
 } from "@/lib/pipeline/gate";
 import { hasSubmittedDisputeIntake } from "@/lib/dispute-intake";
+import { isPartyRole } from "@/lib/participant-roles";
 
 function partyHasAllTests(userId: string, completionsByUser: Map<string, Set<string>>) {
   const keys = completionsByUser.get(userId) ?? new Set();
   return TEST_KEYS.every((key) => keys.has(key));
 }
 
+type SideForReady = typeof users.$inferSelect & {
+  disputeIntakeSubmittedAt: Date | null;
+};
+
 function isPartyMediationReady(
-  user: typeof users.$inferSelect,
+  user: SideForReady,
   completionsByUser: Map<string, Set<string>>,
 ) {
   return (
@@ -34,14 +39,19 @@ export async function getRoomsPreparationReadyMap(
   const result = new Map<string, boolean>();
   if (roomIds.length === 0) return result;
 
-  const [roomRows, partyRows] = await Promise.all([
+  const [roomRows, membershipRows] = await Promise.all([
     db.select().from(rooms).where(inArray(rooms.id, roomIds)),
-    db.select().from(users).where(inArray(users.roomId, roomIds)),
+    db
+      .select({
+        membership: roomParticipants,
+        user: users,
+      })
+      .from(roomParticipants)
+      .innerJoin(users, eq(roomParticipants.userId, users.id))
+      .where(inArray(roomParticipants.roomId, roomIds)),
   ]);
 
-  const partyIds = partyRows
-    .filter((user) => user.role === "party_a" || user.role === "party_b")
-    .map((user) => user.id);
+  const partyIds = membershipRows.map((row) => row.user.id);
 
   const completionRows =
     partyIds.length > 0
@@ -61,12 +71,20 @@ export async function getRoomsPreparationReadyMap(
     completionsByUser.set(row.userId, set);
   }
 
-  const partiesByRoom = new Map<string, typeof partyRows>();
-  for (const user of partyRows) {
-    if (!user.roomId || (user.role !== "party_a" && user.role !== "party_b")) continue;
-    const list = partiesByRoom.get(user.roomId) ?? [];
-    list.push(user);
-    partiesByRoom.set(user.roomId, list);
+  const partiesByRoom = new Map<string, SideForReady[]>();
+  for (const { membership, user } of membershipRows) {
+    if (!isPartyRole(membership.partyRole)) continue;
+    const side: SideForReady = {
+      ...user,
+      role: membership.partyRole,
+      disputeDescription: membership.disputeDescription,
+      disputePriority: membership.disputePriority,
+      disputeAcceptableOutcome: membership.disputeAcceptableOutcome,
+      disputeIntakeSubmittedAt: membership.disputeIntakeSubmittedAt,
+    };
+    const list = partiesByRoom.get(membership.roomId) ?? [];
+    list.push(side);
+    partiesByRoom.set(membership.roomId, list);
   }
 
   for (const room of roomRows) {

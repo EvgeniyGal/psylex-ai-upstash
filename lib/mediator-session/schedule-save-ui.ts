@@ -5,7 +5,7 @@ export function messageForScheduleSaveError(
   code: ScheduleSaveErrorCode,
   admin: Pick<
     AdminCopy,
-    "scheduleMustBeFuture" | "scheduleAlreadyStarted" | "scheduleError"
+    "scheduleMustBeFuture" | "scheduleAlreadyStarted" | "scheduleError" | "scheduleErrorOverlap"
   >,
 ): string {
   switch (code) {
@@ -13,6 +13,8 @@ export function messageForScheduleSaveError(
       return admin.scheduleMustBeFuture;
     case "already_started":
       return admin.scheduleAlreadyStarted;
+    case "overlap":
+      return admin.scheduleErrorOverlap;
     default:
       return admin.scheduleError;
   }

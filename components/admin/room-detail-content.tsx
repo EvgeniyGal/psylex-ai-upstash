@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import {
   deleteRoom,
+  requestProfileRefresh,
   updateParticipantMeta,
   updateRoomMeta,
 } from "@/app/admin/rooms/actions";
+import type { PartyProfileStatus } from "@/lib/room/party-profile-status";
 import { CredentialActions, CredentialField } from "@/components/credential-actions";
 import { RoomMediationDetailsModal } from "@/components/admin/room-mediation-details-modal";
 import { SessionSchedulingSection } from "@/components/mediator/session-scheduling-section";
@@ -60,12 +62,14 @@ function ParticipantSection({
   participant,
   readOnly,
   showCredentials,
+  profileStatus,
 }: {
   participant: RoomUserRow;
   readOnly: boolean;
   showCredentials: boolean;
+  profileStatus?: PartyProfileStatus | null;
 }) {
-  const { admin } = useLocale();
+  const { admin, locale } = useLocale();
   const router = useRouter();
   const [title, setTitle] = useState(participant.title);
   const [description, setDescription] = useState(participant.description);
@@ -155,6 +159,47 @@ function ParticipantSection({
         ) : null}
       </form>
 
+      {profileStatus && (participant.role === "party_a" || participant.role === "party_b") ? (
+        <div className="mb-4 space-y-2 rounded-md border border-hair bg-paper/60 p-3 text-body-sm">
+          <p className="font-semibold text-on-surface">
+            {profileStatus.ready
+              ? `${admin.profileReadyLabel}${
+                  profileStatus.profileReadyAt
+                    ? `, ${formatDateTime(new Date(profileStatus.profileReadyAt), locale)}`
+                    : ""
+                }`
+              : admin.profileNotReadyLabel}
+          </p>
+          {profileStatus.testsCompletedAt ? (
+            <p className="text-on-surface-variant">
+              {admin.profileTestsDateLabel}:{" "}
+              {formatDateTime(new Date(profileStatus.testsCompletedAt), locale)}
+            </p>
+          ) : null}
+          {profileStatus.refreshRequested ? (
+            <p className="text-warning">{admin.profileRefreshPending}</p>
+          ) : null}
+          <button
+            className="btn-secondary px-3 py-1.5 text-body-sm disabled:opacity-60"
+            disabled={pending}
+            onClick={() => {
+              if (!window.confirm(admin.profileRefreshConfirm)) return;
+              startTransition(async () => {
+                try {
+                  await requestProfileRefresh(participant.id);
+                  router.refresh();
+                } catch (error) {
+                  window.alert(error instanceof Error ? error.message : admin.profileRefreshError);
+                }
+              });
+            }}
+            type="button"
+          >
+            {admin.requestProfileRefresh}
+          </button>
+        </div>
+      ) : null}
+
       {showCredentials ? (
         <>
           <div className="space-y-4">
@@ -178,6 +223,7 @@ export function RoomDetailContent({
   participants,
   activityLog = [],
   mediationDetails = null,
+  profileStatusByUserId = {},
   basePath = "/admin/rooms",
   readOnly = false,
   allowDelete,
@@ -187,6 +233,7 @@ export function RoomDetailContent({
   participants: RoomUserRow[];
   activityLog?: RoomActivityEntry[];
   mediationDetails?: AdminMediationDetails | null;
+  profileStatusByUserId?: Record<string, PartyProfileStatus>;
   basePath?: string;
   readOnly?: boolean;
   /** Defaults to !readOnly. Mediators can delete owned rooms while keeping detail read-only. */
@@ -403,6 +450,7 @@ export function RoomDetailContent({
             <ParticipantSection
               key={participant.id}
               participant={participant}
+              profileStatus={profileStatusByUserId[participant.id] ?? null}
               readOnly={readOnly}
               showCredentials={credentialsVisible}
             />

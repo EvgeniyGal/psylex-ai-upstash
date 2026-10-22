@@ -40,13 +40,8 @@ export default async function MediatorRoomLobbyPage({
     redirect(`/mediator/rooms/${roomId}/session`);
   }
 
-  const partyRows = await db
-    .select({ id: users.id, role: users.role })
-    .from(users)
-    .where(eq(users.roomId, roomId));
-  const partyUserIds = partyRows
-    .filter((row) => row.role === "party_a" || row.role === "party_b")
-    .map((row) => row.id);
+  const { getRoomSides } = await import("@/lib/room/helpers");
+  const partyUserIds = (await getRoomSides(roomId)).map((side) => side.id);
 
   return (
     <MediatorSessionLobby

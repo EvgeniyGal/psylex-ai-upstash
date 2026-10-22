@@ -1,8 +1,9 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { rooms, users } from "@/drizzle/schema";
+import { rooms } from "@/drizzle/schema";
 import { requireSessionUserId } from "@/lib/auth-session";
 import { RoomsContent } from "@/components/admin/rooms-content";
+import { getPartiesByRoomIds } from "@/lib/room/helpers";
 import { getRoomsPreparationReadyMap } from "@/lib/room/list-readiness";
 
 export default async function MediatorRoomsPage() {
@@ -21,12 +22,11 @@ export default async function MediatorRoomsPage() {
     preparationReady: readyByRoomId.get(room.id) ?? false,
   }));
 
-  const participantsByRoom = await Promise.all(
-    roomRows.map(async (room) => ({
-      roomId: room.id,
-      users: await db.select().from(users).where(eq(users.roomId, room.id)),
-    })),
-  );
+  const partiesByRoom = await getPartiesByRoomIds(roomRows.map((room) => room.id));
+  const participantsByRoom = roomRows.map((room) => ({
+    roomId: room.id,
+    users: partiesByRoom.get(room.id) ?? [],
+  }));
 
   return (
     <RoomsContent

@@ -91,8 +91,17 @@ export async function getParticipantNextPath(userId: string, role: ParticipantRo
     return status.nextPath;
   }
 
-  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-  if (!user || !hasSubmittedDisputeIntake(user)) {
+  const { getParticipantRoom, listParticipantMemberships } = await import("@/lib/room/helpers");
+  const memberships = await listParticipantMemberships(userId);
+  if (memberships.length === 0) {
+    return "/rooms";
+  }
+  if (memberships.length > 1) {
+    return "/rooms";
+  }
+
+  const participant = await getParticipantRoom(userId);
+  if (!participant || !hasSubmittedDisputeIntake(participant.user)) {
     return "/dispute-intake";
   }
 

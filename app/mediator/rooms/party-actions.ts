@@ -38,21 +38,18 @@ async function requirePartyUserId() {
 
 export async function getMediatorPartyHandshakeAction() {
   const userId = await requirePartyUserId();
-  const [user] = await db
-    .select({ roomId: users.roomId })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-  if (!user?.roomId) return null;
+  const { getParticipantRoom } = await import("@/lib/room/helpers");
+  const participant = await getParticipantRoom(userId);
+  if (!participant) return null;
 
-  await tryFinalizeMediatorSession(user.roomId);
+  await tryFinalizeMediatorSession(participant.roomId);
   const handshake = await getMediatorHandshakeForParty(userId);
   if (!handshake) return null;
 
   const [room] = await db
     .select({ partyNotification: rooms.partyNotification })
     .from(rooms)
-    .where(eq(rooms.id, user.roomId))
+    .where(eq(rooms.id, participant.roomId))
     .limit(1);
 
   return {
@@ -63,17 +60,14 @@ export async function getMediatorPartyHandshakeAction() {
 
 export async function clickMediatorPartyStartMediation() {
   const userId = await requirePartyUserId();
-  const [user] = await db
-    .select({ roomId: users.roomId, role: users.role })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-  if (!user?.roomId || !isPartyRole(user.role)) {
+  const { getParticipantRoom } = await import("@/lib/room/helpers");
+  const participant = await getParticipantRoom(userId);
+  if (!participant) {
     throw new Error("Unauthorized");
   }
 
   const { recordMediatorStartClick } = await import("@/lib/mediator-session/handshake");
-  await recordMediatorStartClick(user.roomId, user.role);
+  await recordMediatorStartClick(participant.roomId, participant.user.role);
   return getMediatorPartyHandshakeAction();
 }
 

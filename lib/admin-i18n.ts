@@ -271,6 +271,18 @@ export type AdminCopy = {
   mediatorDraftSaved: string;
   mediatorDraftPublished: string;
   mediatorProfilesTitle: string;
+  createNewParticipant: string;
+  addExistingParticipant: string;
+  searchParticipant: string;
+  searchParticipantPlaceholder: string;
+  profileReadyLabel: string;
+  profileNotReadyLabel: string;
+  profileTestsDateLabel: string;
+  requestProfileRefresh: string;
+  profileRefreshConfirm: string;
+  profileRefreshPending: string;
+  profileRefreshError: string;
+  scheduleErrorOverlap: string;
   mediatorMessageKinds: Record<string, string>;
   mediatorMessageToParty: string;
   mediatorMessageToBoth: string;
@@ -523,6 +535,8 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     scheduleOpenSession: "Open live session",
     tableSessionAction: "Session",
     scheduleError: "Could not save schedule",
+    scheduleErrorOverlap:
+      "A participant already has another session scheduled or live at this time.",
     calendarTitle: "Session calendar",
     calendarSubtitle: "Review scheduled sessions and reschedule directly from the calendar.",
     calendarToday: "Today",
@@ -579,6 +593,18 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     mediatorDraftSaved: "Draft saved.",
     mediatorDraftPublished: "Agreement published to parties.",
     mediatorProfilesTitle: "Party profiles",
+    createNewParticipant: "Create new participant",
+    addExistingParticipant: "Add existing participant",
+    searchParticipant: "Search",
+    searchParticipantPlaceholder: "Search by login or name…",
+    profileReadyLabel: "Profile ready",
+    profileNotReadyLabel: "Profile not ready",
+    profileTestsDateLabel: "Tests",
+    requestProfileRefresh: "Request profile update",
+    profileRefreshConfirm:
+      "Clear tests and AI profile for this participant? They will need to complete onboarding again.",
+    profileRefreshPending: "Profile update requested — waiting for retests.",
+    profileRefreshError: "Could not request profile update.",
     mediatorMessageKinds: {
       mediation_system: "Notice",
       mediation_opening: "Opening",
@@ -917,6 +943,8 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     scheduleOpenSession: "Відкрити живу сесію",
     tableSessionAction: "Сесія",
     scheduleError: "Не вдалося зберегти розклад",
+    scheduleErrorOverlap:
+      "Учасник уже має іншу сесію в цей час (заплановану або активну).",
     calendarTitle: "Календар сесій",
     calendarSubtitle: "Переглядайте заплановані сесії та змінюйте розклад прямо з календаря.",
     calendarToday: "Сьогодні",
@@ -973,6 +1001,18 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     mediatorDraftSaved: "Чернетку збережено.",
     mediatorDraftPublished: "Угоду опубліковано сторонам.",
     mediatorProfilesTitle: "Профілі сторін",
+    createNewParticipant: "Створити нового учасника",
+    addExistingParticipant: "Додати існуючого учасника",
+    searchParticipant: "Пошук",
+    searchParticipantPlaceholder: "Пошук за логіном або ім’ям…",
+    profileReadyLabel: "Профіль готовий",
+    profileNotReadyLabel: "Профіль не готовий",
+    profileTestsDateLabel: "Тести",
+    requestProfileRefresh: "Запросити оновлення профілю",
+    profileRefreshConfirm:
+      "Скинути тести та AI-профіль цього учасника? Йому знову потрібно пройти онбординг.",
+    profileRefreshPending: "Запитано оновлення профілю — очікуємо повторні тести.",
+    profileRefreshError: "Не вдалося запросити оновлення профілю.",
     mediatorMessageKinds: {
       mediation_system: "Повідомлення",
       mediation_opening: "Відкриття",

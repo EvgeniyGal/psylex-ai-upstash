@@ -54,6 +54,10 @@ async function canAccessRoomChannel(
 ) {
   if (viewer.role === "admin") return true;
   if (viewer.roomId === roomId) return true;
+
+  const { getMembership } = await import("@/lib/room/helpers");
+  if (await getMembership(viewer.id, roomId)) return true;
+
   if (viewer.role !== "mediator") return false;
 
   const [owned] = await db

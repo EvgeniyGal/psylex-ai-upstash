@@ -24,6 +24,12 @@ export type MediatorSchedulingReadiness = {
   mediationStarted: boolean;
   sessionComplete: boolean;
   mediationCompletedAt: string | null;
+  partyAProfileReady: boolean;
+  partyBProfileReady: boolean;
+  partyAProfileReadyAt: string | null;
+  partyBProfileReadyAt: string | null;
+  partyATestsAt: string | null;
+  partyBTestsAt: string | null;
 };
 
 export type ScheduleSaveErrorCode =
@@ -33,6 +39,7 @@ export type ScheduleSaveErrorCode =
   | "invalid_duration"
   | "already_started"
   | "unauthorized"
+  | "overlap"
   | "unknown";
 
 export type ScheduleSaveResult =
@@ -46,6 +53,9 @@ export function scheduleErrorCodeFromMessage(message: string): ScheduleSaveError
   if (message.includes("Invalid session duration")) return "invalid_duration";
   if (message.includes("Cannot reschedule")) return "already_started";
   if (message.includes("Unauthorized")) return "unauthorized";
+  if (message.includes("already has a scheduled session") || message.includes("active mediation session")) {
+    return "overlap";
+  }
   return "unknown";
 }
 
@@ -58,9 +68,12 @@ export async function getMediatorSchedulingReadiness(
   const sides = await getRoomSides(roomId);
   const partyA = sides.find((s) => s.role === "party_a");
   const partyB = sides.find((s) => s.role === "party_b");
-  const [aReady, bReady] = await Promise.all([
+  const { getPartyProfileStatus } = await import("@/lib/room/party-profile-status");
+  const [aReady, bReady, aProfile, bProfile] = await Promise.all([
     partyA ? getSideReadiness(partyA) : null,
     partyB ? getSideReadiness(partyB) : null,
+    partyA ? getPartyProfileStatus(partyA.id) : null,
+    partyB ? getPartyProfileStatus(partyB.id) : null,
   ]);
 
   const partyAReady = !!aReady?.mediationReady;
@@ -78,6 +91,12 @@ export async function getMediatorSchedulingReadiness(
     mediationStarted: !!room.mediationStartedAt,
     sessionComplete: !!room.mediationCompletedAt || room.mediationPhase === "completed",
     mediationCompletedAt: room.mediationCompletedAt?.toISOString() ?? null,
+    partyAProfileReady: !!aProfile?.ready,
+    partyBProfileReady: !!bProfile?.ready,
+    partyAProfileReadyAt: aProfile?.profileReadyAt ?? null,
+    partyBProfileReadyAt: bProfile?.profileReadyAt ?? null,
+    partyATestsAt: aProfile?.testsCompletedAt ?? null,
+    partyBTestsAt: bProfile?.testsCompletedAt ?? null,
   };
 }
 
@@ -107,6 +126,15 @@ export async function scheduleMediatorSession(params: {
   if (!isScheduleDurationOption(params.durationMinutes)) {
     throw new Error("Invalid session duration.");
   }
+
+  const { assertRoomPartiesNoOverlap, sessionWindowFromSchedule } = await import(
+    "@/lib/room/helpers"
+  );
+  await assertRoomPartiesNoOverlap({
+    roomId: params.roomId,
+    window: sessionWindowFromSchedule(params.scheduledStartAt, params.durationMinutes),
+    checkLive: true,
+  });
 
   await db
     .update(rooms)

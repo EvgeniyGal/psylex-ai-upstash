@@ -65,6 +65,8 @@ export function SessionSchedulingSection({
   const [started, setStarted] = useState(mediationStarted);
   const [complete, setComplete] = useState(sessionComplete);
   const [completedAt, setCompletedAt] = useState(mediationCompletedAt);
+  const [partyAProfileLabel, setPartyAProfileLabel] = useState("");
+  const [partyBProfileLabel, setPartyBProfileLabel] = useState("");
 
   const scheduleIso = useMemo(
     () => partsToIso({ date, hour, minute }),
@@ -93,6 +95,32 @@ export function SessionSchedulingSection({
         setStarted(data.mediationStarted);
         setComplete(data.sessionComplete);
         setCompletedAt(data.mediationCompletedAt);
+        setPartyAProfileLabel(
+          data.partyAProfileReady
+            ? `${admin.profileReadyLabel}${
+                data.partyAProfileReadyAt
+                  ? `, ${formatDateTime(new Date(data.partyAProfileReadyAt), locale)}`
+                  : ""
+              }${
+                data.partyATestsAt
+                  ? ` · ${admin.profileTestsDateLabel}: ${formatDateTime(new Date(data.partyATestsAt), locale)}`
+                  : ""
+              }`
+            : admin.profileNotReadyLabel,
+        );
+        setPartyBProfileLabel(
+          data.partyBProfileReady
+            ? `${admin.profileReadyLabel}${
+                data.partyBProfileReadyAt
+                  ? `, ${formatDateTime(new Date(data.partyBProfileReadyAt), locale)}`
+                  : ""
+              }${
+                data.partyBTestsAt
+                  ? ` · ${admin.profileTestsDateLabel}: ${formatDateTime(new Date(data.partyBTestsAt), locale)}`
+                  : ""
+              }`
+            : admin.profileNotReadyLabel,
+        );
       })
       .catch(() => {
         /* ignore */
@@ -158,6 +186,16 @@ export function SessionSchedulingSection({
           {readinessRow(admin.scheduleReadinessPartyA, complete || partyAReady)}
           {readinessRow(admin.scheduleReadinessPartyB, complete || partyBReady)}
           {readinessRow(admin.scheduleReadinessPipeline, complete || pipelineComplete)}
+          {partyAProfileLabel ? (
+            <p className="text-body-sm text-on-surface-variant">
+              {admin.roles.party_a}: {partyAProfileLabel}
+            </p>
+          ) : null}
+          {partyBProfileLabel ? (
+            <p className="text-body-sm text-on-surface-variant">
+              {admin.roles.party_b}: {partyBProfileLabel}
+            </p>
+          ) : null}
         </div>
       )}
 

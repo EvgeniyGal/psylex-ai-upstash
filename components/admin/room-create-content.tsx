@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { createRoom } from "@/app/admin/rooms/actions";
+import { createRoom, searchPartyUsersAction } from "@/app/admin/rooms/actions";
 import { Spinner } from "@/components/ui/spinner";
 import { useLocale } from "@/components/locale-provider";
 import {
@@ -19,11 +19,155 @@ import {
 const inputClass =
   "w-full rounded-md border border-hair bg-paper px-3 py-2 text-ink focus:border-law focus:outline-none focus:ring-1 focus:ring-law";
 
+type PartyMode = "create" | "existing";
+
+type SearchHit = {
+  id: string;
+  login: string;
+  title: string;
+  onboardingCompletedAt: Date | string | null;
+  personalBotReadyAt: Date | string | null;
+};
+
+function PartySlotFields({
+  role,
+  mode,
+  onModeChange,
+  selected,
+  onSelect,
+}: {
+  role: "party_a" | "party_b";
+  mode: PartyMode;
+  onModeChange: (mode: PartyMode) => void;
+  selected: SearchHit | null;
+  onSelect: (hit: SearchHit | null) => void;
+}) {
+  const { admin } = useLocale();
+  const [query, setQuery] = useState("");
+  const [hits, setHits] = useState<SearchHit[]>([]);
+  const [searching, startSearch] = useTransition();
+  const prefix = role === "party_a" ? "partyA" : "partyB";
+  const titleLabel = role === "party_a" ? admin.partyATitleLabel : admin.partyBTitleLabel;
+  const descriptionLabel =
+    role === "party_a" ? admin.partyADescriptionLabel : admin.partyBDescriptionLabel;
+
+  const runSearch = () => {
+    startSearch(async () => {
+      const next = await searchPartyUsersAction(query);
+      setHits(next);
+    });
+  };
+
+  return (
+    <fieldset className="glass-panel space-y-4 rounded-xl p-6">
+      <legend
+        className={`mb-1 font-display text-headline-md ${
+          role === "party_a" ? "text-primary" : "text-tertiary"
+        }`}
+      >
+        {admin.roles[role]}
+      </legend>
+
+      <input name={`${prefix}Mode`} type="hidden" value={mode} />
+      <div className="flex flex-wrap gap-2">
+        <button
+          className={`rounded-md px-3 py-1.5 text-body-sm font-semibold ${
+            mode === "create" ? "bg-law text-white" : "border border-hair text-on-surface"
+          }`}
+          onClick={() => {
+            onModeChange("create");
+            onSelect(null);
+          }}
+          type="button"
+        >
+          {admin.createNewParticipant}
+        </button>
+        <button
+          className={`rounded-md px-3 py-1.5 text-body-sm font-semibold ${
+            mode === "existing" ? "bg-law text-white" : "border border-hair text-on-surface"
+          }`}
+          onClick={() => onModeChange("existing")}
+          type="button"
+        >
+          {admin.addExistingParticipant}
+        </button>
+      </div>
+
+      {mode === "create" ? (
+        <>
+          <div>
+            <label className="mb-1 block text-body-sm text-on-surface-variant">{titleLabel}</label>
+            <input className={inputClass} name={`${prefix}Title`} placeholder={titleLabel} required />
+          </div>
+          <div>
+            <label className="mb-1 block text-body-sm text-on-surface-variant">{descriptionLabel}</label>
+            <textarea
+              className={inputClass}
+              name={`${prefix}Description`}
+              placeholder={descriptionLabel}
+              required
+              rows={3}
+            />
+          </div>
+        </>
+      ) : (
+        <div className="space-y-3">
+          <input
+            name={`${prefix}ExistingUserId`}
+            required
+            type="hidden"
+            value={selected?.id ?? ""}
+          />
+          <div className="flex gap-2">
+            <input
+              className={inputClass}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={admin.searchParticipantPlaceholder}
+              value={query}
+            />
+            <button
+              className="btn-secondary px-3 py-2 text-body-sm disabled:opacity-60"
+              disabled={searching || !query.trim()}
+              onClick={runSearch}
+              type="button"
+            >
+              {searching ? <Spinner size="sm" /> : admin.searchParticipant}
+            </button>
+          </div>
+          {selected ? (
+            <p className="rounded-md border border-law/40 bg-law-fill/30 p-3 text-body-sm text-on-surface">
+              {selected.title} ({selected.login})
+              {selected.onboardingCompletedAt ? ` · ${admin.profileReadyLabel}` : ` · ${admin.profileNotReadyLabel}`}
+            </p>
+          ) : null}
+          <ul className="max-h-40 space-y-1 overflow-auto text-body-sm">
+            {hits.map((hit) => (
+              <li key={hit.id}>
+                <button
+                  className="w-full rounded-md border border-hair px-3 py-2 text-left hover:border-law"
+                  onClick={() => onSelect(hit)}
+                  type="button"
+                >
+                  {hit.title} · {hit.login}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </fieldset>
+  );
+}
+
 export function RoomCreateContent({ basePath = "/admin/rooms" }: { basePath?: string }) {
   const { admin, locale } = useLocale();
   const [pending, startTransition] = useTransition();
   const [jurisdiction, setJurisdiction] = useState<RoomJurisdiction | "">("");
   const [usaSubJurisdiction, setUsaSubJurisdiction] = useState<"" | UsaSubJurisdiction>("");
+  const [partyAMode, setPartyAMode] = useState<PartyMode>("create");
+  const [partyBMode, setPartyBMode] = useState<PartyMode>("create");
+  const [partyASelected, setPartyASelected] = useState<SearchHit | null>(null);
+  const [partyBSelected, setPartyBSelected] = useState<SearchHit | null>(null);
   const labels = jurisdictionLabels(locale);
 
   const onSubmit = (formData: FormData) => {
@@ -120,41 +264,20 @@ export function RoomCreateContent({ basePath = "/admin/rooms" }: { basePath?: st
         </fieldset>
 
         <div className="grid grid-cols-1 gap-stack-md lg:grid-cols-2">
-          <fieldset className="glass-panel space-y-4 rounded-xl p-6">
-            <legend className="mb-1 font-display text-headline-md text-primary">{admin.roles.party_a}</legend>
-            <div>
-              <label className="mb-1 block text-body-sm text-on-surface-variant">{admin.partyATitleLabel}</label>
-              <input className={inputClass} name="partyATitle" placeholder={admin.partyATitleLabel} required />
-            </div>
-            <div>
-              <label className="mb-1 block text-body-sm text-on-surface-variant">{admin.partyADescriptionLabel}</label>
-              <textarea
-                className={inputClass}
-                name="partyADescription"
-                placeholder={admin.partyADescriptionLabel}
-                required
-                rows={3}
-              />
-            </div>
-          </fieldset>
-
-          <fieldset className="glass-panel space-y-4 rounded-xl p-6">
-            <legend className="mb-1 font-display text-headline-md text-tertiary">{admin.roles.party_b}</legend>
-            <div>
-              <label className="mb-1 block text-body-sm text-on-surface-variant">{admin.partyBTitleLabel}</label>
-              <input className={inputClass} name="partyBTitle" placeholder={admin.partyBTitleLabel} required />
-            </div>
-            <div>
-              <label className="mb-1 block text-body-sm text-on-surface-variant">{admin.partyBDescriptionLabel}</label>
-              <textarea
-                className={inputClass}
-                name="partyBDescription"
-                placeholder={admin.partyBDescriptionLabel}
-                required
-                rows={3}
-              />
-            </div>
-          </fieldset>
+          <PartySlotFields
+            mode={partyAMode}
+            onModeChange={setPartyAMode}
+            onSelect={setPartyASelected}
+            role="party_a"
+            selected={partyASelected}
+          />
+          <PartySlotFields
+            mode={partyBMode}
+            onModeChange={setPartyBMode}
+            onSelect={setPartyBSelected}
+            role="party_b"
+            selected={partyBSelected}
+          />
         </div>
 
         <div className="flex justify-end gap-3 border-t border-outline-variant/10 pt-6">

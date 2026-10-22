@@ -1,4 +1,7 @@
+import { eq } from "drizzle-orm";
 import { TestingDashboard } from "@/components/portal/testing-dashboard";
+import { users } from "@/drizzle/schema";
+import { db } from "@/lib/db";
 import { getPlatformSettings } from "@/lib/platform-settings";
 import { getTestStatuses, getUserOnboardingStatus } from "@/lib/onboarding";
 import { resolveTestsFlowStep } from "@/lib/participant-flow";
@@ -34,6 +37,11 @@ export default async function TestsPage({ searchParams }: TestsPageProps) {
   }
 
   const status = await getUserOnboardingStatus(userId);
+  const [userRow] = await db
+    .select({ profileRefreshRequestedAt: users.profileRefreshRequestedAt })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
 
   const tests = getTestStatuses(status.completedTests).map((test) => ({
     key: test.key,
@@ -47,6 +55,7 @@ export default async function TestsPage({ searchParams }: TestsPageProps) {
       flowStep={resolveTestsFlowStep()}
       login={login}
       personalBotReady={status.personalBotReady}
+      refreshRequested={!!userRow?.profileRefreshRequestedAt}
       review={review}
       role={role as ParticipantRole}
       tests={tests}

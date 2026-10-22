@@ -418,10 +418,11 @@ export async function getRoomActivityLog(roomId: string): Promise<RoomActivityEn
   const [room] = await db.select().from(rooms).where(eq(rooms.id, roomId)).limit(1);
   if (!room) return [];
 
-  const roomParticipants = await db.select().from(users).where(eq(users.roomId, roomId));
+  const { getRoomSides } = await import("@/lib/room/helpers");
+  const roomPartySides = await getRoomSides(roomId);
   const mediator =
     room.createdByUserId &&
-    !roomParticipants.some((p) => p.id === room.createdByUserId)
+    !roomPartySides.some((p) => p.id === room.createdByUserId)
       ? await db
           .select()
           .from(users)
@@ -429,8 +430,8 @@ export async function getRoomActivityLog(roomId: string): Promise<RoomActivityEn
           .limit(1)
           .then((rows) => rows[0] ?? null)
       : null;
-  const participants = mediator ? [...roomParticipants, mediator] : roomParticipants;
-  const participantIds = roomParticipants.map((p) => p.id);
+  const participants = mediator ? [...roomPartySides, mediator] : roomPartySides;
+  const participantIds = roomPartySides.map((p) => p.id);
 
   const [pipelineEvents, testCompletions, filingReceipts, participantMessages] =
     await Promise.all([

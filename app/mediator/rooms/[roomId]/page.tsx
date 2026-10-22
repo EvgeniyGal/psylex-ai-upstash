@@ -1,12 +1,14 @@
 import { and, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { rooms, users } from "@/drizzle/schema";
+import { rooms } from "@/drizzle/schema";
 import { requireSessionUserId } from "@/lib/auth-session";
 import { isUuid } from "@/lib/utils";
 import { RoomDetailContent } from "@/components/admin/room-detail-content";
 import { getAdminMediationDetails } from "@/lib/mediation/admin-room-details";
 import { getRoomActivityLog } from "@/lib/pipeline/room-activity-log";
+import { getRoomSides } from "@/lib/room/helpers";
+import { getPartyProfileStatus } from "@/lib/room/party-profile-status";
 
 export default async function MediatorRoomDetailPage({
   params,
@@ -24,10 +26,11 @@ export default async function MediatorRoomDetailPage({
     .limit(1);
   if (!room) notFound();
 
-  const [participants, activityLog, mediationDetails] = await Promise.all([
-    db.select().from(users).where(eq(users.roomId, roomId)),
+  const sides = await getRoomSides(roomId);
+  const [activityLog, mediationDetails, profileStatuses] = await Promise.all([
     getRoomActivityLog(roomId),
     getAdminMediationDetails(roomId),
+    Promise.all(sides.map(async (side) => [side.id, await getPartyProfileStatus(side.id)] as const)),
   ]);
 
   return (
@@ -36,7 +39,8 @@ export default async function MediatorRoomDetailPage({
       allowDelete
       basePath="/mediator/rooms"
       mediationDetails={mediationDetails}
-      participants={participants}
+      participants={sides}
+      profileStatusByUserId={Object.fromEntries(profileStatuses)}
       readOnly
       showCredentials
       room={room}

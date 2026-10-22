@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { useHelp } from "@/components/help/help-provider";
 import { PortalLocaleSwitcher } from "@/components/portal/portal-locale-switcher";
@@ -20,6 +21,14 @@ export function PortalHeader() {
       showUplBanner={showUplBanner}
       trailing={
         <>
+          {isPartyRole(role) ? (
+            <Link
+              className="text-[13px] font-medium text-ink-soft transition-colors hover:text-ink"
+              href="/rooms"
+            >
+              {t.myRoomsNav}
+            </Link>
+          ) : null}
           {partyLabel ? (
             <span className="rounded-full border border-hair bg-surface-container px-3 py-1 font-display text-label-md uppercase tracking-wide text-on-surface">
               {partyLabel}

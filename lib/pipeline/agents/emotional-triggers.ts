@@ -25,8 +25,39 @@ export async function runEmotionalTriggersAgent(params: RunEmotionalTriggersPara
   }
 
   const [user] = await db.select().from(users).where(eq(users.id, params.userId)).limit(1);
-  if (!user || !isPersonalBotReady(user) || !hasSubmittedDisputeIntake(user)) {
+  if (!user || !isPersonalBotReady(user)) {
     throw new Error("User must have a ready personal bot prompt and completed dispute intake.");
+  }
+
+  let intakeUser = user;
+  if (params.roomId) {
+    const { getMembership } = await import("@/lib/room/helpers");
+    const membership = await getMembership(params.userId, params.roomId);
+    if (!membership || !hasSubmittedDisputeIntake(membership)) {
+      throw new Error("User must have a ready personal bot prompt and completed dispute intake.");
+    }
+    intakeUser = {
+      ...user,
+      disputeDescription: membership.disputeDescription,
+      disputePriority: membership.disputePriority,
+      disputeAcceptableOutcome: membership.disputeAcceptableOutcome,
+      disputeIntakeSubmittedAt: membership.disputeIntakeSubmittedAt,
+    };
+  } else if (!hasSubmittedDisputeIntake(user)) {
+    // Admin dry-run without room: accept legacy user-level intake or any membership intake.
+    const { listParticipantMemberships } = await import("@/lib/room/helpers");
+    const memberships = await listParticipantMemberships(params.userId);
+    const withIntake = memberships.find((row) => hasSubmittedDisputeIntake(row.membership));
+    if (!withIntake) {
+      throw new Error("User must have a ready personal bot prompt and completed dispute intake.");
+    }
+    intakeUser = {
+      ...user,
+      disputeDescription: withIntake.membership.disputeDescription,
+      disputePriority: withIntake.membership.disputePriority,
+      disputeAcceptableOutcome: withIntake.membership.disputeAcceptableOutcome,
+      disputeIntakeSubmittedAt: withIntake.membership.disputeIntakeSubmittedAt,
+    };
   }
 
   if (!params.dryRun && isUserEmotionalTriggersComplete(user)) {
@@ -51,7 +82,7 @@ export async function runEmotionalTriggersAgent(params: RunEmotionalTriggersPara
   try {
     const { result } = await runAgent({
       agentKey: "emotional_triggers",
-      userMessage: assembleEmotionalTriggersInput(user),
+      userMessage: assembleEmotionalTriggersInput(intakeUser),
       draftPrompt: params.draftPrompt,
       targetLocale: normalizeLocale(user.preferredLocale),
     });

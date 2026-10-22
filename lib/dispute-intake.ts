@@ -100,20 +100,20 @@ export async function getMediationLobbyStatusForUser(userId: string): Promise<Me
 }
 
 export async function getMediationLobbyData(userId: string) {
-  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-  if (!user?.roomId || !isPartyRole(user.role)) {
-    return null;
-  }
+  const { getParticipantRoom } = await import("@/lib/room/helpers");
+  const participant = await getParticipantRoom(userId);
+  if (!participant) return null;
 
+  const user = participant.user;
   const selfReadiness = await getSideReadiness(user);
   if (!selfReadiness) return null;
 
   const oppositeRole = getOppositePartyRole(user.role);
-  const sides = await getRoomSides(user.roomId);
+  const sides = await getRoomSides(participant.roomId);
   const oppositeUser = sides.find((side) => side.role === oppositeRole) ?? null;
   const oppositeReadiness = oppositeUser ? await getSideReadiness(oppositeUser) : null;
 
-  const [room] = await db.select().from(rooms).where(eq(rooms.id, user.roomId)).limit(1);
+  const [room] = await db.select().from(rooms).where(eq(rooms.id, participant.roomId)).limit(1);
   if (!room) return null;
 
   const modeB = isMediatorFacilitatedRoom(room);
@@ -122,7 +122,7 @@ export async function getMediationLobbyData(userId: string) {
   }
 
   const [freshRoom] = modeB
-    ? await db.select().from(rooms).where(eq(rooms.id, user.roomId)).limit(1)
+    ? await db.select().from(rooms).where(eq(rooms.id, participant.roomId)).limit(1)
     : [room];
   const activeRoom = freshRoom ?? room;
 

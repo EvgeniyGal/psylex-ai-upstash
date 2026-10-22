@@ -46,6 +46,7 @@ type TestingDashboardProps = {
   canProceed: boolean;
   flowStep: ParticipantFlowStepId;
   review?: boolean;
+  refreshRequested?: boolean;
 };
 
 const stagger = {
@@ -63,6 +64,7 @@ export function TestingDashboard({
   canProceed,
   flowStep,
   review = false,
+  refreshRequested = false,
 }: TestingDashboardProps) {
   const router = useRouter();
   const { locale, portal: t } = useLocale();
@@ -118,6 +120,11 @@ export function TestingDashboard({
           <motion.div className="mb-4 text-center" variants={fadeInUp}>
             <h1 className="mb-2 font-display text-display-lg">{roleCopy.testsTitle}</h1>
             <p className="font-sans text-body-lg text-on-surface-variant">{roleCopy.testsSubtitle}</p>
+            {refreshRequested ? (
+              <p className="mx-auto mt-4 max-w-xl rounded-lg border border-law/40 bg-law-fill/40 px-4 py-3 text-body-sm text-on-surface">
+                {t.profileRefreshBanner}
+              </p>
+            ) : null}
             <div className="mx-auto mt-4 flex max-w-xs items-center gap-3">
               <div className="h-2 flex-1 overflow-hidden rounded-full bg-hair">
                 <motion.div
