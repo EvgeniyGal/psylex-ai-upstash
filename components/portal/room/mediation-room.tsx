@@ -7,6 +7,7 @@ import {
   clickReadyForOptions,
   downloadMediationResults,
   fetchMediationRoomState,
+  helpFormulateReply,
   sendDialogueReply,
   submitAgreementAcceptance,
   submitCompromiseVote,
@@ -62,6 +63,7 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
   const [reply, setReply] = useState("");
   const [email, setEmail] = useState("");
   const [pending, startTransition] = useTransition();
+  const [formulatePending, startFormulate] = useTransition();
 
   const isSessionComplete = state.room.phase === "completed";
 
@@ -274,6 +276,22 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
     agent: t.mediationAgent,
     system: t.mediationSystem,
     preparing: t.mediationPreparing,
+    translatedBadge: t.mediationTranslatedBadge,
+    showOriginal: t.mediationShowOriginal,
+    hideOriginal: t.mediationHideOriginal,
+  };
+
+  const onHelpFormulate = () => {
+    const draft = reply.trim();
+    if (!draft) return;
+    startFormulate(async () => {
+      try {
+        const rewritten = await helpFormulateReply(draft);
+        setReply(rewritten);
+      } catch {
+        toast.error(t.mediationHelpFormulateFailed);
+      }
+    });
   };
 
   const chatStatusHeader = (
@@ -329,7 +347,11 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
       ) : (
         <MediationChatComposer
           disabled={pending}
+          helpFormulateLabel={t.mediationHelpFormulate}
+          helpFormulatePending={formulatePending}
+          helpFormulatePendingLabel={t.mediationHelpFormulatePending}
           onChange={setReply}
+          onHelpFormulate={onHelpFormulate}
           onSend={onSendReply}
           pending={pending}
           placeholder={t.mediationReplyPlaceholder}

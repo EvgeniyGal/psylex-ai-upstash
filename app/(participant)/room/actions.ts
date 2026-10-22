@@ -43,6 +43,20 @@ export async function sendDialogueReply(content: string) {
   return submitDialogueReply(userId, content);
 }
 
+export async function helpFormulateReply(draft: string) {
+  const userId = await requireParticipant();
+  const [user] = await db
+    .select({ preferredLocale: users.preferredLocale })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  const { helpFormulateText } = await import("@/lib/mediation/formulate");
+  return helpFormulateText({
+    draft,
+    locale: (user?.preferredLocale as Locale) ?? "en",
+  });
+}
+
 export async function clickReadyForOptions() {
   const userId = await requireParticipant();
   await markReadyForOptions(userId);

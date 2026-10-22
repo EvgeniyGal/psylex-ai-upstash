@@ -123,6 +123,7 @@ function buildAdminMediationState(
     legalNorms: option.legalNorms,
     fulfillmentProbability: option.fulfillmentProbability,
     refusalRisks: option.refusalRisks,
+    canonicalDescription: option.canonicalDescription,
   });
 
   return {
@@ -152,7 +153,7 @@ function buildAdminMediationState(
       selfAccepted: !!room.partyAAgreementAcceptedAt,
       otherAccepted: !!room.partyBAgreementAcceptedAt,
       selectedOptionId: room.selectedOptionId,
-      draftAgreement: room.draftAgreement,
+      draftAgreement: (room.draftAgreement as MediationState["room"]["draftAgreement"]) ?? null,
     },
     viewerRole: "party_a",
     messages: [],

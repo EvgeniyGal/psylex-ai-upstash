@@ -10,7 +10,7 @@ import {
 
 export function obligationsToTerms(obligations: DraftObligation[]): string[] {
   return obligations.map((o) =>
-    o.deadline?.trim() ? `${o.text.trim()} (Deadline: ${o.deadline.trim()})` : o.text.trim(),
+    o.deadline?.trim() ? `${o.text.trim()} (${o.deadline.trim()})` : o.text.trim(),
   );
 }
 

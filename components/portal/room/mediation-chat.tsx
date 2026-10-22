@@ -14,6 +14,8 @@ export type MediationChatMessage = {
   isOwn: boolean;
   /** Overrides default you/agent/system label when set. */
   senderLabel?: string | null;
+  isTranslated?: boolean;
+  originalText?: string | null;
 };
 
 type MediationChatLabels = {
@@ -21,6 +23,9 @@ type MediationChatLabels = {
   agent: string;
   system: string;
   preparing: string;
+  translatedBadge?: string;
+  showOriginal?: string;
+  hideOriginal?: string;
 };
 
 type MediationChatProps = {
@@ -83,9 +88,12 @@ function MediationChatBubble({
   locale: Locale;
   showTimes: boolean;
 }) {
+  const [showOriginal, setShowOriginal] = useState(false);
   const isAgent = message.senderType === "agent";
   const isSystem = message.senderType === "system";
   const time = showTimes ? formatMessageTime(message.createdAt, locale) : "";
+  const showTranslationMeta =
+    !!message.isTranslated && !!message.originalText && !message.isOwn;
 
   const variant = isSystem ? "system" : message.isOwn ? "own" : "other";
 
@@ -149,6 +157,33 @@ function MediationChatBubble({
         >
           {message.content}
         </p>
+        {showTranslationMeta ? (
+          <div
+            className={cn(
+              "mt-1.5 space-y-1 text-[11px] leading-snug",
+              message.isOwn ? "text-white/80" : "text-on-surface-variant",
+            )}
+          >
+            <p className="font-medium">{labels.translatedBadge ?? "Translated"}</p>
+            <button
+              className={cn(
+                "underline-offset-2 hover:underline",
+                message.isOwn ? "text-white/90" : "text-law",
+              )}
+              onClick={() => setShowOriginal((value) => !value)}
+              type="button"
+            >
+              {showOriginal
+                ? (labels.hideOriginal ?? "Hide original")
+                : (labels.showOriginal ?? "Show original")}
+            </button>
+            {showOriginal ? (
+              <p className="whitespace-pre-wrap rounded-md bg-black/5 px-2 py-1 text-[12px] text-on-surface">
+                {message.originalText}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
         <p
           className={cn(
             "mt-1 text-right text-[11px] leading-none",
@@ -236,6 +271,10 @@ type MediationChatComposerProps = {
   pending?: boolean;
   onChange: (value: string) => void;
   onSend: () => void;
+  helpFormulateLabel?: string;
+  helpFormulatePendingLabel?: string;
+  onHelpFormulate?: () => void | Promise<void>;
+  helpFormulatePending?: boolean;
 };
 
 export function MediationChatComposer({
@@ -246,11 +285,36 @@ export function MediationChatComposer({
   pending = false,
   onChange,
   onSend,
+  helpFormulateLabel,
+  helpFormulatePendingLabel,
+  onHelpFormulate,
+  helpFormulatePending = false,
 }: MediationChatComposerProps) {
   const canSend = !disabled && !pending && value.trim().length > 0;
+  const canFormulate =
+    !!onHelpFormulate &&
+    !disabled &&
+    !pending &&
+    !helpFormulatePending &&
+    value.trim().length > 0;
 
   return (
-    <div className="flex items-end gap-2 px-3 py-3">
+    <div className="flex flex-col gap-2 px-3 py-3">
+      {onHelpFormulate ? (
+        <div className="flex justify-start">
+          <button
+            className="rounded-full border border-hair px-3 py-1 text-[12px] font-medium text-law transition-colors hover:bg-law/5 disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={!canFormulate}
+            onClick={() => void onHelpFormulate()}
+            type="button"
+          >
+            {helpFormulatePending
+              ? (helpFormulatePendingLabel ?? "Rewriting…")
+              : (helpFormulateLabel ?? "Help me phrase this")}
+          </button>
+        </div>
+      ) : null}
+      <div className="flex items-end gap-2">
       <textarea
         className="custom-scrollbar max-h-32 min-h-[44px] flex-1 resize-none rounded-[22px] border border-hair bg-surface-container-high/80 px-4 py-2.5 text-[15px] leading-snug text-on-surface outline-none transition-colors placeholder:text-on-surface-variant focus:border-law/50 focus:bg-white"
         disabled={disabled || pending}
@@ -276,6 +340,7 @@ export function MediationChatComposer({
       >
         <span className="material-symbols-outlined text-[22px]">send</span>
       </motion.button>
+      </div>
     </div>
   );
 }

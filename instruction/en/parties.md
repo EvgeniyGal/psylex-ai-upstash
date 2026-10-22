@@ -63,6 +63,8 @@ Open the link from the email or message. The system signs you in automatically a
 
 After sign-in, the system opens the screen you need: welcome, tests, dispute description, lobby, or mediation room. If you take part in more than one room, you first see **My rooms** and choose which case to continue.
 
+Use **EN | UA** in the header for your interface language. In the session, messages from others appear in your language (marked **Translated**; you can show the original). Before sending, you can use **Help me phrase this** to clarify your draft without changing its meaning. Solution options and the results PDF follow your interface language.
+
 ---
 
 ## 3. Process stages

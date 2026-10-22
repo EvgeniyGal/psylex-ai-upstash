@@ -13,6 +13,7 @@ import {
   publishMediatorDraftAgreementAction,
   returnMediatorSessionToDialogueAction,
   saveMediatorDraftAgreementAction,
+  helpFormulateMediatorText,
   sendCustomMediatorQuestionAction,
   sendMediatorQuestionAction,
 } from "@/app/mediator/rooms/actions";
@@ -114,6 +115,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
   const router = useRouter();
   const [state, setState] = useState(initialState);
   const [pending, startTransition] = useTransition();
+  const [formulatePending, startFormulate] = useTransition();
   const [selectedAudience, setSelectedAudience] = useState<MediatorAudience>("both");
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
@@ -446,6 +448,18 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
                     ? resolveLocalizedSystemMessage(message.content, locale)
                     : message.content}
                 </p>
+                {"isTranslated" in message &&
+                message.isTranslated &&
+                message.originalText ? (
+                  <details className="mt-1 text-[12px] text-on-surface-variant">
+                    <summary className="cursor-pointer text-law">
+                      {t.mediationTranslatedBadge} — {t.mediationShowOriginal}
+                    </summary>
+                    <p className="mt-1 whitespace-pre-wrap rounded-md bg-black/5 px-2 py-1">
+                      {message.originalText}
+                    </p>
+                  </details>
+                ) : null}
               </div>
             ))}
           </div>
@@ -542,6 +556,26 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
                     value={editText}
                   />
                   <button
+                    className="rounded-full border border-hair px-3 py-1 text-[12px] font-medium text-law disabled:opacity-40"
+                    disabled={pending || formulatePending || !editText.trim()}
+                    onClick={() => {
+                      const draft = editText.trim();
+                      if (!draft) return;
+                      startFormulate(async () => {
+                        try {
+                          setEditText(await helpFormulateMediatorText(draft));
+                        } catch {
+                          toast.error(t.mediationHelpFormulateFailed);
+                        }
+                      });
+                    }}
+                    type="button"
+                  >
+                    {formulatePending
+                      ? t.mediationHelpFormulatePending
+                      : t.mediationHelpFormulate}
+                  </button>
+                  <button
                     className="btn-primary flex w-full items-center justify-center gap-2 px-3 py-2 text-body-sm disabled:opacity-60"
                     disabled={pending || !editText.trim()}
                     onClick={onSendQuestion}
@@ -563,6 +597,26 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
                 rows={4}
                 value={customText}
               />
+              <button
+                className="rounded-full border border-hair px-3 py-1 text-[12px] font-medium text-law disabled:opacity-40"
+                disabled={pending || formulatePending || !customText.trim()}
+                onClick={() => {
+                  const draft = customText.trim();
+                  if (!draft) return;
+                  startFormulate(async () => {
+                    try {
+                      setCustomText(await helpFormulateMediatorText(draft));
+                    } catch {
+                      toast.error(t.mediationHelpFormulateFailed);
+                    }
+                  });
+                }}
+                type="button"
+              >
+                {formulatePending
+                  ? t.mediationHelpFormulatePending
+                  : t.mediationHelpFormulate}
+              </button>
               <button
                 className="btn-primary flex w-full items-center justify-center gap-2 px-3 py-2 text-body-sm disabled:opacity-60"
                 disabled={pending || !customText.trim()}

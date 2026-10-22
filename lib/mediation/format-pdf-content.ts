@@ -94,7 +94,10 @@ export function formatPartyPsychodynamicProfiles(
   ].join("\n");
 }
 
-export function formatLegalAnalysis(analysis: LegalAnalysis | null | undefined): string {
+export function formatLegalAnalysis(
+  analysis: LegalAnalysis | null | undefined,
+  locale: Locale = "en",
+): string {
   if (!analysis) return "";
 
   const summary =
@@ -108,14 +111,16 @@ export function formatLegalAnalysis(analysis: LegalAnalysis | null | undefined):
   if (summary) {
     parts.push(summary);
   }
+  const relevanceLabel = locale === "uk" ? "Релевантність" : "Relevance";
+  const sourceLabel = locale === "uk" ? "Джерело" : "Source";
   for (const law of analysis.applicableLaws ?? []) {
-    parts.push(`${law.name}\n${law.summary}\nRelevance: ${law.relevance}`);
+    parts.push(`${law.name}\n${law.summary}\n${relevanceLabel}: ${law.relevance}`);
   }
   for (const regulation of analysis.regulations ?? []) {
     parts.push(`${regulation.name}\n${regulation.summary}`);
   }
   for (const citation of analysis.citations ?? []) {
-    const source = citation.sourceUrl ? `\nSource: ${citation.sourceUrl}` : "";
+    const source = citation.sourceUrl ? `\n${sourceLabel}: ${citation.sourceUrl}` : "";
     parts.push(`${citation.documentName}\n${citation.excerpt}${source}`);
   }
   return parts.join("\n\n");

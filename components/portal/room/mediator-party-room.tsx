@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import {
   downloadMediatorPartyResults,
   fetchMediatorPartyRoomState,
+  helpFormulateMediatorPartyReply,
   sendMediatorPartyReply,
   submitMediatorPartyAgreement,
   submitMediatorPartyCompromiseVote,
@@ -45,6 +46,7 @@ export function MediatorPartyRoom({
   const [reply, setReply] = useState("");
   const [email, setEmail] = useState("");
   const [pending, startTransition] = useTransition();
+  const [formulatePending, startFormulate] = useTransition();
 
   const notification = state.room.partyNotification as PartyNotification | null;
   const { banner, clearBanner } = usePartyActionNotifications({
@@ -239,6 +241,9 @@ export function MediatorPartyRoom({
                 you: t.mediationYou,
                 agent: t.mediationAgent,
                 system: t.mediationSystem,
+                translatedBadge: t.mediationTranslatedBadge,
+                showOriginal: t.mediationShowOriginal,
+                hideOriginal: t.mediationHideOriginal,
               }}
               messages={state.messages.map((m) => {
                 let senderLabel: string | null = null;
@@ -256,13 +261,30 @@ export function MediatorPartyRoom({
                   createdAt: m.createdAt,
                   isOwn: m.isOwn,
                   senderLabel,
+                  isTranslated: m.isTranslated,
+                  originalText: m.originalText,
                 };
               })}
               footer={
                 state.room.canReply && !review ? (
                   <MediationChatComposer
                     disabled={pending}
+                    helpFormulateLabel={t.mediationHelpFormulate}
+                    helpFormulatePending={formulatePending}
+                    helpFormulatePendingLabel={t.mediationHelpFormulatePending}
                     onChange={setReply}
+                    onHelpFormulate={() => {
+                      const draft = reply.trim();
+                      if (!draft) return;
+                      startFormulate(async () => {
+                        try {
+                          const rewritten = await helpFormulateMediatorPartyReply(draft);
+                          setReply(rewritten);
+                        } catch {
+                          toast.error(t.mediationHelpFormulateFailed);
+                        }
+                      });
+                    }}
                     onSend={onSend}
                     pending={pending}
                     placeholder={t.mediationReplyPlaceholder}

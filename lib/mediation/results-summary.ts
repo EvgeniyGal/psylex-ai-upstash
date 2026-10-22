@@ -57,16 +57,22 @@ function findSelectedOption(state: MediationResultsSummaryInput) {
   );
 }
 
-function termsFromDraft(draft: {
-  title?: string;
-  body?: string;
-  terms?: string[];
-  obligations?: Array<{ text: string; deadline?: string | null }>;
-} | null): string[] {
+function termsFromDraft(
+  draft: {
+    title?: string;
+    body?: string;
+    terms?: string[];
+    obligations?: Array<{ text: string; deadline?: string | null }>;
+  } | null,
+  locale: Locale,
+): string[] {
   if (!draft) return [];
+  const deadlineLabel = locale === "uk" ? "Строк" : "Deadline";
   if (draft.obligations && draft.obligations.length > 0) {
     return draft.obligations.map((o) =>
-      o.deadline?.trim() ? `${o.text.trim()} (Deadline: ${o.deadline.trim()})` : o.text.trim(),
+      o.deadline?.trim()
+        ? `${o.text.trim()} (${deadlineLabel}: ${o.deadline.trim()})`
+        : o.text.trim(),
     );
   }
   return draft.terms ?? [];
@@ -76,12 +82,9 @@ export async function buildMediationResultsSummary(
   state: MediationResultsSummaryInput,
   locale: Locale = "en",
 ): Promise<MediationResultsSummary> {
-  const draft = state.room.draftAgreement as {
-    title?: string;
-    body?: string;
-    terms?: string[];
-    obligations?: Array<{ text: string; deadline?: string | null }>;
-  } | null;
+  const { resolveDraftForLocale } = await import("@/lib/mediation/localize-artifacts");
+  const rawDraft = state.room.draftAgreement as import("@/lib/mediation/types").DraftAgreement | null;
+  const draft = rawDraft ? resolveDraftForLocale(rawDraft, locale) : null;
 
   const copy = portalCopy[locale];
   const selectedOption = findSelectedOption(state);
@@ -110,11 +113,12 @@ export async function buildMediationResultsSummary(
 
   const solutionParts: string[] = [];
   if (selectedOption) {
+    // Prefer viewer-facing description (already locale-resolved by room state).
     const sharedSolution =
+      selectedOption.description?.trim() ||
       selectedOption.canonicalDescription?.trim() ||
-      draft?.body?.trim() ||
-      selectedOption.description;
-    solutionParts.push(sharedSolution);
+      draft?.body?.trim();
+    if (sharedSolution) solutionParts.push(sharedSolution);
     if (selectedOption.fulfillmentProbability) {
       solutionParts.push(`${copy.mediationFulfillment}: ${selectedOption.fulfillmentProbability}`);
     }
@@ -135,6 +139,6 @@ export async function buildMediationResultsSummary(
     solution: solutionParts.join("\n\n") || copy.mediationNoAgreementOutcome,
     agreementTitle: draft?.title ?? copy.mediationAgreementTitle,
     agreementBody: draft?.body ?? null,
-    terms: termsFromDraft(draft),
+    terms: termsFromDraft(draft, locale),
   };
 }

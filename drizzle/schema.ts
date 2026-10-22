@@ -350,6 +350,10 @@ export const roomMessages = pgTable("room_messages", {
   content: text("content").notNull(),
   canonicalContent: text("canonical_content"),
   adaptations: jsonb("adaptations"),
+  /** Locale the author wrote in (participant / mediator free text). */
+  sourceLocale: preferredLocale("source_locale"),
+  /** Locale-keyed translations of free-text content: `{ en?: string; uk?: string }`. */
+  translations: jsonb("translations"),
   messageKind: text("message_kind"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });

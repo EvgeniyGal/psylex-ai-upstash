@@ -30,7 +30,11 @@ import {
   type MediatorAudience,
 } from "@/lib/mediator-session/orchestrator";
 import type { DraftAgreement, MediationOption } from "@/lib/mediation/types";
+import type { Locale } from "@/lib/i18n";
 import type { PartyRole } from "@/lib/participant-roles";
+import { db } from "@/lib/db";
+import { users } from "@/drizzle/schema";
+import { eq } from "drizzle-orm";
 
 async function requireMediator() {
   const session = await getServerSession(authOptions);
@@ -39,6 +43,20 @@ async function requireMediator() {
   }
   const userId = await requireSessionUserId();
   return userId;
+}
+
+export async function helpFormulateMediatorText(draft: string) {
+  const userId = await requireMediator();
+  const [user] = await db
+    .select({ preferredLocale: users.preferredLocale })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  const { helpFormulateText } = await import("@/lib/mediation/formulate");
+  return helpFormulateText({
+    draft,
+    locale: (user?.preferredLocale as Locale) ?? "en",
+  });
 }
 
 export async function fetchMediatorSchedulingReadiness(roomId: string) {

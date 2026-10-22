@@ -81,6 +81,20 @@ export async function sendMediatorPartyReply(content: string) {
   return submitMediatorPartyReply(userId, content);
 }
 
+export async function helpFormulateMediatorPartyReply(draft: string) {
+  const userId = await requirePartyUserId();
+  const [user] = await db
+    .select({ preferredLocale: users.preferredLocale })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  const { helpFormulateText } = await import("@/lib/mediation/formulate");
+  return helpFormulateText({
+    draft,
+    locale: (user?.preferredLocale as Locale) ?? "en",
+  });
+}
+
 export async function submitMediatorPartyVote(optionId: string) {
   const userId = await requirePartyUserId();
   const { castMediatorPartyVote } = await import("@/lib/mediator-session/orchestrator");

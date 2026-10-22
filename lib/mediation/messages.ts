@@ -1,14 +1,27 @@
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { roomMessages } from "@/drizzle/schema";
+import { roomMessages, users } from "@/drizzle/schema";
 import { resolveAdaptedText } from "@/lib/mediation/assemble-input";
 import type { MediationMessageKind, PartyAdaptations } from "@/lib/mediation/types";
 import type { Locale } from "@/lib/i18n";
 import type { PartyRole } from "@/lib/participant-roles";
 import { resolveLocalizedSystemMessage } from "@/lib/mediation/system-messages";
+import {
+  ensureMessageTranslations,
+  getRoomLocalesForTranslation,
+  type MessageTranslations,
+} from "@/lib/mediation/translate";
+import { normalizeLocale } from "@/lib/pipeline/locale";
 import { notifyRoom } from "@/lib/realtime/notify";
 
 export { resolveLocalizedSystemMessage } from "@/lib/mediation/system-messages";
+
+export type ResolvedMessageView = {
+  content: string;
+  isTranslated: boolean;
+  originalText: string | null;
+  sourceLocale: Locale | null;
+};
 
 export async function listRoomMessages(roomId: string) {
   return db
@@ -57,6 +70,15 @@ export function toPartyAdaptations(payload: {
   };
 }
 
+async function localeForUser(userId: string): Promise<Locale> {
+  const [row] = await db
+    .select({ preferredLocale: users.preferredLocale })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  return normalizeLocale(row?.preferredLocale);
+}
+
 export async function insertAgentMessage(params: {
   roomId: string;
   canonicalContent: string;
@@ -68,9 +90,25 @@ export async function insertAgentMessage(params: {
   channel?: "shared" | "private";
   /** Mediator user id when a human mediator authored the message. */
   senderUserId?: string | null;
+  /** When a human mediator authored free text, translate for other room locales. */
+  sourceLocale?: Locale | null;
 }) {
   const channel =
     params.channel ?? (params.addresseeUserId ? "private" : "shared");
+
+  let sourceLocale: Locale | null = params.sourceLocale ?? null;
+  let translations: MessageTranslations | null = null;
+
+  if (params.senderUserId) {
+    sourceLocale = sourceLocale ?? (await localeForUser(params.senderUserId));
+    const needed = await getRoomLocalesForTranslation(params.roomId);
+    translations = await ensureMessageTranslations({
+      content: params.canonicalContent,
+      sourceLocale,
+      neededLocales: needed,
+    });
+  }
+
   const [row] = await db
     .insert(roomMessages)
     .values({
@@ -81,6 +119,8 @@ export async function insertAgentMessage(params: {
       content: params.canonicalContent,
       canonicalContent: params.canonicalContent,
       adaptations: params.adaptations,
+      sourceLocale,
+      translations,
       messageKind: params.messageKind,
       participantUserId: params.addresseeUserId ?? null,
     })
@@ -94,7 +134,16 @@ export async function insertParticipantMessage(params: {
   userId: string;
   content: string;
   channel?: "shared" | "private";
+  sourceLocale?: Locale;
 }) {
+  const sourceLocale = params.sourceLocale ?? (await localeForUser(params.userId));
+  const needed = await getRoomLocalesForTranslation(params.roomId);
+  const translations = await ensureMessageTranslations({
+    content: params.content,
+    sourceLocale,
+    neededLocales: needed,
+  });
+
   const [row] = await db
     .insert(roomMessages)
     .values({
@@ -103,6 +152,8 @@ export async function insertParticipantMessage(params: {
       senderType: "participant",
       senderUserId: params.userId,
       content: params.content,
+      sourceLocale,
+      translations,
     })
     .returning();
   notifyRoom(params.roomId);
@@ -265,11 +316,11 @@ export function isMessageVisibleToViewer(
   return true;
 }
 
-export function resolveMessageForViewer(
+function resolveBaseTextForViewer(
   message: typeof roomMessages.$inferSelect,
   viewerRole: PartyRole,
   viewerPreferredLocale?: string | null,
-) {
+): string {
   if (message.adaptations && message.canonicalContent) {
     const adapted = resolveAdaptedText(
       message.adaptations as PartyAdaptations,
@@ -294,6 +345,56 @@ export function resolveMessageForViewer(
     );
   }
   return message.content;
+}
+
+export function resolveMessageViewForViewer(
+  message: typeof roomMessages.$inferSelect,
+  viewerRole: PartyRole,
+  viewerPreferredLocale?: string | null,
+): ResolvedMessageView {
+  const locale = viewerLocale(viewerPreferredLocale);
+  const sourceLocale = message.sourceLocale
+    ? normalizeLocale(message.sourceLocale)
+    : null;
+  const translations = message.translations as MessageTranslations | null;
+  const originalText =
+    (sourceLocale && translations?.[sourceLocale]) || message.content;
+
+  if (translations) {
+    const localized = translations[locale];
+    if (localized && sourceLocale && sourceLocale !== locale && localized !== originalText) {
+      return {
+        content: localized,
+        isTranslated: true,
+        originalText,
+        sourceLocale,
+      };
+    }
+    if (localized) {
+      return {
+        content: localized,
+        isTranslated: false,
+        originalText: null,
+        sourceLocale,
+      };
+    }
+  }
+
+  return {
+    content: resolveBaseTextForViewer(message, viewerRole, viewerPreferredLocale),
+    isTranslated: false,
+    originalText: null,
+    sourceLocale,
+  };
+}
+
+/** @deprecated Prefer resolveMessageViewForViewer for translation metadata. */
+export function resolveMessageForViewer(
+  message: typeof roomMessages.$inferSelect,
+  viewerRole: PartyRole,
+  viewerPreferredLocale?: string | null,
+) {
+  return resolveMessageViewForViewer(message, viewerRole, viewerPreferredLocale).content;
 }
 
 function isQuestionForParty(

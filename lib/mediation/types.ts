@@ -36,14 +36,19 @@ export type PartyAdaptations = {
   party_b: string;
 };
 
-export type MediationOption = {
-  id: string;
+export type MediationOptionLocaleFields = {
   canonicalDescription: string;
   legalNorms: string;
   fulfillmentProbability: string;
   refusalRisks: string;
   partyA: string;
   partyB: string;
+};
+
+export type MediationOption = MediationOptionLocaleFields & {
+  id: string;
+  /** Localized copies when parties (or downloads) use different UI languages. */
+  byLocale?: Partial<Record<"en" | "uk", MediationOptionLocaleFields>>;
 };
 
 export type DraftObligationSource = "dialogue" | "option" | "protective" | "mediator";
@@ -57,17 +62,19 @@ export type DraftObligation = {
 
 export type DraftAgreementStatus = "draft" | "published" | "accepted" | "rejected";
 
-export type DraftAgreement = {
+export type DraftAgreementLocaleFields = {
   title: string;
   body: string;
-  /** Structured obligations (preferred). */
   obligations: DraftObligation[];
-  /** Derived from obligations for legacy consumers. */
   terms: string[];
+};
+
+export type DraftAgreement = DraftAgreementLocaleFields & {
   protectiveClauseIds: string[];
   status: DraftAgreementStatus;
   publishedAt?: string;
   generatedAt: string;
+  byLocale?: Partial<Record<"en" | "uk", DraftAgreementLocaleFields>>;
 };
 
 export type MediationTurn = PartyRole | null;

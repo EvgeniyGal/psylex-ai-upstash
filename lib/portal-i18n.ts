@@ -144,6 +144,12 @@ type PortalCopy = {
   mediationSystem: string;
   mediationReplyPlaceholder: string;
   mediationSendReply: string;
+  mediationTranslatedBadge: string;
+  mediationShowOriginal: string;
+  mediationHideOriginal: string;
+  mediationHelpFormulate: string;
+  mediationHelpFormulatePending: string;
+  mediationHelpFormulateFailed: string;
   mediationAttackRedirected: string;
   mediationActionFailed: string;
   mediationOptionsTitle: string;
@@ -402,6 +408,12 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     mediationSystem: "System",
     mediationReplyPlaceholder: "Type your substantive reply…",
     mediationSendReply: "Send reply",
+    mediationTranslatedBadge: "Translated",
+    mediationShowOriginal: "Show original",
+    mediationHideOriginal: "Hide original",
+    mediationHelpFormulate: "Help me phrase this",
+    mediationHelpFormulatePending: "Rewriting…",
+    mediationHelpFormulateFailed: "Could not rewrite. Try again.",
     mediationAttackRedirected: "Please focus on the substance of the dispute.",
     mediationActionFailed: "Action failed. Please try again.",
     mediationOptionsTitle: "Solution options",
@@ -679,6 +691,12 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     mediationSystem: "Система",
     mediationReplyPlaceholder: "Введіть змістовну відповідь…",
     mediationSendReply: "Надіслати відповідь",
+    mediationTranslatedBadge: "Перекладено",
+    mediationShowOriginal: "Показати оригінал",
+    mediationHideOriginal: "Приховати оригінал",
+    mediationHelpFormulate: "Допоможи сформулювати",
+    mediationHelpFormulatePending: "Переписуємо…",
+    mediationHelpFormulateFailed: "Не вдалося переписати. Спробуйте ще раз.",
     mediationAttackRedirected: "Будь ласка, зосередьтеся на суті спору.",
     mediationActionFailed: "Не вдалося виконати дію. Спробуйте ще раз.",
     mediationOptionsTitle: "Варіанти рішення",

@@ -1,6 +1,8 @@
 import type { z } from "zod";
+import type { Locale } from "@/lib/i18n";
 import { loadAgentPrompt } from "@/lib/pipeline/load-prompt";
 import { getOpenAIClient, parseJsonFromModelResponse } from "@/lib/pipeline/openai-client";
+import { localeInstruction, normalizeLocale } from "@/lib/pipeline/locale";
 import {
   assembleMediationAgentInput,
   type MediationContext,
@@ -16,9 +18,12 @@ type RunMediationAgentParams<T extends z.ZodType> = {
   schema: T;
   draftPrompt?: string;
   extraInstruction?: string;
+  /** Participant-facing output language. Defaults to English when omitted. */
+  targetLocale?: Locale;
 };
 
 export async function runMediationAgent<T extends z.ZodType>(params: RunMediationAgentParams<T>) {
+  const targetLocale = normalizeLocale(params.targetLocale ?? "en");
   const systemPrompt = await loadAgentPrompt("mediation", params.draftPrompt);
   const client = await getOpenAIClient();
   const userMessage = [
@@ -26,6 +31,8 @@ export async function runMediationAgent<T extends z.ZodType>(params: RunMediatio
     "",
     mediationModeInstructions[params.mode],
     params.extraInstruction ? `\nContext: ${params.extraInstruction}` : "",
+    "",
+    localeInstruction(targetLocale),
   ]
     .filter(Boolean)
     .join("\n");

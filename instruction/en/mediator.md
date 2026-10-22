@@ -179,6 +179,10 @@ The parties receive the notification **A mediation session has been scheduled.**
 
 A participant may belong to several rooms, but **cannot** have two overlapping scheduled or live sessions. If save fails with an overlap message, pick another time (or wait until their other session ends).
 
+### Language in the live session
+
+Your **EN | UA** switcher sets the language you write and read. Party messages are translated to each viewer’s language (**Translated** + show original). Use **Help me phrase this** on question drafts before sending. Solution options and agreement text are generated for each party’s language when they differ.
+
 You can change the schedule until the session starts. After start, the fields are locked.
 
 When there is a schedule and preparation is ready:

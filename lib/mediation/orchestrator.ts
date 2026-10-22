@@ -15,7 +15,7 @@ import {
   isMessageVisibleToViewer,
   hasMessageKindInRoom,
   listRoomMessages,
-  resolveMessageForViewer,
+  resolveMessageViewForViewer,
   toPartyAdaptations,
 } from "@/lib/mediation/messages";
 import { runMediationAgent } from "@/lib/mediation/run-agent";
@@ -162,12 +162,18 @@ async function askDialogueQuestion(room: RoomRow, addressee: PartyRole) {
     const addresseeUserId =
       addressee === "party_a" ? partyA?.id ?? null : partyB?.id ?? null;
 
-    const { ctx } = await buildContext(room);
+    const { ctx, partyA: sideA, partyB: sideB } = await buildContext(room);
+    const addresseeUser = addressee === "party_a" ? sideA : sideB;
     const result = await runMediationAgent({
       mode: "dialogue_question",
       context: ctx,
       schema: mediationDialogueQuestionSchema,
-      extraInstruction: `Set addressee to "${addressee}". Round ${room.mediationRound}.`,
+      targetLocale: (addresseeUser?.preferredLocale as Locale) ?? "en",
+      extraInstruction: [
+        `Set addressee to "${addressee}". Round ${room.mediationRound}.`,
+        `Write partyA adaptation in ${sideA.preferredLocale === "uk" ? "Ukrainian" : "English"}.`,
+        `Write partyB adaptation in ${sideB.preferredLocale === "uk" ? "Ukrainian" : "English"}.`,
+      ].join(" "),
     });
 
     await insertAgentMessage({
@@ -254,22 +260,13 @@ async function generateAndPublishOptions(roomId: string) {
 
   mediationAgentWork.add(roomId);
   try {
-    const { ctx } = await buildContext(room);
-    const result = await runMediationAgent({
-      mode: "options",
+    const { ctx, partyA, partyB } = await buildContext(room);
+    const { generateLocalizedOptions } = await import("@/lib/mediation/generate-localized");
+    const options = await generateLocalizedOptions({
       context: ctx,
-      schema: mediationOptionsSchema,
+      partyALocale: partyA?.preferredLocale,
+      partyBLocale: partyB?.preferredLocale,
     });
-
-    const options: MediationOption[] = result.options.map((option) => ({
-      id: option.id,
-      canonicalDescription: option.canonicalDescription,
-      legalNorms: option.legalNorms,
-      fulfillmentProbability: option.fulfillmentProbability,
-      refusalRisks: option.refusalRisks,
-      partyA: option.partyA,
-      partyB: option.partyB,
-    }));
 
     // Atomic write: only set options if still empty (another instance may have finished first)
     const fresh = await loadRoom(roomId);
@@ -487,23 +484,14 @@ async function ensureCompromiseOption(room: RoomRow) {
     const fresh = await loadRoom(room.id);
     if (!fresh || fresh.compromiseOption) return;
 
-    const { ctx } = await buildContext(fresh);
-    const compromise = await runMediationAgent({
-      mode: "compromise",
+    const { ctx, partyA, partyB } = await buildContext(fresh);
+    const { generateLocalizedCompromise } = await import("@/lib/mediation/generate-localized");
+    const compromiseOption = await generateLocalizedCompromise({
       context: ctx,
-      schema: mediationCompromiseSchema,
+      partyALocale: partyA?.preferredLocale,
+      partyBLocale: partyB?.preferredLocale,
       extraInstruction: `Party A voted ${fresh.partyAVoteOptionId}, Party B voted ${fresh.partyBVoteOptionId}.`,
     });
-
-    const compromiseOption: MediationOption = {
-      id: compromise.option.id,
-      canonicalDescription: compromise.option.canonicalDescription,
-      legalNorms: compromise.option.legalNorms,
-      fulfillmentProbability: compromise.option.fulfillmentProbability,
-      refusalRisks: compromise.option.refusalRisks,
-      partyA: compromise.option.partyA,
-      partyB: compromise.option.partyB,
-    };
 
     const afterLlm = await loadRoom(room.id);
     if (afterLlm?.compromiseOption) return;
@@ -823,31 +811,26 @@ async function generateDraftAgreement(roomId: string, optionId: string) {
     .join("\n");
   const suggestedProtectiveIds = defaultSuggestedProtectiveIds(roomText);
 
-  const { ctx } = await buildContext(room);
-  const draft = await runMediationAgent({
-    mode: "agreement_draft",
+  const { ctx, partyA, partyB } = await buildContext(room);
+  const afterLlm = await loadRoom(roomId);
+  if (afterLlm?.draftAgreement) return;
+
+  const { generateLocalizedAgreementDraft } = await import("@/lib/mediation/generate-localized");
+  const agreement = await generateLocalizedAgreementDraft({
     context: ctx,
-    schema: mediationAgreementDraftSchema,
+    partyALocale: partyA?.preferredLocale,
+    partyBLocale: partyB?.preferredLocale,
     extraInstruction: buildAgreementDraftExtraInstruction({
       optionId,
       option,
       suggestedProtectiveIds,
     }),
+    normalize: normalizeDraftAgreement,
+    mergeProtective: mergeProtectiveClausesIntoDraft,
+    suggestedProtectiveIds,
+    status: isMediatorFacilitatedRoom(room) ? "draft" : "published",
+    publishedAt: isMediatorFacilitatedRoom(room) ? undefined : new Date().toISOString(),
   });
-
-  const afterLlm = await loadRoom(roomId);
-  if (afterLlm?.draftAgreement) return;
-
-  let agreement = normalizeDraftAgreement(
-    {
-      ...draft,
-      generatedAt: new Date().toISOString(),
-      status: isMediatorFacilitatedRoom(room) ? "draft" : "published",
-      publishedAt: isMediatorFacilitatedRoom(room) ? undefined : new Date().toISOString(),
-    },
-    { suggestProtectiveIds: suggestedProtectiveIds },
-  );
-  agreement = mergeProtectiveClausesIntoDraft(agreement, suggestedProtectiveIds, "en");
 
   await db.update(rooms).set({ draftAgreement: agreement }).where(eq(rooms.id, roomId));
   notifyRoom(roomId);
@@ -977,23 +960,41 @@ export async function getMediationRoomState(userId: string) {
           ? isMessageVisibleToViewer(message, userId, visibilityContext)
           : message.senderUserId === userId || message.senderType !== "participant",
       )
-      .map((message) => ({
-        id: message.id,
-        senderType: message.senderType,
-        messageKind: message.messageKind,
-        content: resolveMessageForViewer(message, role, participant.user.preferredLocale),
-        createdAt: message.createdAt.toISOString(),
-        isOwn: message.senderUserId === userId,
-      })),
+      .map((message) => {
+        const view = resolveMessageViewForViewer(
+          message,
+          role,
+          participant.user.preferredLocale,
+        );
+        return {
+          id: message.id,
+          senderType: message.senderType,
+          messageKind: message.messageKind,
+          content: view.content,
+          createdAt: message.createdAt.toISOString(),
+          isOwn: message.senderUserId === userId,
+          isTranslated: !!(view.isTranslated && message.senderUserId !== userId),
+          originalText:
+            view.isTranslated && message.senderUserId !== userId ? view.originalText : null,
+        };
+      }),
   );
 
-  const mapOption = (option: MediationOption) => ({
-    id: option.id,
-    description: role === "party_a" ? option.partyA : option.partyB,
-    legalNorms: option.legalNorms,
-    fulfillmentProbability: option.fulfillmentProbability,
-    refusalRisks: option.refusalRisks,
-  });
+  const { descriptionForViewerRole, resolveOptionForLocale, resolveDraftForLocale } = await import(
+    "@/lib/mediation/localize-artifacts"
+  );
+  const viewerLocale = participant.user.preferredLocale;
+  const mapOption = (option: MediationOption) => {
+    const resolved = resolveOptionForLocale(option, viewerLocale);
+    return {
+      id: option.id,
+      description: descriptionForViewerRole(option, role, viewerLocale),
+      legalNorms: resolved.legalNorms,
+      fulfillmentProbability: resolved.fulfillmentProbability,
+      refusalRisks: resolved.refusalRisks,
+      canonicalDescription: resolved.canonicalDescription,
+    };
+  };
 
   const otherVoteVisible =
     room!.mediationPhase === "voting_discrepancy" ||
@@ -1041,7 +1042,12 @@ export async function getMediationRoomState(userId: string) {
       otherAccepted:
         role === "party_a" ? !!room!.partyBAgreementAcceptedAt : !!room!.partyAAgreementAcceptedAt,
       selectedOptionId: room!.selectedOptionId,
-      draftAgreement: room!.draftAgreement,
+      draftAgreement: room!.draftAgreement
+        ? resolveDraftForLocale(
+            room!.draftAgreement as import("@/lib/mediation/types").DraftAgreement,
+            viewerLocale,
+          )
+        : null,
     },
     viewerRole: role,
     messages: viewerMessages,

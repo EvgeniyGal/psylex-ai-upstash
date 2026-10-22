@@ -17,10 +17,12 @@ import {
   listRoomMessages,
   partyHasUnansweredQuestion,
   resolveAgentMessageTargetUserId,
-  resolveMessageForViewer,
+  resolveMessageViewForViewer,
   toPartyAdaptations,
 } from "@/lib/mediation/messages";
 import { resolveLocalizedSystemMessage } from "@/lib/mediation/system-messages";
+import type { MessageTranslations } from "@/lib/mediation/translate";
+import { normalizeLocale } from "@/lib/pipeline/locale";
 import { runMediationAgent } from "@/lib/mediation/run-agent";
 import {
   mediationAgreementDraftSchema,
@@ -389,22 +391,13 @@ export async function generateMediatorOptions(roomId: string, mediatorUserId: st
     await setPhase(roomId, "generating_options", { reason: "mediator_requested" });
 
     const fresh = (await loadRoom(roomId)) ?? room;
-    const { ctx } = await buildContext(fresh);
-    const result = await runMediationAgent({
-      mode: "options",
+    const { ctx, partyA, partyB } = await buildContext(fresh);
+    const { generateLocalizedOptions } = await import("@/lib/mediation/generate-localized");
+    const options = await generateLocalizedOptions({
       context: ctx,
-      schema: mediationOptionsSchema,
+      partyALocale: partyA?.preferredLocale,
+      partyBLocale: partyB?.preferredLocale,
     });
-
-    const options: MediationOption[] = result.options.map((option) => ({
-      id: option.id,
-      canonicalDescription: option.canonicalDescription,
-      legalNorms: option.legalNorms,
-      fulfillmentProbability: option.fulfillmentProbability,
-      refusalRisks: option.refusalRisks,
-      partyA: option.partyA,
-      partyB: option.partyB,
-    }));
 
     await db
       .update(rooms)
@@ -457,23 +450,14 @@ async function generateCompromiseDraft(room: RoomRow) {
     const fresh = await loadRoom(room.id);
     if (!fresh || fresh.mediatorCompromiseDraft || fresh.compromiseOption) return;
 
-    const { ctx } = await buildContext(fresh);
-    const compromise = await runMediationAgent({
-      mode: "compromise",
+    const { ctx, partyA, partyB } = await buildContext(fresh);
+    const { generateLocalizedCompromise } = await import("@/lib/mediation/generate-localized");
+    const draft = await generateLocalizedCompromise({
       context: ctx,
-      schema: mediationCompromiseSchema,
+      partyALocale: partyA?.preferredLocale,
+      partyBLocale: partyB?.preferredLocale,
       extraInstruction: `Party A voted ${fresh.partyAVoteOptionId}, Party B voted ${fresh.partyBVoteOptionId}.`,
     });
-
-    const draft: MediationOption = {
-      id: compromise.option.id,
-      canonicalDescription: compromise.option.canonicalDescription,
-      legalNorms: compromise.option.legalNorms,
-      fulfillmentProbability: compromise.option.fulfillmentProbability,
-      refusalRisks: compromise.option.refusalRisks,
-      partyA: compromise.option.partyA,
-      partyB: compromise.option.partyB,
-    };
 
     await db
       .update(rooms)
@@ -720,7 +704,22 @@ export async function saveMediatorDraftAgreement(
     publishedAt: draft.status === "published" ? draft.publishedAt : undefined,
     generatedAt: draft.generatedAt || new Date().toISOString(),
   });
-  next = mergeProtectiveClausesIntoDraft(next, next.protectiveClauseIds, "en");
+  const [mediatorRow] = await db
+    .select({ preferredLocale: users.preferredLocale })
+    .from(users)
+    .where(eq(users.id, mediatorUserId))
+    .limit(1);
+  const mediatorLocale: Locale = mediatorRow?.preferredLocale === "uk" ? "uk" : "en";
+  next = mergeProtectiveClausesIntoDraft(next, next.protectiveClauseIds, mediatorLocale);
+  // Preserve dual-locale copies when mediator edits the primary fields.
+  if (draft.byLocale) {
+    next = { ...next, byLocale: { ...draft.byLocale, [mediatorLocale]: {
+      title: next.title,
+      body: next.body,
+      obligations: next.obligations,
+      terms: next.terms,
+    } } };
+  }
   next = { ...next, terms: obligationsToTerms(next.obligations) };
 
   await db.update(rooms).set({ draftAgreement: next }).where(eq(rooms.id, roomId));
@@ -827,27 +826,22 @@ async function ensureDraftAgreement(roomId: string, optionId: string) {
       .join("\n");
     const suggestedProtectiveIds = defaultSuggestedProtectiveIds(roomText);
 
-    const { ctx } = await buildContext(fresh);
-    const draft = await runMediationAgent({
-      mode: "agreement_draft",
+    const { ctx, partyA, partyB } = await buildContext(fresh);
+    const { generateLocalizedAgreementDraft } = await import("@/lib/mediation/generate-localized");
+    const agreement = await generateLocalizedAgreementDraft({
       context: ctx,
-      schema: mediationAgreementDraftSchema,
+      partyALocale: partyA?.preferredLocale,
+      partyBLocale: partyB?.preferredLocale,
       extraInstruction: buildAgreementDraftExtraInstruction({
         optionId,
         option,
         suggestedProtectiveIds,
       }),
+      normalize: normalizeDraftAgreement,
+      mergeProtective: mergeProtectiveClausesIntoDraft,
+      suggestedProtectiveIds,
+      status: "draft",
     });
-
-    let agreement: DraftAgreement = normalizeDraftAgreement(
-      {
-        ...draft,
-        generatedAt: new Date().toISOString(),
-        status: "draft",
-      },
-      { suggestProtectiveIds: suggestedProtectiveIds },
-    );
-    agreement = mergeProtectiveClausesIntoDraft(agreement, suggestedProtectiveIds, "en");
 
     await db.update(rooms).set({ draftAgreement: agreement }).where(eq(rooms.id, roomId));
     notifyRoom(roomId);
@@ -975,21 +969,52 @@ async function buildSessionState(
       !!message.senderUserId &&
       message.senderUserId === room.createdByUserId;
 
+    const isOwn = message.senderUserId === viewerUserId;
+    let content: string;
+    let isTranslated = false;
+    let originalText: string | null = null;
+
+    if (forMediator) {
+      if (message.messageKind === "mediation_system") {
+        content = resolveLocalizedSystemMessage(
+          message.canonicalContent ?? message.content,
+          locale,
+        );
+      } else {
+        const translations = message.translations as MessageTranslations | null;
+        const sourceLocale = message.sourceLocale
+          ? normalizeLocale(message.sourceLocale)
+          : null;
+        const localized = translations?.[normalizeLocale(locale)];
+        const original =
+          (sourceLocale && translations?.[sourceLocale]) ||
+          message.canonicalContent ||
+          message.content;
+        if (localized && sourceLocale && sourceLocale !== normalizeLocale(locale) && !isOwn) {
+          content = localized;
+          isTranslated = true;
+          originalText = original;
+        } else {
+          content = localized ?? message.canonicalContent ?? message.content;
+        }
+      }
+    } else {
+      const view = resolveMessageViewForViewer(message, role!, locale);
+      content = view.content;
+      isTranslated = !!(view.isTranslated && !isOwn);
+      originalText = isTranslated ? view.originalText : null;
+    }
+
     return {
       id: message.id,
       senderType: message.senderType,
       messageKind: message.messageKind,
       channel: message.channel,
-      content: forMediator
-        ? message.messageKind === "mediation_system"
-          ? resolveLocalizedSystemMessage(
-              message.canonicalContent ?? message.content,
-              locale,
-            )
-          : (message.canonicalContent ?? message.content)
-        : resolveMessageForViewer(message, role!, locale),
+      content,
       createdAt: message.createdAt.toISOString(),
-      isOwn: message.senderUserId === viewerUserId,
+      isOwn,
+      isTranslated,
+      originalText,
       addresseeUserId,
       senderPartyRole: roleForUserId(message.senderUserId),
       addresseePartyRole: roleForUserId(addresseeUserId),
@@ -1010,21 +1035,28 @@ async function buildSessionState(
           .map((message) => mapMessage(message, false)),
   );
 
-  const mapOption = (option: MediationOption) => ({
-    id: option.id,
-    description:
-      viewerKind === "mediator"
-        ? option.canonicalDescription
-        : role === "party_a"
-          ? option.partyA
-          : option.partyB,
-    legalNorms: option.legalNorms,
-    fulfillmentProbability: option.fulfillmentProbability,
-    refusalRisks: option.refusalRisks,
-    partyA: option.partyA,
-    partyB: option.partyB,
-    canonicalDescription: option.canonicalDescription,
-  });
+  const {
+    descriptionForViewerRole,
+    resolveDraftForLocale,
+    resolveOptionForLocale,
+  } = await import("@/lib/mediation/localize-artifacts");
+
+  const mapOption = (option: MediationOption) => {
+    const resolved = resolveOptionForLocale(option, locale);
+    return {
+      id: option.id,
+      description:
+        viewerKind === "mediator"
+          ? resolved.canonicalDescription
+          : descriptionForViewerRole(option, role!, locale),
+      legalNorms: resolved.legalNorms,
+      fulfillmentProbability: resolved.fulfillmentProbability,
+      refusalRisks: resolved.refusalRisks,
+      partyA: resolved.partyA,
+      partyB: resolved.partyB,
+      canonicalDescription: resolved.canonicalDescription,
+    };
+  };
 
   const otherVoteVisible =
     room.mediationPhase === "voting_discrepancy" ||
@@ -1062,7 +1094,9 @@ async function buildSessionState(
   const draftAgreement =
     viewerKind === "party" && draftAgreementRaw && !agreementPublished
       ? null
-      : draftAgreementRaw;
+      : draftAgreementRaw
+        ? resolveDraftForLocale(draftAgreementRaw, locale)
+        : null;
 
   const statePayload = {
     room: {
