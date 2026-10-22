@@ -278,13 +278,13 @@ Fields:
 
 Check neutrality and accuracy, edit if needed, click **Publish compromise**. The parties vote **Accept compromise** / **Reject compromise**.
 
-There is no separate “End session” button: the finale comes when the parties accept the agreement or reject the compromise (no mutual agreement).
+The session normally ends when the parties accept the agreement or reject the compromise (no mutual agreement). You can also click **End session** on the live console (with confirmation) to close early without an agreement.
 
 ---
 
 ## 11. Ending the session and results
 
-When the phase becomes **Agreement** or **Completed**:
+When the phase becomes **Agreement** or **Completed** (including after you use **End session**):
 
 1. The console shows **Session finished. Returning to room details…**
 2. After a few seconds the room card opens.

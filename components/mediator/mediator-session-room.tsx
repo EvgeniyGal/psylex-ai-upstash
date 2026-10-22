@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
+  endMediatorSessionAction,
   fetchMediatorSessionState,
   generateMediatorOptionsAction,
   generateMediatorQuestionCandidatesAction,
@@ -234,6 +235,18 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
     });
   };
 
+  const onEndSession = () => {
+    if (!window.confirm(admin.mediatorEndSessionConfirm)) return;
+    startTransition(async () => {
+      try {
+        const next = await endMediatorSessionAction(roomId);
+        if (next) setState(next);
+      } catch {
+        toast.error(admin.mediatorEndSessionError);
+      }
+    });
+  };
+
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -244,7 +257,20 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
           <span className="material-symbols-outlined text-[20px]">arrow_back</span>
           {admin.returnToRooms}
         </Link>
-        <SessionElapsedTimer startedAt={state.room.mediationStartedAt} />
+        <div className="flex flex-wrap items-center gap-3">
+          {!sessionEnded ? (
+            <button
+              className="btn-secondary inline-flex items-center gap-2 px-4 py-2 text-body-sm font-semibold text-error disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={pending}
+              onClick={onEndSession}
+              type="button"
+            >
+              {pending ? <Spinner className="text-error" size="sm" /> : null}
+              {admin.mediatorEndSession}
+            </button>
+          ) : null}
+          <SessionElapsedTimer startedAt={state.room.mediationStartedAt} />
+        </div>
       </div>
 
       {sessionEnded ? (

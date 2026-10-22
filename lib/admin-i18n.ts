@@ -243,6 +243,9 @@ export type AdminCopy = {
   mediatorQuestionCandidates: string;
   mediatorOwnQuestion: string;
   mediatorSessionFinished: string;
+  mediatorEndSession: string;
+  mediatorEndSessionConfirm: string;
+  mediatorEndSessionError: string;
   mediatorSelectCandidate: string;
   mediatorCompromiseDraft: string;
   mediatorCompromiseCanonical: string;
@@ -527,6 +530,10 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     mediatorQuestionCandidates: "Question candidates",
     mediatorOwnQuestion: "Your question",
     mediatorSessionFinished: "Session finished. Returning to room details…",
+    mediatorEndSession: "End session",
+    mediatorEndSessionConfirm:
+      "End this session without an agreement? Parties will see the session as completed.",
+    mediatorEndSessionError: "Could not end the session.",
     mediatorSelectCandidate: "Select a question",
     mediatorCompromiseDraft: "Compromise draft",
     mediatorCompromiseCanonical: "Canonical description (mediator view)",
@@ -883,6 +890,10 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     mediatorQuestionCandidates: "Варіанти запитань",
     mediatorOwnQuestion: "Ваше запитання",
     mediatorSessionFinished: "Сесію завершено. Повертаємо до деталей кімнати…",
+    mediatorEndSession: "Завершити сесію",
+    mediatorEndSessionConfirm:
+      "Завершити сесію без угоди? Сторони побачать сесію як завершену.",
+    mediatorEndSessionError: "Не вдалося завершити сесію.",
     mediatorSelectCandidate: "Оберіть запитання",
     mediatorCompromiseDraft: "Чернетка компромісу",
     mediatorCompromiseCanonical: "Канонічний опис (для медіатора)",

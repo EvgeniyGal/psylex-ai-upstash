@@ -35,7 +35,10 @@ import type {
   PartyAdaptations,
 } from "@/lib/mediation/types";
 import { setPartyNotification } from "@/lib/mediator-session/notifications";
-import { isMediatorFacilitatedRoom } from "@/lib/mediator-session/room-mode";
+import {
+  isMediatorFacilitatedRoom,
+  isMediatorSessionEnded,
+} from "@/lib/mediator-session/room-mode";
 import type {
   MediatorQuestionCandidates,
   QuestionCandidate,
@@ -586,6 +589,44 @@ export async function castMediatorCompromiseVote(userId: string, accepted: boole
   });
 
   return loadRoom(room.id);
+}
+
+/** Mediator force-end: same outcome as no mutual agreement (phase completed). */
+export async function endMediatorSession(mediatorUserId: string, roomId: string) {
+  const room = await loadRoom(roomId);
+  if (!room || !isMediatorFacilitatedRoom(room) || room.createdByUserId !== mediatorUserId) {
+    throw new Error("Unauthorized");
+  }
+  if (!room.mediationStartedAt) {
+    throw new Error("Session has not started.");
+  }
+  if (isMediatorSessionEnded(room.mediationPhase) || room.mediationCompletedAt) {
+    throw new Error("Session already ended.");
+  }
+
+  await db
+    .update(rooms)
+    .set({
+      mediationPhase: "completed",
+      mediationCompletedAt: new Date(),
+    })
+    .where(eq(rooms.id, roomId));
+  notifyRoom(roomId);
+
+  await setPartyNotification({
+    roomId,
+    type: "session_completed",
+    targetRole: "all",
+  });
+
+  await logPipelineEvent({
+    roomId,
+    agentKey: "mediation",
+    eventType: "mediation_phase_changed",
+    payload: { phase: "completed", mode: "mediator_facilitated", reason: "mediator_ended" },
+  });
+
+  return getMediatorConsoleSessionState(mediatorUserId, roomId);
 }
 
 async function ensureDraftAgreement(roomId: string, optionId: string) {

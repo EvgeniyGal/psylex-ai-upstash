@@ -17,6 +17,7 @@ import {
   tryFinalizeMediatorSession,
 } from "@/lib/mediator-session/handshake";
 import {
+  endMediatorSession,
   generateMediatorOptions,
   generateQuestionCandidates,
   getMediatorConsoleSessionState,
@@ -159,4 +160,13 @@ export async function publishMediatorCompromiseAction(params: {
     draft: params.draft,
   });
   return getMediatorConsoleSessionState(userId, params.roomId);
+}
+
+export async function endMediatorSessionAction(roomId: string) {
+  const userId = await requireMediator();
+  const state = await endMediatorSession(userId, roomId);
+  revalidatePath(`/mediator/rooms/${roomId}`);
+  revalidatePath(`/mediator/rooms/${roomId}/session`);
+  revalidatePath("/mediation");
+  return state;
 }
