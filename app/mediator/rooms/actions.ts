@@ -33,7 +33,7 @@ import type { DraftAgreement, MediationOption } from "@/lib/mediation/types";
 import type { Locale } from "@/lib/i18n";
 import type { PartyRole } from "@/lib/participant-roles";
 import { db } from "@/lib/db";
-import { users } from "@/drizzle/schema";
+import { rooms, users } from "@/drizzle/schema";
 import { eq } from "drizzle-orm";
 
 async function requireMediator() {
@@ -43,6 +43,25 @@ async function requireMediator() {
   }
   const userId = await requireSessionUserId();
   return userId;
+}
+
+/** Admin (any room) or owning mediator may read Mode B scheduling readiness. */
+async function requireSchedulingReadinessAccess(roomId: string) {
+  const session = await getServerSession(authOptions);
+  const role = session?.user?.role;
+  if (!session || (role !== "admin" && role !== "mediator")) {
+    throw new Error("Unauthorized");
+  }
+  if (role === "admin") return;
+  const userId = await requireSessionUserId();
+  const [room] = await db
+    .select({ createdByUserId: rooms.createdByUserId })
+    .from(rooms)
+    .where(eq(rooms.id, roomId))
+    .limit(1);
+  if (!room || room.createdByUserId !== userId) {
+    throw new Error("Unauthorized");
+  }
 }
 
 export async function helpFormulateMediatorText(draft: string) {
@@ -60,7 +79,7 @@ export async function helpFormulateMediatorText(draft: string) {
 }
 
 export async function fetchMediatorSchedulingReadiness(roomId: string) {
-  await requireMediator();
+  await requireSchedulingReadinessAccess(roomId);
   return getMediatorSchedulingReadiness(roomId);
 }
 

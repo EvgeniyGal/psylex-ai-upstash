@@ -74,7 +74,6 @@ export function SessionSchedulingSection({
   );
 
   const refreshReadiness = useCallback(() => {
-    if (readOnly) return;
     void fetchMediatorSchedulingReadiness(roomId)
       .then((data) => {
         if (!data) return;
@@ -125,7 +124,7 @@ export function SessionSchedulingSection({
       .catch(() => {
         /* ignore */
       });
-  }, [readOnly, roomId]);
+  }, [admin, locale, roomId]);
 
   useEffect(() => {
     refreshReadiness();
@@ -181,23 +180,21 @@ export function SessionSchedulingSection({
         ) : null}
       </div>
 
-      {readOnly ? null : (
-        <div className="space-y-2 rounded-md bg-surface-container-low/60 p-3">
-          {readinessRow(admin.scheduleReadinessPartyA, complete || partyAReady)}
-          {readinessRow(admin.scheduleReadinessPartyB, complete || partyBReady)}
-          {readinessRow(admin.scheduleReadinessPipeline, complete || pipelineComplete)}
-          {partyAProfileLabel ? (
-            <p className="text-body-sm text-on-surface-variant">
-              {admin.roles.party_a}: {partyAProfileLabel}
-            </p>
-          ) : null}
-          {partyBProfileLabel ? (
-            <p className="text-body-sm text-on-surface-variant">
-              {admin.roles.party_b}: {partyBProfileLabel}
-            </p>
-          ) : null}
-        </div>
-      )}
+      <div className="space-y-2 rounded-md bg-surface-container-low/60 p-3">
+        {readinessRow(admin.scheduleReadinessPartyA, complete || partyAReady)}
+        {readinessRow(admin.scheduleReadinessPartyB, complete || partyBReady)}
+        {readinessRow(admin.scheduleReadinessPipeline, complete || pipelineComplete)}
+        {partyAProfileLabel ? (
+          <p className="text-body-sm text-on-surface-variant">
+            {admin.roles.party_a}: {partyAProfileLabel}
+          </p>
+        ) : null}
+        {partyBProfileLabel ? (
+          <p className="text-body-sm text-on-surface-variant">
+            {admin.roles.party_b}: {partyBProfileLabel}
+          </p>
+        ) : null}
+      </div>
 
       {readOnly || started ? (
         <div className="space-y-2">

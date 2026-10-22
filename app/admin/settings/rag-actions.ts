@@ -55,14 +55,23 @@ const updateSchema = z
     id: z.string().uuid(),
     name: z.string().trim().min(1),
     sourceUrl: z.string().trim().url(),
+    jurisdiction: z.string().refine(isRoomJurisdiction, "Invalid jurisdiction"),
     usaSubJurisdiction: z.string().optional(),
     category: z.string().refine(isLegalDocumentCategory, "Invalid category"),
   })
   .superRefine((value, ctx) => {
-    if (value.usaSubJurisdiction && !isUsaSubJurisdiction(value.usaSubJurisdiction)) {
+    if (value.jurisdiction === "usa") {
+      if (!value.usaSubJurisdiction || !isUsaSubJurisdiction(value.usaSubJurisdiction)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "US jurisdiction is required.",
+          path: ["usaSubJurisdiction"],
+        });
+      }
+    } else if (value.usaSubJurisdiction) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Invalid US jurisdiction.",
+        message: "US jurisdiction is only valid for USA documents.",
         path: ["usaSubJurisdiction"],
       });
     }
@@ -123,28 +132,27 @@ export async function updateDocument(formData: FormData) {
     id: formData.get("id"),
     name: formData.get("name"),
     sourceUrl: formData.get("sourceUrl"),
+    jurisdiction: formData.get("jurisdiction"),
     usaSubJurisdiction: usaSubJurisdictionValue || undefined,
     category: formData.get("category"),
   });
 
   const [existing] = await db
-    .select({ jurisdiction: legalDocuments.jurisdiction })
+    .select({ id: legalDocuments.id })
     .from(legalDocuments)
     .where(eq(legalDocuments.id, parsed.id))
     .limit(1);
 
   if (!existing) throw new Error("Document not found.");
-  if (existing.jurisdiction === "usa" && !parsed.usaSubJurisdiction) {
-    throw new Error("US state or territory is required.");
-  }
 
   await db
     .update(legalDocuments)
     .set({
       name: parsed.name,
       sourceUrl: parsed.sourceUrl,
+      jurisdiction: parsed.jurisdiction,
       usaSubJurisdiction:
-        existing.jurisdiction === "usa" && parsed.usaSubJurisdiction ? parsed.usaSubJurisdiction : null,
+        parsed.jurisdiction === "usa" && parsed.usaSubJurisdiction ? parsed.usaSubJurisdiction : null,
       category: parsed.category,
       updatedAt: new Date(),
     })

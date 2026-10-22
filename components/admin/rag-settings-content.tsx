@@ -30,12 +30,20 @@ type RagSettingsContentProps = {
 };
 
 type ModalState =
-  | { type: "upload"; jurisdiction: RoomJurisdiction; usaSubJurisdiction?: UsaSubJurisdiction }
+  | { type: "upload" }
   | { type: "edit"; document: LegalDocumentRow }
   | { type: "delete"; document: LegalDocumentRow }
   | null;
 
 type JurisdictionTab = RoomJurisdiction;
+
+const RAG_JURISDICTION_TAB_KEY = "rag.activeJurisdictionTab";
+
+function readStoredJurisdictionTab(): JurisdictionTab {
+  if (typeof window === "undefined") return "ukraine";
+  const stored = window.localStorage.getItem(RAG_JURISDICTION_TAB_KEY);
+  return stored === "usa" || stored === "ukraine" ? stored : "ukraine";
+}
 
 function statusLabel(
   status: LegalDocumentRow["status"],
@@ -58,6 +66,8 @@ export function RagSettingsContent({ documents }: RagSettingsContentProps) {
   const { admin, locale } = useLocale();
   const [modal, setModal] = useState<ModalState>(null);
   const [selectedUploadFileName, setSelectedUploadFileName] = useState("");
+  const [uploadJurisdiction, setUploadJurisdiction] = useState<"" | RoomJurisdiction>("");
+  const [editJurisdiction, setEditJurisdiction] = useState<RoomJurisdiction>("ukraine");
   const [activeJurisdictionTab, setActiveJurisdictionTab] = useState<JurisdictionTab>("ukraine");
   const [ukraineCategoryFilter, setUkraineCategoryFilter] = useState<"" | LegalDocumentCategory>("");
   const [usaCategoryFilter, setUsaCategoryFilter] = useState<"" | LegalDocumentCategory>("");
@@ -70,6 +80,7 @@ export function RagSettingsContent({ documents }: RagSettingsContentProps) {
   const [testResult, setTestResult] = useState<RagInquiryResult | null>(null);
   const [pending, startTransition] = useTransition();
   const uploadFileInputRef = useRef<HTMLInputElement | null>(null);
+  const jurisdictionTabHydrated = useRef(false);
 
   const ukraineDocuments = useMemo(
     () =>
@@ -121,6 +132,13 @@ export function RagSettingsContent({ documents }: RagSettingsContentProps) {
   useEffect(() => {
     if (modal?.type !== "upload") {
       setSelectedUploadFileName("");
+      setUploadJurisdiction("");
+    }
+  }, [modal]);
+
+  useEffect(() => {
+    if (modal?.type === "edit") {
+      setEditJurisdiction(modal.document.jurisdiction);
     }
   }, [modal]);
 
@@ -132,6 +150,20 @@ export function RagSettingsContent({ documents }: RagSettingsContentProps) {
     setTestCategory("");
     if (next !== "usa") setTestUsaSubJurisdiction("");
   };
+
+  const selectJurisdictionTab = (tab: JurisdictionTab) => {
+    setActiveJurisdictionTab(tab);
+    window.localStorage.setItem(RAG_JURISDICTION_TAB_KEY, tab);
+    resetTestInquiryForJurisdiction(tab);
+  };
+
+  useEffect(() => {
+    if (jurisdictionTabHydrated.current) return;
+    jurisdictionTabHydrated.current = true;
+    const stored = readStoredJurisdictionTab();
+    setActiveJurisdictionTab(stored);
+    setTestJurisdiction(stored);
+  }, []);
 
   const runMutation = (action: () => Promise<void>, successMessage: string) => {
     startTransition(async () => {
@@ -146,19 +178,25 @@ export function RagSettingsContent({ documents }: RagSettingsContentProps) {
 
   const onUpload = (formData: FormData) => {
     if (modal?.type !== "upload") return;
-    formData.set("jurisdiction", modal.jurisdiction);
+    const jurisdiction = String(formData.get("jurisdiction") ?? "");
+    if (jurisdiction !== "ukraine" && jurisdiction !== "usa") return;
     runMutation(async () => {
       await uploadDocument(formData);
       setModal(null);
+      selectJurisdictionTab(jurisdiction);
     }, admin.ragDocumentUploaded);
   };
 
   const onUpdate = (formData: FormData) => {
     if (modal?.type !== "edit") return;
     formData.set("id", modal.document.id);
+    const jurisdiction = String(formData.get("jurisdiction") ?? "");
     runMutation(async () => {
       await updateDocument(formData);
       setModal(null);
+      if (jurisdiction === "ukraine" || jurisdiction === "usa") {
+        selectJurisdictionTab(jurisdiction);
+      }
     }, admin.ragDocumentUpdated);
   };
 
@@ -247,16 +285,7 @@ export function RagSettingsContent({ documents }: RagSettingsContentProps) {
       <div className="flex flex-wrap items-center justify-end gap-3">
         <button
           className="btn-primary px-4 py-2 text-body-sm"
-          onClick={() =>
-            setModal({
-              type: "upload",
-              jurisdiction,
-              usaSubJurisdiction:
-                jurisdiction === "usa" && usaSubJurisdictionFilterValue
-                  ? usaSubJurisdictionFilterValue
-                  : undefined,
-            })
-          }
+          onClick={() => setModal({ type: "upload" })}
           type="button"
         >
           {admin.ragUploadDocument}
@@ -383,10 +412,7 @@ export function RagSettingsContent({ documents }: RagSettingsContentProps) {
                   : "px-4 py-3 font-display text-body-md text-on-surface-variant transition-colors hover:text-on-surface"
               }
               key={tab}
-              onClick={() => {
-                setActiveJurisdictionTab(tab);
-                resetTestInquiryForJurisdiction(tab);
-              }}
+              onClick={() => selectJurisdictionTab(tab)}
               type="button"
             >
               {tab === "ukraine" ? admin.ragJurisdictionUkraine : admin.ragJurisdictionUsa}
@@ -542,12 +568,31 @@ export function RagSettingsContent({ documents }: RagSettingsContentProps) {
               <label className="mb-1 block text-body-sm text-on-surface-variant">{admin.ragSourceUrl}</label>
               <input className={inputClass} disabled={isUploading} name="sourceUrl" required type="url" />
             </div>
-            {modal?.type === "upload" && modal.jurisdiction === "usa" ? (
+            <div>
+              <label className="mb-1 block text-body-sm text-on-surface-variant">{admin.jurisdictionLabel}</label>
+              <select
+                className={inputClass}
+                disabled={isUploading}
+                name="jurisdiction"
+                onChange={(event) =>
+                  setUploadJurisdiction(event.target.value as "" | RoomJurisdiction)
+                }
+                required
+                value={uploadJurisdiction}
+              >
+                <option disabled value="">
+                  —
+                </option>
+                <option value="ukraine">{admin.ragJurisdictionUkraine}</option>
+                <option value="usa">{admin.ragJurisdictionUsa}</option>
+              </select>
+            </div>
+            {uploadJurisdiction === "usa" ? (
               <div>
                 <label className="mb-1 block text-body-sm text-on-surface-variant">{admin.ragUsaSubJurisdiction}</label>
                 <select
                   className={inputClass}
-                  defaultValue={modal.usaSubJurisdiction ?? ""}
+                  defaultValue=""
                   disabled={isUploading}
                   name="usaSubJurisdiction"
                   required
@@ -617,7 +662,7 @@ export function RagSettingsContent({ documents }: RagSettingsContentProps) {
               </button>
               <button
                 className="btn-primary flex items-center gap-2 px-4 py-2 disabled:opacity-60"
-                disabled={isUploading}
+                disabled={isUploading || !uploadJurisdiction}
                 type="submit"
               >
                 {isUploading ? (
@@ -657,12 +702,30 @@ export function RagSettingsContent({ documents }: RagSettingsContentProps) {
                 type="url"
               />
             </div>
-            {modal.document.jurisdiction === "usa" ? (
+            <div>
+              <label className="mb-1 block text-body-sm text-on-surface-variant">{admin.jurisdictionLabel}</label>
+              <select
+                className={inputClass}
+                name="jurisdiction"
+                onChange={(event) => setEditJurisdiction(event.target.value as RoomJurisdiction)}
+                required
+                value={editJurisdiction}
+              >
+                <option value="ukraine">{admin.ragJurisdictionUkraine}</option>
+                <option value="usa">{admin.ragJurisdictionUsa}</option>
+              </select>
+            </div>
+            {editJurisdiction === "usa" ? (
               <div>
                 <label className="mb-1 block text-body-sm text-on-surface-variant">{admin.ragUsaSubJurisdiction}</label>
                 <select
                   className={inputClass}
-                  defaultValue={modal.document.usaSubJurisdiction ?? ""}
+                  defaultValue={
+                    modal.document.jurisdiction === "usa"
+                      ? (modal.document.usaSubJurisdiction ?? "")
+                      : ""
+                  }
+                  key={`${modal.document.id}-${editJurisdiction}`}
                   name="usaSubJurisdiction"
                   required
                 >
