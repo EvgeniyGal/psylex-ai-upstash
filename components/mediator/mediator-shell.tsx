@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/mediator/rooms", key: "navRooms" as const, icon: "gavel" },
+  { href: "/mediator/sides", key: "navSides" as const, icon: "diversity_3" },
   { href: "/mediator/calendar", key: "navCalendar" as const, icon: "calendar_month" },
 ];
 

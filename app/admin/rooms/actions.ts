@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { db } from "@/lib/db";
-import { roomParticipants, rooms, userTestCompletions, users } from "@/drizzle/schema";
+import { roomParticipants, rooms, users } from "@/drizzle/schema";
 import { authOptions } from "@/lib/auth";
 import { requireSessionUserId } from "@/lib/auth-session";
 import { generateLogin, generatePassword } from "@/lib/generate-credentials";
@@ -212,34 +212,27 @@ export async function searchPartyUsersAction(query: string) {
 }
 
 export async function requestProfileRefresh(userId: string) {
-  await assertCanManageRooms();
+  const { role, userId: actorId } = await assertCanManageRooms();
   const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   if (!user || !isPartyRole(user.role)) {
     throw new Error("User is not a party participant.");
   }
-
-  await db.delete(userTestCompletions).where(eq(userTestCompletions.userId, userId));
-  await db
-    .update(users)
-    .set({
-      onboardingCompletedAt: null,
-      personalBotPrompt: null,
-      personalBotReadyAt: null,
-      psychodynamicProfile: null,
-      psychodynamicProfileAt: null,
-      emotionalTriggers: null,
-      emotionalTriggersAt: null,
-      profileRefreshRequestedAt: new Date(),
-      welcomeSeenAt: user.welcomeSeenAt ?? new Date(),
-      disclaimerAcceptedAt: user.disclaimerAcceptedAt ?? new Date(),
-    })
-    .where(eq(users.id, userId));
-  notifyUser(userId);
+  if (role === "mediator") {
+    const { assertMediatorOwnsPartyUser, redoFullPartyProfileLocal } = await import(
+      "@/lib/room/party-redo"
+    );
+    await assertMediatorOwnsPartyUser(actorId, userId);
+    await redoFullPartyProfileLocal(userId);
+  } else {
+    const { redoFullPartyProfileLocal } = await import("@/lib/room/party-redo");
+    await redoFullPartyProfileLocal(userId);
+  }
   if (user.roomId) {
-    notifyRoom(user.roomId);
     revalidatePath(`/admin/rooms/${user.roomId}`);
     revalidatePath(`/mediator/rooms/${user.roomId}`);
   }
   revalidatePath("/admin/rooms");
   revalidatePath("/mediator/rooms");
+  revalidatePath("/admin/sides");
+  revalidatePath("/mediator/sides");
 }

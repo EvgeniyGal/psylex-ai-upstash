@@ -29,7 +29,11 @@ export const TEST_AIRTABLE_CONFIG: Record<TestKey, AirtableTableConfig> = {
   },
 };
 
-export const PERSONAL_BOT_AIRTABLE_CONFIG: AirtableTableConfig & { promptField: string } = {
+export const PERSONAL_BOT_AIRTABLE_CONFIG: AirtableTableConfig & {
+  promptField: string;
+  /** Optional Airtable "Last modified time" field for the prompt; falls back to record createdTime. */
+  promptUpdatedField?: string;
+} = {
   baseId: "app1ZVsARMCWgWOPz",
   tableId: "tblbaCrLD2UOk6euI",
   loginField: "Email",

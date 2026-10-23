@@ -218,6 +218,13 @@
       "when": 1784880000000,
       "tag": "0030_openai_model",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1784960000000,
+      "tag": "0031_sides_airtable_dates",
+      "breakpoints": true
     }
   ]
 }

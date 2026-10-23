@@ -4,9 +4,39 @@ export type AdminCopy = {
   adminConsole: string;
   mediatorConsole: string;
   navRooms: string;
+  navSides: string;
   navCalendar: string;
   navMediators: string;
   navSettings: string;
+  sidesTitle: string;
+  sidesSubtitle: string;
+  sidesTabAdmin: string;
+  sidesTabMediator: string;
+  sidesNoAdmin: string;
+  sidesNoMediator: string;
+  sidesNoRows: string;
+  sidesFilterMediator: string;
+  sidesFilterMediatorAll: string;
+  sidesRoomColumn: string;
+  sidesLoginColumn: string;
+  sidesRoleColumn: string;
+  sidesTestsColumn: string;
+  sidesBotColumn: string;
+  sidesActionsColumn: string;
+  sidesRedoTest: (label: string) => string;
+  sidesRedoAllTests: string;
+  sidesRedoBot: string;
+  sidesRedoAll: string;
+  sidesRedoConfirmTest: string;
+  sidesRedoConfirmAllTests: string;
+  sidesRedoConfirmBot: string;
+  sidesRedoConfirmAll: string;
+  sidesRedoSuccess: string;
+  sidesRedoError: string;
+  sidesEdit: string;
+  sidesEditTitle: string;
+  sidesEditSuccess: string;
+  sidesEditError: string;
   logout: string;
   portalTitle: string;
   searchPlaceholder: string;
@@ -323,9 +353,44 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     adminConsole: "Admin Console",
     mediatorConsole: "Mediator Console",
     navRooms: "Rooms",
+    navSides: "Sides",
     navCalendar: "Calendar",
     navMediators: "Mediators",
     navSettings: "Settings",
+    sidesTitle: "Sides",
+    sidesSubtitle:
+      "Party participants across rooms. Review test and bot readiness, and request selective retests.",
+    sidesTabAdmin: "Admin rooms",
+    sidesTabMediator: "Mediator rooms",
+    sidesNoAdmin: "No sides in admin rooms yet.",
+    sidesNoMediator: "No sides in mediator rooms yet.",
+    sidesNoRows: "No sides yet.",
+    sidesFilterMediator: "Mediator",
+    sidesFilterMediatorAll: "All mediators",
+    sidesRoomColumn: "Room",
+    sidesLoginColumn: "Login",
+    sidesRoleColumn: "Role",
+    sidesTestsColumn: "Tests",
+    sidesBotColumn: "Bot prompt",
+    sidesActionsColumn: "Actions",
+    sidesRedoTest: (label) => `Redo ${label}`,
+    sidesRedoAllTests: "Redo all tests",
+    sidesRedoBot: "Redo bot prompt",
+    sidesRedoAll: "Redo all",
+    sidesRedoConfirmTest:
+      "Clear this test locally? The participant must produce a newer Airtable record to complete it again.",
+    sidesRedoConfirmAllTests:
+      "Clear all tests locally? Newer Airtable records will be required to complete them again.",
+    sidesRedoConfirmBot:
+      "Clear the personal bot prompt locally? A newer Airtable bot record will be required.",
+    sidesRedoConfirmAll:
+      "Clear tests, bot prompt, and AI profiles locally? Newer Airtable records will be required.",
+    sidesRedoSuccess: "Retest requested.",
+    sidesRedoError: "Could not request retest.",
+    sidesEdit: "Edit",
+    sidesEditTitle: "Edit side",
+    sidesEditSuccess: "Side updated.",
+    sidesEditError: "Could not update side.",
     logout: "Logout",
     portalTitle: "Mediation Portal",
     searchPlaceholder: "Search...",
@@ -745,9 +810,44 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     adminConsole: "Адмін-панель",
     mediatorConsole: "Панель медіатора",
     navRooms: "Кімнати",
+    navSides: "Сторони",
     navCalendar: "Календар",
     navMediators: "Медіатори",
     navSettings: "Налаштування",
+    sidesTitle: "Сторони",
+    sidesSubtitle:
+      "Учасники кімнат. Переглядайте готовність тестів і бота та запитуйте вибіркове перескладання.",
+    sidesTabAdmin: "Кімнати адміна",
+    sidesTabMediator: "Кімнати медіаторів",
+    sidesNoAdmin: "У кімнатах адміна ще немає сторін.",
+    sidesNoMediator: "У кімнатах медіаторів ще немає сторін.",
+    sidesNoRows: "Сторін ще немає.",
+    sidesFilterMediator: "Медіатор",
+    sidesFilterMediatorAll: "Усі медіатори",
+    sidesRoomColumn: "Кімната",
+    sidesLoginColumn: "Логін",
+    sidesRoleColumn: "Роль",
+    sidesTestsColumn: "Тести",
+    sidesBotColumn: "Промпт бота",
+    sidesActionsColumn: "Дії",
+    sidesRedoTest: (label) => `Перескласти ${label}`,
+    sidesRedoAllTests: "Перескласти всі тести",
+    sidesRedoBot: "Перескласти промпт бота",
+    sidesRedoAll: "Перескласти все",
+    sidesRedoConfirmTest:
+      "Скинути цей тест локально? Для повторного завершення потрібен новіший запис в Airtable.",
+    sidesRedoConfirmAllTests:
+      "Скинути всі тести локально? Для повторного завершення потрібні новіші записи в Airtable.",
+    sidesRedoConfirmBot:
+      "Скинути промпт бота локально? Для повторного завершення потрібен новіший запис в Airtable.",
+    sidesRedoConfirmAll:
+      "Скинути тести, промпт бота та AI-профілі локально? Потрібні новіші записи в Airtable.",
+    sidesRedoSuccess: "Перескладання запрошено.",
+    sidesRedoError: "Не вдалося запросити перескладання.",
+    sidesEdit: "Редагувати",
+    sidesEditTitle: "Редагувати сторону",
+    sidesEditSuccess: "Сторону оновлено.",
+    sidesEditError: "Не вдалося оновити сторону.",
     logout: "Вийти",
     portalTitle: "Портал медіації",
     searchPlaceholder: "Пошук...",

@@ -143,6 +143,18 @@ export const users = pgTable("users", {
   onboardingCompletedAt: timestamp("onboarding_completed_at", { withTimezone: true }),
   personalBotPrompt: text("personal_bot_prompt"),
   personalBotReadyAt: timestamp("personal_bot_ready_at", { withTimezone: true }),
+  /** Airtable bot-record date used for display (last-modified field or createdTime). */
+  personalBotAirtableUpdatedAt: timestamp("personal_bot_airtable_updated_at", { withTimezone: true }),
+  /**
+   * After bot redo: sync only accepts a bot record newer than this timestamp.
+   * ISO stored as timestamptz.
+   */
+  personalBotRedoAfter: timestamp("personal_bot_redo_after", { withTimezone: true }),
+  /**
+   * After selective test redo: map TestKey → ISO timestamp.
+   * Sync only accepts Airtable createdTime strictly newer than the floor.
+   */
+  testRedoAfter: jsonb("test_redo_after").$type<Record<string, string>>().notNull().default({}),
   disputeDescription: text("dispute_description"),
   disputePriority: text("dispute_priority"),
   disputeAcceptableOutcome: text("dispute_acceptable_outcome"),
@@ -189,6 +201,8 @@ export const userTestCompletions = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     testKey: text("test_key").notNull(),
     completedAt: timestamp("completed_at", { withTimezone: true }).defaultNow().notNull(),
+    /** Airtable record createdTime for the matching test row. */
+    airtableCreatedAt: timestamp("airtable_created_at", { withTimezone: true }),
   },
   (table) => [unique("user_test_completions_user_test_unique").on(table.userId, table.testKey)],
 );

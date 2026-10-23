@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/admin/rooms", key: "navRooms" as const, icon: "gavel" },
+  { href: "/admin/sides", key: "navSides" as const, icon: "diversity_3" },
   { href: "/admin/mediators", key: "navMediators" as const, icon: "group" },
   { href: "/admin/settings", key: "navSettings" as const, icon: "settings" },
 ];

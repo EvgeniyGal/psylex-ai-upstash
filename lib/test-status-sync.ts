@@ -3,7 +3,11 @@ import {
   PERSONAL_BOT_AIRTABLE_CONFIG,
   TEST_AIRTABLE_CONFIG,
 } from "@/lib/airtable-config";
-import { findAirtableRecordByLogin, hasAirtableRecordForLogin } from "@/lib/airtable";
+import {
+  findLatestAirtableRecordByLogin,
+  parseAirtableCreatedTime,
+  parseAirtableFieldDate,
+} from "@/lib/airtable";
 import { db } from "@/lib/db";
 import { finalizePersonalBotPrompt } from "@/lib/personal-bot-prompt";
 import { getPlatformSettings } from "@/lib/platform-settings";
@@ -20,6 +24,23 @@ export type TestStatusSyncResult = {
   synced: boolean;
 };
 
+function parseRedoAfterMap(raw: unknown): Record<string, string> {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof value === "string" && value.trim()) out[key] = value;
+  }
+  return out;
+}
+
+function isNewerThanFloor(candidate: Date | null, floorIso: string | null | undefined) {
+  if (!candidate) return false;
+  if (!floorIso) return true;
+  const floorMs = Date.parse(floorIso);
+  if (Number.isNaN(floorMs)) return true;
+  return candidate.getTime() > floorMs;
+}
+
 async function getCompletedTestKeys(userId: string): Promise<Set<TestKey>> {
   const rows = await db
     .select({ testKey: userTestCompletions.testKey })
@@ -31,6 +52,22 @@ async function getCompletedTestKeys(userId: string): Promise<Set<TestKey>> {
       .map((row) => row.testKey)
       .filter((key): key is TestKey => TEST_KEYS.includes(key as TestKey)),
   );
+}
+
+function resolveBotUpdatedAt(
+  record: {
+    id: string;
+    createdTime?: string;
+    fields: Record<string, unknown>;
+  } | null,
+): Date | null {
+  if (!record) return null;
+  const fieldName = PERSONAL_BOT_AIRTABLE_CONFIG.promptUpdatedField;
+  if (fieldName) {
+    const fromField = parseAirtableFieldDate(record.fields[fieldName]);
+    if (fromField) return fromField;
+  }
+  return parseAirtableCreatedTime(record);
 }
 
 export async function syncUserTestStatus(
@@ -47,6 +84,9 @@ export async function syncUserTestStatus(
       role: users.role,
       personalBotPrompt: users.personalBotPrompt,
       personalBotReadyAt: users.personalBotReadyAt,
+      personalBotAirtableUpdatedAt: users.personalBotAirtableUpdatedAt,
+      personalBotRedoAfter: users.personalBotRedoAfter,
+      testRedoAfter: users.testRedoAfter,
       roomId: users.roomId,
     })
     .from(users)
@@ -55,6 +95,10 @@ export async function syncUserTestStatus(
 
   const userRole = user?.role && isParticipantRole(user.role) ? user.role : null;
   let personalBotPrompt = user?.personalBotPrompt?.trim() ?? null;
+  const testRedoAfter = parseRedoAfterMap(user?.testRedoAfter);
+  const hasTestFloors = Object.keys(testRedoAfter).length > 0;
+  const hasBotFloor = !!user?.personalBotRedoAfter;
+  const missingBotDate = !user?.personalBotAirtableUpdatedAt;
 
   if (personalBotPrompt && userRole) {
     const finalized = finalizePersonalBotPrompt(personalBotPrompt, login, userRole);
@@ -71,7 +115,14 @@ export async function syncUserTestStatus(
 
   const personalBotReady = !!user?.personalBotReadyAt && !!personalBotPrompt;
 
-  if (testsComplete && personalBotReady) {
+  const canEarlyReturn =
+    testsComplete &&
+    personalBotReady &&
+    !hasTestFloors &&
+    !hasBotFloor &&
+    !missingBotDate;
+
+  if (canEarlyReturn) {
     return {
       completedTests: [...completedSet],
       testsComplete: true,
@@ -97,12 +148,18 @@ export async function syncUserTestStatus(
     if (completedSet.has(testKey)) continue;
 
     const config = TEST_AIRTABLE_CONFIG[testKey];
-    const found = await hasAirtableRecordForLogin(apiKey, config, login);
-    if (!found) continue;
+    const record = await findLatestAirtableRecordByLogin(apiKey, config, login);
+    const createdAt = parseAirtableCreatedTime(record);
+    if (!record || !createdAt) continue;
+    if (!isNewerThanFloor(createdAt, testRedoAfter[testKey])) continue;
 
     await db
       .insert(userTestCompletions)
-      .values({ userId, testKey })
+      .values({
+        userId,
+        testKey,
+        airtableCreatedAt: createdAt,
+      })
       .onConflictDoNothing({
         target: [userTestCompletions.userId, userTestCompletions.testKey],
       });
@@ -116,11 +173,15 @@ export async function syncUserTestStatus(
   let syncedBotReady = personalBotReady;
 
   if (allTestsComplete) {
-    const record = await findAirtableRecordByLogin(
+    const record = await findLatestAirtableRecordByLogin(
       apiKey,
       PERSONAL_BOT_AIRTABLE_CONFIG,
       login,
     );
+    const botUpdatedAt = record ? resolveBotUpdatedAt(record) : null;
+    const floorIso = user?.personalBotRedoAfter?.toISOString() ?? null;
+    const acceptsBot = isNewerThanFloor(botUpdatedAt, floorIso);
+
     const promptValue = record?.fields[PERSONAL_BOT_AIRTABLE_CONFIG.promptField];
     const prompt =
       typeof promptValue === "string"
@@ -129,10 +190,10 @@ export async function syncUserTestStatus(
           ? String(promptValue).trim()
           : "";
 
-    if (prompt && userRole) {
+    if (acceptsBot && prompt && userRole) {
       syncedBotPrompt = finalizePersonalBotPrompt(prompt, login, userRole);
       syncedBotReady = true;
-    } else {
+    } else if (!personalBotReady) {
       syncedBotPrompt = null;
       syncedBotReady = false;
     }
@@ -141,13 +202,19 @@ export async function syncUserTestStatus(
     const readyChanged =
       !!user?.personalBotReadyAt !== syncedBotReady ||
       (syncedBotReady && promptChanged);
+    const dateChanged =
+      syncedBotReady &&
+      botUpdatedAt &&
+      (!user?.personalBotAirtableUpdatedAt ||
+        user.personalBotAirtableUpdatedAt.getTime() !== botUpdatedAt.getTime());
 
-    if (promptChanged || readyChanged) {
+    if (promptChanged || readyChanged || dateChanged) {
       await db
         .update(users)
         .set({
           personalBotPrompt: syncedBotPrompt,
-          personalBotReadyAt: syncedBotReady ? new Date() : null,
+          personalBotReadyAt: syncedBotReady ? (user?.personalBotReadyAt ?? new Date()) : null,
+          personalBotAirtableUpdatedAt: syncedBotReady ? botUpdatedAt : null,
         })
         .where(eq(users.id, userId));
       updated = true;
@@ -159,6 +226,7 @@ export async function syncUserTestStatus(
         .set({
           personalBotPrompt: null,
           personalBotReadyAt: null,
+          personalBotAirtableUpdatedAt: null,
         })
         .where(eq(users.id, userId));
       updated = true;
