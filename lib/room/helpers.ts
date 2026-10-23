@@ -1,8 +1,9 @@
 import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { PARTY_ROLES, roomParticipants, rooms, users } from "@/drizzle/schema";
+import { PARTY_ROLES, roomParticipants, rooms, userTestCompletions, users } from "@/drizzle/schema";
 import type { Locale } from "@/lib/i18n";
 import { isParticipantRole, isPartyRole, type PartyRole } from "@/lib/participant-roles";
+import { TEST_KEYS, type TestKey } from "@/lib/test-keys";
 
 export type RoomPartySide = typeof users.$inferSelect & {
   role: PartyRole;
@@ -261,7 +262,17 @@ export async function addRoomParticipant(params: {
   return inserted;
 }
 
-export async function searchPartyUsers(query: string, limit = 20) {
+export type PartySearchHit = {
+  id: string;
+  login: string;
+  title: string;
+  role: string;
+  onboardingCompletedAt: Date | null;
+  personalBotReady: boolean;
+  tests: Record<TestKey, boolean>;
+};
+
+export async function searchPartyUsers(query: string, limit = 20): Promise<PartySearchHit[]> {
   const q = query.trim().replace(/[%_]/g, "");
   const partyFilter = inArray(users.role, [...PARTY_ROLES]);
   const filters = q
@@ -271,7 +282,7 @@ export async function searchPartyUsers(query: string, limit = 20) {
       )
     : partyFilter;
 
-  return db
+  const rows = await db
     .select({
       id: users.id,
       login: users.login,
@@ -279,11 +290,45 @@ export async function searchPartyUsers(query: string, limit = 20) {
       role: users.role,
       onboardingCompletedAt: users.onboardingCompletedAt,
       personalBotReadyAt: users.personalBotReadyAt,
-      psychodynamicProfileAt: users.psychodynamicProfileAt,
-      profileRefreshRequestedAt: users.profileRefreshRequestedAt,
+      personalBotPrompt: users.personalBotPrompt,
     })
     .from(users)
     .where(filters)
     .orderBy(users.title, users.login)
     .limit(limit);
+
+  if (rows.length === 0) return [];
+
+  const ids = rows.map((row) => row.id);
+  const completionRows = await db
+    .select({
+      userId: userTestCompletions.userId,
+      testKey: userTestCompletions.testKey,
+    })
+    .from(userTestCompletions)
+    .where(inArray(userTestCompletions.userId, ids));
+
+  const completedByUser = new Map<string, Set<TestKey>>();
+  for (const row of completionRows) {
+    if (!TEST_KEYS.includes(row.testKey as TestKey)) continue;
+    const set = completedByUser.get(row.userId) ?? new Set<TestKey>();
+    set.add(row.testKey as TestKey);
+    completedByUser.set(row.userId, set);
+  }
+
+  return rows.map((row) => {
+    const completed = completedByUser.get(row.id) ?? new Set<TestKey>();
+    const tests = Object.fromEntries(
+      TEST_KEYS.map((key) => [key, completed.has(key)]),
+    ) as Record<TestKey, boolean>;
+    return {
+      id: row.id,
+      login: row.login,
+      title: row.title,
+      role: row.role,
+      onboardingCompletedAt: row.onboardingCompletedAt,
+      personalBotReady: !!row.personalBotReadyAt && !!row.personalBotPrompt?.trim(),
+      tests,
+    };
+  });
 }

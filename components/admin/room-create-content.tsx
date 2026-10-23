@@ -16,19 +16,42 @@ import {
   jurisdictionLabels,
   type RoomJurisdiction,
 } from "@/lib/room/jurisdiction";
+import type { PartySearchHit } from "@/lib/room/helpers";
+import { TEST_KEYS } from "@/lib/test-keys";
 
 const inputClass =
   "w-full rounded-md border border-hair bg-paper px-3 py-2 text-ink focus:border-law focus:outline-none focus:ring-1 focus:ring-law";
 
 type PartyMode = "create" | "existing";
 
-type SearchHit = {
-  id: string;
-  login: string;
-  title: string;
-  onboardingCompletedAt: Date | string | null;
-  personalBotReadyAt: Date | string | null;
-};
+type SearchHit = PartySearchHit;
+
+function PrepBadges({ hit }: { hit: SearchHit }) {
+  const chips: { key: string; label: string; ready: boolean }[] = [
+    ...TEST_KEYS.map((testKey, index) => ({
+      key: testKey,
+      label: `T${index + 1}`,
+      ready: hit.tests[testKey],
+    })),
+    { key: "bp", label: "BP", ready: hit.personalBotReady },
+  ];
+
+  return (
+    <span className="mt-1 flex flex-wrap gap-1" aria-label="Preparation status">
+      {chips.map((chip) => (
+        <span
+          className={`rounded px-1.5 py-0.5 text-[11px] font-bold leading-none ${
+            chip.ready ? "bg-success/20 text-success" : "bg-error/20 text-error"
+          }`}
+          key={chip.key}
+          title={chip.label}
+        >
+          {chip.label}
+        </span>
+      ))}
+    </span>
+  );
+}
 
 function PartySlotFields({
   role,
@@ -144,10 +167,15 @@ function PartySlotFields({
             </div>
           </div>
           {selected ? (
-            <p className="rounded-md border border-law/40 bg-law-fill/30 p-3 text-body-sm text-on-surface">
-              {selected.title} ({selected.login})
-              {selected.onboardingCompletedAt ? ` · ${admin.profileReadyLabel}` : ` · ${admin.profileNotReadyLabel}`}
-            </p>
+            <div className="rounded-md border border-law/40 bg-law-fill/30 p-3 text-body-sm text-on-surface">
+              <p>
+                {selected.title} ({selected.login})
+                {selected.onboardingCompletedAt
+                  ? ` · ${admin.profileReadyLabel}`
+                  : ` · ${admin.profileNotReadyLabel}`}
+              </p>
+              <PrepBadges hit={selected} />
+            </div>
           ) : (
             <p className="text-body-sm text-on-surface-variant">{admin.selectParticipantHint}</p>
           )}
@@ -174,6 +202,7 @@ function PartySlotFields({
                         {" "}
                         · {hit.login}
                       </span>
+                      <PrepBadges hit={hit} />
                     </button>
                   </li>
                 );
