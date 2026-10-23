@@ -236,6 +236,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
           partyRole: selectedParty,
           candidateId: selectedCandidateId,
           editedText: editText,
+          sourceLocale: locale,
         });
         if (next) setState(next);
         setSelectedCandidateId(null);
@@ -255,6 +256,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
           roomId,
           audience: selectedAudience,
           text: customText,
+          sourceLocale: locale,
         });
         if (next) setState(next);
         setCustomText("");

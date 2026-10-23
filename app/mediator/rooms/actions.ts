@@ -145,6 +145,7 @@ export async function sendMediatorQuestionAction(params: {
   partyRole: PartyRole;
   candidateId: string;
   editedText?: string;
+  sourceLocale?: Locale;
 }) {
   const userId = await requireMediator();
   try {
@@ -154,6 +155,7 @@ export async function sendMediatorQuestionAction(params: {
       partyRole: params.partyRole,
       candidateId: params.candidateId,
       editedText: params.editedText,
+      sourceLocale: params.sourceLocale,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to send question.";
@@ -167,6 +169,7 @@ export async function sendCustomMediatorQuestionAction(params: {
   roomId: string;
   audience: MediatorAudience;
   text: string;
+  sourceLocale: Locale;
 }) {
   const userId = await requireMediator();
   try {
@@ -175,6 +178,7 @@ export async function sendCustomMediatorQuestionAction(params: {
       mediatorUserId: userId,
       audience: params.audience,
       text: params.text,
+      sourceLocale: params.sourceLocale,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to send question.";

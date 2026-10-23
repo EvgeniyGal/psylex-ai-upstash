@@ -90,16 +90,25 @@ export async function insertAgentMessage(params: {
   channel?: "shared" | "private";
   /** Mediator user id when a human mediator authored the message. */
   senderUserId?: string | null;
-  /** When a human mediator authored free text, translate for other room locales. */
+  /**
+   * Locale the mediator (or author) wrote in — typically the UI locale.
+   * Required for correct free-text translation; falls back to the author's preferredLocale.
+   */
   sourceLocale?: Locale | null;
+  /**
+   * When false, skip auto-translation (use party adaptations from the LLM instead).
+   * Defaults to true whenever senderUserId is set.
+   */
+  translate?: boolean;
 }) {
   const channel =
     params.channel ?? (params.addresseeUserId ? "private" : "shared");
 
   let sourceLocale: Locale | null = params.sourceLocale ?? null;
   let translations: MessageTranslations | null = null;
+  const shouldTranslate = params.translate ?? !!params.senderUserId;
 
-  if (params.senderUserId) {
+  if (params.senderUserId && shouldTranslate) {
     sourceLocale = sourceLocale ?? (await localeForUser(params.senderUserId));
     const needed = await getRoomLocalesForTranslation(params.roomId);
     translations = await ensureMessageTranslations({
@@ -107,6 +116,8 @@ export async function insertAgentMessage(params: {
       sourceLocale,
       neededLocales: needed,
     });
+  } else if (params.sourceLocale) {
+    sourceLocale = params.sourceLocale;
   }
 
   const [row] = await db
@@ -359,6 +370,34 @@ export function resolveMessageViewForViewer(
   const translations = message.translations as MessageTranslations | null;
   const originalText =
     (sourceLocale && translations?.[sourceLocale]) || message.content;
+
+  // Prefer party adaptations when they differ from the authored canonical text
+  // (LLM per-party wording, or custom questions pre-translated into each locale).
+  if (message.adaptations && message.canonicalContent) {
+    const adapted = resolveAdaptedText(
+      message.adaptations as PartyAdaptations,
+      message.canonicalContent,
+      viewerRole,
+    );
+    if (
+      adapted.trim() &&
+      adapted !== message.canonicalContent &&
+      !shouldFallbackToCanonicalForEnglish({
+        adapted,
+        canonical: message.canonicalContent,
+        preferredLocale: viewerPreferredLocale,
+      })
+    ) {
+      const showTranslated =
+        !!sourceLocale && sourceLocale !== locale && adapted !== originalText;
+      return {
+        content: adapted,
+        isTranslated: showTranslated,
+        originalText: showTranslated ? originalText : null,
+        sourceLocale,
+      };
+    }
+  }
 
   if (translations) {
     const localized = translations[locale];

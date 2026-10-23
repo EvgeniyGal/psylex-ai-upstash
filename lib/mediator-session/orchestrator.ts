@@ -191,6 +191,10 @@ async function deliverMediatorQuestion(params: {
   mediatorUserId: string;
   canonicalContent: string;
   adaptations: PartyAdaptations;
+  /** UI / authoring locale for free-text translation. */
+  sourceLocale?: Locale | null;
+  /** False for LLM candidates (adaptations already localized per party). */
+  translate?: boolean;
 }) {
   const { partyA, partyB } = await getRoomPartiesForPipeline(params.roomId);
   if (!partyA || !partyB) throw new Error("Party not found.");
@@ -211,6 +215,8 @@ async function deliverMediatorQuestion(params: {
     addresseeUserId: addressee?.id ?? null,
     channel: isBoth ? "shared" : "private",
     senderUserId: params.mediatorUserId,
+    sourceLocale: params.sourceLocale,
+    translate: params.translate,
   });
 
   await db
@@ -250,6 +256,8 @@ export async function sendMediatorQuestion(params: {
   partyRole: PartyRole;
   candidateId: string;
   editedText?: string;
+  /** Mediator UI locale — required when the candidate text was edited. */
+  sourceLocale?: Locale;
 }) {
   const room = await assertMediatorOwnsRoom(params.roomId, params.mediatorUserId);
   assertCanGenerateQuestions(room.mediationPhase);
@@ -275,12 +283,18 @@ export async function sendMediatorQuestion(params: {
           party_b: edited || candidate.partyB,
         };
 
+  // Unedited LLM candidates already include per-party wording — don't overwrite with
+  // a fresh machine translation keyed off the mediator UI locale.
+  const isFreeTextEdit = !!edited;
+
   await deliverMediatorQuestion({
     roomId: params.roomId,
     audience: params.partyRole,
     mediatorUserId: params.mediatorUserId,
     canonicalContent,
     adaptations,
+    sourceLocale: isFreeTextEdit ? (params.sourceLocale ?? null) : null,
+    translate: isFreeTextEdit,
   });
 
   const nextCandidates: MediatorQuestionCandidates = {
@@ -299,6 +313,8 @@ export async function sendCustomMediatorQuestion(params: {
   mediatorUserId: string;
   audience: MediatorAudience;
   text: string;
+  /** Locale the mediator typed in (UI locale). */
+  sourceLocale: Locale;
 }) {
   const room = await assertMediatorOwnsRoom(params.roomId, params.mediatorUserId);
   assertSessionAllowsMediatorSend(room.mediationPhase);
@@ -306,12 +322,31 @@ export async function sendCustomMediatorQuestion(params: {
   const text = params.text.trim();
   if (!text) throw new Error("Question cannot be empty.");
 
+  const sourceLocale = normalizeLocale(params.sourceLocale);
+  const { partyA, partyB } = await getRoomPartiesForPipeline(params.roomId);
+  if (!partyA || !partyB) throw new Error("Party not found.");
+
+  const partyALocale = normalizeLocale(partyA.preferredLocale);
+  const partyBLocale = normalizeLocale(partyB.preferredLocale);
+
+  const { translateText } = await import("@/lib/mediation/translate");
+  const [partyAText, partyBText] = await Promise.all([
+    partyALocale === sourceLocale
+      ? Promise.resolve(text)
+      : translateText({ text, from: sourceLocale, to: partyALocale }),
+    partyBLocale === sourceLocale
+      ? Promise.resolve(text)
+      : translateText({ text, from: sourceLocale, to: partyBLocale }),
+  ]);
+
   await deliverMediatorQuestion({
     roomId: params.roomId,
     audience: params.audience,
     mediatorUserId: params.mediatorUserId,
     canonicalContent: text,
-    adaptations: { party_a: text, party_b: text },
+    adaptations: { party_a: partyAText, party_b: partyBText },
+    sourceLocale,
+    translate: true,
   });
 }
 
