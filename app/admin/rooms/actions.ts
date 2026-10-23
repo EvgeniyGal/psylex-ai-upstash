@@ -97,6 +97,10 @@ export async function createRoom(formData: FormData) {
   ) {
     if (mode === "existing") {
       const existingId = required(formData.get(existingIdKey), existingIdKey);
+      if (role === "mediator") {
+        const { assertMediatorOwnsPartyUser } = await import("@/lib/room/party-redo");
+        await assertMediatorOwnsPartyUser(userId, existingId);
+      }
       await addRoomParticipant({ roomId: room.id, userId: existingId, partyRole });
       return;
     }
@@ -207,8 +211,10 @@ export async function deleteRoom(formData: FormData) {
 }
 
 export async function searchPartyUsersAction(query: string) {
-  await assertCanManageRooms();
-  return searchPartyUsers(query);
+  const { role, userId } = await assertCanManageRooms();
+  return searchPartyUsers(query, {
+    createdByUserId: role === "mediator" ? userId : undefined,
+  });
 }
 
 export async function requestProfileRefresh(userId: string) {

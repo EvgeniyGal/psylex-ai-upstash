@@ -272,15 +272,33 @@ export type PartySearchHit = {
   tests: Record<TestKey, boolean>;
 };
 
-export async function searchPartyUsers(query: string, limit = 20): Promise<PartySearchHit[]> {
+export async function searchPartyUsers(
+  query: string,
+  options?: { limit?: number; createdByUserId?: string },
+): Promise<PartySearchHit[]> {
+  const limit = options?.limit ?? 20;
   const q = query.trim().replace(/[%_]/g, "");
   const partyFilter = inArray(users.role, [...PARTY_ROLES]);
-  const filters = q
-    ? and(
-        partyFilter,
-        sql`(${users.login} ILIKE ${`%${q}%`} OR ${users.title} ILIKE ${`%${q}%`})`,
-      )
-    : partyFilter;
+  const textFilter = q
+    ? sql`(${users.login} ILIKE ${`%${q}%`} OR ${users.title} ILIKE ${`%${q}%`})`
+    : undefined;
+
+  let scopedUserIds: string[] | null = null;
+  if (options?.createdByUserId) {
+    const owned = await db
+      .selectDistinct({ userId: roomParticipants.userId })
+      .from(roomParticipants)
+      .innerJoin(rooms, eq(rooms.id, roomParticipants.roomId))
+      .where(eq(rooms.createdByUserId, options.createdByUserId));
+    scopedUserIds = owned.map((row) => row.userId);
+    if (scopedUserIds.length === 0) return [];
+  }
+
+  const filters = and(
+    partyFilter,
+    textFilter,
+    scopedUserIds ? inArray(users.id, scopedUserIds) : undefined,
+  );
 
   const rows = await db
     .select({
