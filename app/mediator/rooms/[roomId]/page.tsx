@@ -1,8 +1,9 @@
 import { and, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { rooms } from "@/drizzle/schema";
+import { rooms, users } from "@/drizzle/schema";
 import { requireSessionUserId } from "@/lib/auth-session";
+import type { Locale } from "@/lib/i18n";
 import { isUuid } from "@/lib/utils";
 import { RoomDetailContent } from "@/components/admin/room-detail-content";
 import { getAdminMediationDetails } from "@/lib/mediation/admin-room-details";
@@ -26,10 +27,20 @@ export default async function MediatorRoomDetailPage({
     .limit(1);
   if (!room) notFound();
 
+  const [mediatorUser] = await db
+    .select({ preferredLocale: users.preferredLocale })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  const uiLocale: Locale =
+    mediatorUser?.preferredLocale === "uk" || mediatorUser?.preferredLocale === "en"
+      ? mediatorUser.preferredLocale
+      : "en";
+
   const sides = await getRoomSides(roomId);
   const [activityLog, mediationDetails, profileStatuses] = await Promise.all([
     getRoomActivityLog(roomId),
-    getAdminMediationDetails(roomId),
+    getAdminMediationDetails(roomId, uiLocale),
     Promise.all(sides.map(async (side) => [side.id, await getPartyProfileStatus(side.id)] as const)),
   ]);
 

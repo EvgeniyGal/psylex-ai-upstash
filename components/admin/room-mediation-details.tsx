@@ -15,12 +15,16 @@ function MessageColumn({
   messages,
   emptyLabel,
   locale,
+  translatedBadge,
+  showOriginalLabel,
 }: {
   title: string;
   accentClass: string;
   messages: AdminMediationDetails["partyAMessages"];
   emptyLabel: string;
   locale: Locale;
+  translatedBadge: string;
+  showOriginalLabel: string;
 }) {
   return (
     <div className="flex min-h-[280px] flex-col rounded-xl border border-hair bg-paper">
@@ -47,6 +51,16 @@ function MessageColumn({
                 {message.messageKind ? ` · ${message.messageKind}` : ""}
               </p>
               <p className="whitespace-pre-wrap text-body-sm text-on-surface">{message.content}</p>
+              {message.isTranslated && message.originalText ? (
+                <details className="mt-1 text-[12px] text-on-surface-variant">
+                  <summary className="cursor-pointer text-law">
+                    {translatedBadge} — {showOriginalLabel}
+                  </summary>
+                  <p className="mt-1 whitespace-pre-wrap rounded-md bg-black/5 px-2 py-1">
+                    {message.originalText}
+                  </p>
+                </details>
+              ) : null}
               <p className="mt-2 text-body-sm text-on-surface-variant/80">
                 {formatDateTime(message.createdAt, locale)}
               </p>
@@ -137,14 +151,18 @@ export function RoomMediationDetails({
             emptyLabel={admin.mediationDetailsNoMessages}
             locale={locale}
             messages={details.partyAMessages}
+            showOriginalLabel={t.mediationShowOriginal}
             title={details.partyATitle}
+            translatedBadge={t.mediationTranslatedBadge}
           />
           <MessageColumn
             accentClass="bg-party-b-fill/30"
             emptyLabel={admin.mediationDetailsNoMessages}
             locale={locale}
             messages={details.partyBMessages}
+            showOriginalLabel={t.mediationShowOriginal}
             title={details.partyBTitle}
+            translatedBadge={t.mediationTranslatedBadge}
           />
         </div>
       </div>

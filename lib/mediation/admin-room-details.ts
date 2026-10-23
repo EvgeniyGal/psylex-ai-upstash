@@ -3,7 +3,14 @@ import type { Locale } from "@/lib/i18n";
 import { db } from "@/lib/db";
 import { rooms } from "@/drizzle/schema";
 import { formatPartyPsychodynamicProfiles } from "@/lib/mediation/format-pdf-content";
-import { listRoomMessages, resolveMessageForViewer, isMessageVisibleToViewer } from "@/lib/mediation/messages";
+import {
+  listRoomMessages,
+  resolveMessageViewForViewer,
+  resolveLocalizedSystemMessage,
+  isMessageVisibleToViewer,
+} from "@/lib/mediation/messages";
+import type { MessageTranslations } from "@/lib/mediation/translate";
+import { normalizeLocale } from "@/lib/pipeline/locale";
 import {
   buildMediationResultsSummary,
   type MediationResultsSummary,
@@ -25,6 +32,8 @@ export type AdminMediationMessageView = {
   content: string;
   createdAt: Date;
   messageKind: string | null;
+  isTranslated: boolean;
+  originalText: string | null;
 };
 
 export type AdminMediationOptionView = {
@@ -65,13 +74,68 @@ function mapOption(option: MediationOption, locale: Locale): AdminMediationOptio
   };
 }
 
+/**
+ * Resolve message text for staff (admin/mediator) like the live mediator console:
+ * prefer translations[staffLocale], with original when source differs.
+ */
+function resolveStaffMessageView(
+  message: Awaited<ReturnType<typeof listRoomMessages>>[number],
+  role: PartyRole,
+  staffLocale: Locale,
+): { content: string; isTranslated: boolean; originalText: string | null } {
+  if (message.messageKind === "mediation_system") {
+    return {
+      content: resolveLocalizedSystemMessage(
+        message.canonicalContent ?? message.content,
+        staffLocale,
+      ),
+      isTranslated: false,
+      originalText: null,
+    };
+  }
+
+  const translations = message.translations as MessageTranslations | null;
+  const sourceLocale = message.sourceLocale
+    ? normalizeLocale(message.sourceLocale)
+    : null;
+  const original =
+    (sourceLocale && translations?.[sourceLocale]) ||
+    message.canonicalContent ||
+    message.content;
+  const localized = translations?.[staffLocale];
+
+  if (localized) {
+    if (sourceLocale && sourceLocale !== staffLocale && localized !== original) {
+      return {
+        content: localized,
+        isTranslated: true,
+        originalText: original,
+      };
+    }
+    return {
+      content: localized,
+      isTranslated: false,
+      originalText: null,
+    };
+  }
+
+  // Legacy / adaptation-only rows: party-role resolution as fallback.
+  const view = resolveMessageViewForViewer(message, role, staffLocale);
+  return {
+    content: view.content,
+    isTranslated: view.isTranslated,
+    originalText: view.originalText,
+  };
+}
+
 function buildPartyMessages(
   messages: Awaited<ReturnType<typeof listRoomMessages>>,
   role: PartyRole,
   partyUserId: string,
   partyAUserId: string,
   partyBUserId: string,
-  preferredLocale: string | null,
+  /** Staff UI locale — same resolution language as live mediator console. */
+  viewerLocale: Locale,
   labels: { party: string; agent: string; system: string },
 ): AdminMediationMessageView[] {
   const thread: AdminMediationMessageView[] = [];
@@ -81,6 +145,7 @@ function buildPartyMessages(
     partyBUserId,
     includeRoundSummaries: true,
   };
+  const staffLocale = normalizeLocale(viewerLocale);
 
   for (const message of messages) {
     if (
@@ -89,25 +154,29 @@ function buildPartyMessages(
       continue;
     }
 
-    if (message.senderType === "participant") {
-      thread.push({
-        id: message.id,
-        senderType: "participant",
-        senderLabel: labels.party,
-        content: message.content,
-        createdAt: message.createdAt,
-        messageKind: message.messageKind,
-      });
-      continue;
-    }
+    const view = resolveStaffMessageView(message, role, staffLocale);
+    const senderType: AdminMediationMessageView["senderType"] =
+      message.senderType === "participant"
+        ? "participant"
+        : message.senderType === "agent"
+          ? "agent"
+          : "system";
+    const senderLabel =
+      senderType === "participant"
+        ? labels.party
+        : senderType === "agent"
+          ? labels.agent
+          : labels.system;
 
     thread.push({
-      id: `${message.id}-${role}`,
-      senderType: message.senderType === "agent" ? "agent" : "system",
-      senderLabel: message.senderType === "agent" ? labels.agent : labels.system,
-      content: resolveMessageForViewer(message, role, preferredLocale),
+      id: senderType === "participant" ? message.id : `${message.id}-${role}`,
+      senderType,
+      senderLabel,
+      content: view.content,
       createdAt: message.createdAt,
       messageKind: message.messageKind,
+      isTranslated: view.isTranslated,
+      originalText: view.originalText,
     });
   }
 
@@ -224,7 +293,7 @@ export async function getAdminMediationDetails(
     partyA.id,
     partyA.id,
     partyB.id,
-    partyA.preferredLocale,
+    locale,
     {
       party: partyRoleLabel("party_a", locale),
       agent: copy.mediationAgent,
@@ -237,7 +306,7 @@ export async function getAdminMediationDetails(
     partyB.id,
     partyA.id,
     partyB.id,
-    partyB.preferredLocale,
+    locale,
     {
       party: partyRoleLabel("party_b", locale),
       agent: copy.mediationAgent,
