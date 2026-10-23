@@ -56,21 +56,53 @@ export function isRoomLegalAnalysisComplete(room: { legalAnalysisAt: Date | null
   return !!room.legalAnalysisAt;
 }
 
-export async function isPostIntakePipelineComplete(roomId: string) {
+export type PostIntakePipelineDetail = {
+  partyAPsychodynamic: boolean;
+  partyBPsychodynamic: boolean;
+  partyAEmotionalTriggers: boolean;
+  partyBEmotionalTriggers: boolean;
+  interestsAnalysis: boolean;
+  legalAnalysis: boolean;
+  complete: boolean;
+};
+
+export async function getPostIntakePipelineDetail(
+  roomId: string,
+): Promise<PostIntakePipelineDetail | null> {
   const [room] = await db.select().from(rooms).where(eq(rooms.id, roomId)).limit(1);
-  if (!room) return false;
+  if (!room) return null;
 
   const { partyA, partyB } = await getRoomPartiesForPipeline(roomId);
-  if (!partyA || !partyB) return false;
+  const partyAPsychodynamic = partyA ? isUserPsychodynamicComplete(partyA) : false;
+  const partyBPsychodynamic = partyB ? isUserPsychodynamicComplete(partyB) : false;
+  const partyAEmotionalTriggers = partyA ? isUserEmotionalTriggersComplete(partyA) : false;
+  const partyBEmotionalTriggers = partyB ? isUserEmotionalTriggersComplete(partyB) : false;
+  const interestsAnalysis = isRoomInterestsComplete(room);
+  const legalAnalysis = isRoomLegalAnalysisComplete(room);
+  const complete =
+    !!partyA &&
+    !!partyB &&
+    partyAPsychodynamic &&
+    partyBPsychodynamic &&
+    partyAEmotionalTriggers &&
+    partyBEmotionalTriggers &&
+    interestsAnalysis &&
+    legalAnalysis;
 
-  return (
-    isUserPsychodynamicComplete(partyA) &&
-    isUserPsychodynamicComplete(partyB) &&
-    isUserEmotionalTriggersComplete(partyA) &&
-    isUserEmotionalTriggersComplete(partyB) &&
-    isRoomInterestsComplete(room) &&
-    isRoomLegalAnalysisComplete(room)
-  );
+  return {
+    partyAPsychodynamic,
+    partyBPsychodynamic,
+    partyAEmotionalTriggers,
+    partyBEmotionalTriggers,
+    interestsAnalysis,
+    legalAnalysis,
+    complete,
+  };
+}
+
+export async function isPostIntakePipelineComplete(roomId: string) {
+  const detail = await getPostIntakePipelineDetail(roomId);
+  return !!detail?.complete;
 }
 
 export async function isPostIntakePipelineRunning(roomId: string) {

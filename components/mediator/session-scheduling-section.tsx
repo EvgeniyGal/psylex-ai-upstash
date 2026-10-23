@@ -12,6 +12,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { useLocale } from "@/components/locale-provider";
 import { useRoomRealtime } from "@/hooks/use-room-realtime";
 import { formatDateTime } from "@/lib/format-datetime";
+import type { PartySchedulingDetail } from "@/lib/mediator-session/scheduling";
 import {
   normalizeDuration,
   partsToIso,
@@ -26,6 +27,8 @@ import {
   isScheduleIsoInPast,
   messageForScheduleSaveError,
 } from "@/lib/mediator-session/schedule-save-ui";
+import type { PostIntakePipelineDetail } from "@/lib/pipeline/gate";
+import { TEST_KEYS } from "@/lib/test-keys";
 
 type SessionSchedulingSectionProps = {
   roomId: string;
@@ -37,6 +40,102 @@ type SessionSchedulingSectionProps = {
   mediationCompletedAt?: string | null;
   partyUserIds?: string[];
 };
+
+function DetailRow({ label, ready }: { label: string; ready: boolean }) {
+  const { admin } = useLocale();
+  return (
+    <div className="flex items-center justify-between gap-3 text-body-sm">
+      <span className="text-on-surface-variant">{label}</span>
+      <span className={ready ? "font-semibold text-success" : "font-semibold text-error"}>
+        {ready ? admin.scheduleReady : admin.scheduleNotReady}
+      </span>
+    </div>
+  );
+}
+
+function PartyDetailChecklist({
+  detail,
+  forceReady,
+}: {
+  detail: PartySchedulingDetail | null;
+  forceReady: boolean;
+}) {
+  const { admin } = useLocale();
+  if (!detail && !forceReady) return null;
+
+  return (
+    <ul className="mt-2 space-y-1 border-l border-outline-variant/30 pl-3">
+      {TEST_KEYS.map((key) => (
+        <li key={key}>
+          <DetailRow
+            label={admin.activityLogTests[key] ?? key}
+            ready={forceReady || !!detail?.tests[key]}
+          />
+        </li>
+      ))}
+      <li>
+        <DetailRow
+          label={admin.scheduleDetailPersonalBot}
+          ready={forceReady || !!detail?.personalBotReady}
+        />
+      </li>
+      <li>
+        <DetailRow
+          label={admin.scheduleDetailDisputeIntake}
+          ready={forceReady || !!detail?.disputeIntakeComplete}
+        />
+      </li>
+    </ul>
+  );
+}
+
+function PipelineDetailChecklist({
+  detail,
+  forceReady,
+}: {
+  detail: PostIntakePipelineDetail | null;
+  forceReady: boolean;
+}) {
+  const { admin } = useLocale();
+  if (!detail && !forceReady) return null;
+
+  const items: { label: string; ready: boolean }[] = [
+    {
+      label: `${admin.scheduleDetailPsychodynamic} · ${admin.roles.party_a}`,
+      ready: forceReady || !!detail?.partyAPsychodynamic,
+    },
+    {
+      label: `${admin.scheduleDetailPsychodynamic} · ${admin.roles.party_b}`,
+      ready: forceReady || !!detail?.partyBPsychodynamic,
+    },
+    {
+      label: `${admin.scheduleDetailEmotionalTriggers} · ${admin.roles.party_a}`,
+      ready: forceReady || !!detail?.partyAEmotionalTriggers,
+    },
+    {
+      label: `${admin.scheduleDetailEmotionalTriggers} · ${admin.roles.party_b}`,
+      ready: forceReady || !!detail?.partyBEmotionalTriggers,
+    },
+    {
+      label: admin.scheduleDetailInterests,
+      ready: forceReady || !!detail?.interestsAnalysis,
+    },
+    {
+      label: admin.scheduleDetailLegal,
+      ready: forceReady || !!detail?.legalAnalysis,
+    },
+  ];
+
+  return (
+    <ul className="mt-2 space-y-1 border-l border-outline-variant/30 pl-3">
+      {items.map((item) => (
+        <li key={item.label}>
+          <DetailRow label={item.label} ready={item.ready} />
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export function SessionSchedulingSection({
   roomId,
@@ -65,8 +164,9 @@ export function SessionSchedulingSection({
   const [started, setStarted] = useState(mediationStarted);
   const [complete, setComplete] = useState(sessionComplete);
   const [completedAt, setCompletedAt] = useState(mediationCompletedAt);
-  const [partyAProfileLabel, setPartyAProfileLabel] = useState("");
-  const [partyBProfileLabel, setPartyBProfileLabel] = useState("");
+  const [partyADetail, setPartyADetail] = useState<PartySchedulingDetail | null>(null);
+  const [partyBDetail, setPartyBDetail] = useState<PartySchedulingDetail | null>(null);
+  const [pipelineDetail, setPipelineDetail] = useState<PostIntakePipelineDetail | null>(null);
 
   const scheduleIso = useMemo(
     () => partsToIso({ date, hour, minute }),
@@ -94,37 +194,14 @@ export function SessionSchedulingSection({
         setStarted(data.mediationStarted);
         setComplete(data.sessionComplete);
         setCompletedAt(data.mediationCompletedAt);
-        setPartyAProfileLabel(
-          data.partyAProfileReady
-            ? `${admin.profileReadyLabel}${
-                data.partyAProfileReadyAt
-                  ? `, ${formatDateTime(new Date(data.partyAProfileReadyAt), locale)}`
-                  : ""
-              }${
-                data.partyATestsAt
-                  ? ` · ${admin.profileTestsDateLabel}: ${formatDateTime(new Date(data.partyATestsAt), locale)}`
-                  : ""
-              }`
-            : admin.profileNotReadyLabel,
-        );
-        setPartyBProfileLabel(
-          data.partyBProfileReady
-            ? `${admin.profileReadyLabel}${
-                data.partyBProfileReadyAt
-                  ? `, ${formatDateTime(new Date(data.partyBProfileReadyAt), locale)}`
-                  : ""
-              }${
-                data.partyBTestsAt
-                  ? ` · ${admin.profileTestsDateLabel}: ${formatDateTime(new Date(data.partyBTestsAt), locale)}`
-                  : ""
-              }`
-            : admin.profileNotReadyLabel,
-        );
+        setPartyADetail(data.partyADetail);
+        setPartyBDetail(data.partyBDetail);
+        setPipelineDetail(data.pipelineDetail);
       })
       .catch(() => {
         /* ignore */
       });
-  }, [admin, locale, roomId]);
+  }, [roomId]);
 
   useEffect(() => {
     refreshReadiness();
@@ -159,9 +236,9 @@ export function SessionSchedulingSection({
     });
   };
 
-  const readinessRow = (label: string, ready: boolean) => (
-    <div className="flex items-center justify-between gap-3 text-body-sm">
-      <span className="text-on-surface-variant">{label}</span>
+  const summaryRow = (label: string, ready: boolean) => (
+    <div className="flex items-center justify-between gap-3 text-body-sm font-semibold">
+      <span className="text-on-surface">{label}</span>
       <span className={ready ? "text-success" : "text-error"}>
         {ready ? admin.scheduleReady : admin.scheduleNotReady}
       </span>
@@ -180,20 +257,19 @@ export function SessionSchedulingSection({
         ) : null}
       </div>
 
-      <div className="space-y-2 rounded-md bg-surface-container-low/60 p-3">
-        {readinessRow(admin.scheduleReadinessPartyA, complete || partyAReady)}
-        {readinessRow(admin.scheduleReadinessPartyB, complete || partyBReady)}
-        {readinessRow(admin.scheduleReadinessPipeline, complete || pipelineComplete)}
-        {partyAProfileLabel ? (
-          <p className="text-body-sm text-on-surface-variant">
-            {admin.roles.party_a}: {partyAProfileLabel}
-          </p>
-        ) : null}
-        {partyBProfileLabel ? (
-          <p className="text-body-sm text-on-surface-variant">
-            {admin.roles.party_b}: {partyBProfileLabel}
-          </p>
-        ) : null}
+      <div className="space-y-4 rounded-md bg-surface-container-low/60 p-3">
+        <div>
+          {summaryRow(admin.scheduleReadinessPartyA, complete || partyAReady)}
+          <PartyDetailChecklist detail={partyADetail} forceReady={complete} />
+        </div>
+        <div>
+          {summaryRow(admin.scheduleReadinessPartyB, complete || partyBReady)}
+          <PartyDetailChecklist detail={partyBDetail} forceReady={complete} />
+        </div>
+        <div>
+          {summaryRow(admin.scheduleReadinessPipeline, complete || pipelineComplete)}
+          <PipelineDetailChecklist detail={pipelineDetail} forceReady={complete} />
+        </div>
       </div>
 
       {readOnly || started ? (

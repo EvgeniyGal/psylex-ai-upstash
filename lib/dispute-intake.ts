@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { rooms, userTestCompletions, users, type users as usersTable } from "@/drizzle/schema";
-import { TEST_KEYS } from "@/lib/test-keys";
+import { TEST_KEYS, type TestKey } from "@/lib/test-keys";
 import { getRoomSides } from "@/lib/room/helpers";
 import {
   getOppositePartyRole,
@@ -22,6 +22,8 @@ export type SideReadiness = {
   role: PartyRole;
   title: string;
   testsComplete: boolean;
+  /** Per onboarding test key — true when completed. */
+  tests: Record<TestKey, boolean>;
   personalBotReady: boolean;
   disputeIntakeComplete: boolean;
   mediationReady: boolean;
@@ -37,23 +39,27 @@ export function getOppositeSideRole(role: PartyRole): PartyRole {
   return getOppositePartyRole(role);
 }
 
-async function getCompletedTestCount(userId: string) {
+async function getCompletedTestKeys(userId: string): Promise<Set<TestKey>> {
   const rows = await db
     .select({ testKey: userTestCompletions.testKey })
     .from(userTestCompletions)
     .where(eq(userTestCompletions.userId, userId));
 
-  const completed = new Set(
-    rows.map((row) => row.testKey).filter((key) => TEST_KEYS.includes(key as (typeof TEST_KEYS)[number])),
+  return new Set(
+    rows
+      .map((row) => row.testKey)
+      .filter((key): key is TestKey => TEST_KEYS.includes(key as TestKey)),
   );
-  return completed.size;
 }
 
 export async function getSideReadiness(user: UserRow): Promise<SideReadiness | null> {
   if (!isPartyRole(user.role)) return null;
 
-  const completedCount = await getCompletedTestCount(user.id);
-  const testsComplete = completedCount === TEST_KEYS.length;
+  const completedKeys = await getCompletedTestKeys(user.id);
+  const tests = Object.fromEntries(
+    TEST_KEYS.map((key) => [key, completedKeys.has(key)]),
+  ) as Record<TestKey, boolean>;
+  const testsComplete = TEST_KEYS.every((key) => tests[key]);
   const personalBotReady = !!user.personalBotReadyAt && !!user.personalBotPrompt?.trim();
   const disputeIntakeComplete = hasSubmittedDisputeIntake(user);
 
@@ -62,6 +68,7 @@ export async function getSideReadiness(user: UserRow): Promise<SideReadiness | n
     role: user.role,
     title: user.title,
     testsComplete,
+    tests,
     personalBotReady,
     disputeIntakeComplete,
     mediationReady: testsComplete && personalBotReady && disputeIntakeComplete,

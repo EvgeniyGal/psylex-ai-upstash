@@ -10,9 +10,20 @@ import {
 } from "@/lib/mediator-session/schedule-options";
 import { logPipelineEvent } from "@/lib/pipeline/log-event";
 import { notifyRoom } from "@/lib/realtime/notify";
-import { getSideReadiness } from "@/lib/dispute-intake";
-import { isPostIntakePipelineComplete } from "@/lib/pipeline/gate";
+import { getSideReadiness, type SideReadiness } from "@/lib/dispute-intake";
+import {
+  getPostIntakePipelineDetail,
+  type PostIntakePipelineDetail,
+} from "@/lib/pipeline/gate";
 import { getRoomSides } from "@/lib/room/helpers";
+import type { TestKey } from "@/lib/test-keys";
+
+export type PartySchedulingDetail = {
+  ready: boolean;
+  tests: Record<TestKey, boolean>;
+  personalBotReady: boolean;
+  disputeIntakeComplete: boolean;
+};
 
 export type MediatorSchedulingReadiness = {
   partyAReady: boolean;
@@ -30,7 +41,20 @@ export type MediatorSchedulingReadiness = {
   partyBProfileReadyAt: string | null;
   partyATestsAt: string | null;
   partyBTestsAt: string | null;
+  partyADetail: PartySchedulingDetail | null;
+  partyBDetail: PartySchedulingDetail | null;
+  pipelineDetail: PostIntakePipelineDetail | null;
 };
+
+function toPartyDetail(ready: SideReadiness | null): PartySchedulingDetail | null {
+  if (!ready) return null;
+  return {
+    ready: ready.mediationReady,
+    tests: ready.tests,
+    personalBotReady: ready.personalBotReady,
+    disputeIntakeComplete: ready.disputeIntakeComplete,
+  };
+}
 
 export type ScheduleSaveErrorCode =
   | "past"
@@ -78,7 +102,8 @@ export async function getMediatorSchedulingReadiness(
 
   const partyAReady = !!aReady?.mediationReady;
   const partyBReady = !!bReady?.mediationReady;
-  const pipelineComplete = await isPostIntakePipelineComplete(roomId);
+  const pipelineDetail = await getPostIntakePipelineDetail(roomId);
+  const pipelineComplete = !!pipelineDetail?.complete;
   const canSchedule = !room.mediationStartedAt;
 
   return {
@@ -97,6 +122,9 @@ export async function getMediatorSchedulingReadiness(
     partyBProfileReadyAt: bProfile?.profileReadyAt ?? null,
     partyATestsAt: aProfile?.testsCompletedAt ?? null,
     partyBTestsAt: bProfile?.testsCompletedAt ?? null,
+    partyADetail: toPartyDetail(aReady),
+    partyBDetail: toPartyDetail(bReady),
+    pipelineDetail,
   };
 }
 

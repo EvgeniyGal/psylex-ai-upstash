@@ -210,6 +210,12 @@ export type AdminCopy = {
   scheduleReadinessPartyA: string;
   scheduleReadinessPartyB: string;
   scheduleReadinessPipeline: string;
+  scheduleDetailPersonalBot: string;
+  scheduleDetailDisputeIntake: string;
+  scheduleDetailPsychodynamic: string;
+  scheduleDetailEmotionalTriggers: string;
+  scheduleDetailInterests: string;
+  scheduleDetailLegal: string;
   scheduleReady: string;
   scheduleNotReady: string;
   scheduleDisabledHint: string;
@@ -534,6 +540,12 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     scheduleReadinessPartyA: "Party A ready",
     scheduleReadinessPartyB: "Party B ready",
     scheduleReadinessPipeline: "AI analysis complete",
+    scheduleDetailPersonalBot: "Personal bot prompt",
+    scheduleDetailDisputeIntake: "Dispute intake",
+    scheduleDetailPsychodynamic: "Psychodynamic profile",
+    scheduleDetailEmotionalTriggers: "Emotional triggers",
+    scheduleDetailInterests: "Interests analysis",
+    scheduleDetailLegal: "Legal analysis",
     scheduleReady: "Ready",
     scheduleNotReady: "Not ready",
     scheduleDisabledHint: "Both parties must finish tests, conflict questions, and AI analysis before scheduling.",
@@ -950,6 +962,12 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     scheduleReadinessPartyA: "Сторона A готова",
     scheduleReadinessPartyB: "Сторона B готова",
     scheduleReadinessPipeline: "AI-аналіз завершено",
+    scheduleDetailPersonalBot: "Промпт особистого бота",
+    scheduleDetailDisputeIntake: "Опис спору (intake)",
+    scheduleDetailPsychodynamic: "Психодинамічний профіль",
+    scheduleDetailEmotionalTriggers: "Емоційні тригери",
+    scheduleDetailInterests: "Аналіз інтересів",
+    scheduleDetailLegal: "Правовий аналіз",
     scheduleReady: "Готово",
     scheduleNotReady: "Не готово",
     scheduleDisabledHint: "Обидві сторони мають завершити тести, питання про конфлікт і AI-аналіз перед плануванням.",
