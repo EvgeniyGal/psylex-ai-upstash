@@ -33,6 +33,8 @@ import { TEST_KEYS } from "@/lib/test-keys";
 type SessionSchedulingSectionProps = {
   roomId: string;
   readOnly?: boolean;
+  /** When false, only the preparation checklist is shown (Mode A admin rooms). */
+  showScheduleControls?: boolean;
   initialScheduledStartAt?: string | null;
   initialDurationMinutes?: number;
   mediationStarted?: boolean;
@@ -140,6 +142,7 @@ function PipelineDetailChecklist({
 export function SessionSchedulingSection({
   roomId,
   readOnly = false,
+  showScheduleControls = true,
   initialScheduledStartAt = null,
   initialDurationMinutes = DEFAULT_SCHEDULE_DURATION_MINUTES,
   mediationStarted = false,
@@ -210,7 +213,7 @@ export function SessionSchedulingSection({
   useRoomRealtime(roomId, () => {
     refreshReadiness();
   }, {
-    enabled: !readOnly,
+    enabled: true,
     watchUsers: true,
     partyUserIds,
   });
@@ -248,8 +251,10 @@ export function SessionSchedulingSection({
   return (
     <div className="glass-panel space-y-4 rounded-xl p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h4 className="font-display text-headline-md text-on-surface">{admin.scheduleSectionTitle}</h4>
-        {complete ? (
+        <h4 className="font-display text-headline-md text-on-surface">
+          {showScheduleControls ? admin.scheduleSectionTitle : admin.preparationSectionTitle}
+        </h4>
+        {showScheduleControls && complete ? (
           <span className="inline-flex items-center gap-1.5 rounded-md bg-tertiary/15 px-2.5 py-1 text-label-md font-semibold text-tertiary">
             <span className="material-symbols-outlined text-[18px]">check_circle</span>
             {admin.scheduleSessionComplete}
@@ -272,90 +277,94 @@ export function SessionSchedulingSection({
         </div>
       </div>
 
-      {readOnly || started ? (
-        <div className="space-y-2">
-          <div>
-            <p className="mb-1 text-body-sm text-on-surface-variant">{admin.scheduleDateTimeLabel}</p>
-            <p className="text-body-md text-on-surface">
-              {scheduledStartAt ? formatDateTime(new Date(scheduledStartAt), locale) : admin.scheduleNotSet}
-            </p>
-          </div>
-          <div>
-            <p className="mb-1 text-body-sm text-on-surface-variant">{admin.scheduleDurationLabel}</p>
-            <p className="text-body-md text-on-surface">
-              {admin.scheduleDurationOption(durationMinutes)}
-            </p>
-          </div>
-          {complete && completedAt ? (
-            <div>
-              <p className="mb-1 text-body-sm text-on-surface-variant">{admin.mediationCompletedAt}</p>
-              <p className="text-body-md text-on-surface">
-                {formatDateTime(new Date(completedAt), locale)}
-              </p>
-            </div>
-          ) : null}
-        </div>
-      ) : (
+      {showScheduleControls ? (
         <>
-          {!(partyAReady && partyBReady && pipelineComplete) ? (
-            <p className="text-body-sm text-on-surface-variant">{admin.scheduleStartRequiresReadyHint}</p>
-          ) : null}
-
-          <ScheduleFields
-            date={date}
-            disabled={!canSchedule || pending}
-            durationMinutes={durationMinutes}
-            hour={hour}
-            idPrefix={`room-${roomId}`}
-            minute={minute}
-            onDateChange={setDate}
-            onDurationChange={setDurationMinutes}
-            onHourChange={setHour}
-            onMinuteChange={setMinute}
-          />
-
-          <button
-            className="btn-primary flex items-center gap-1.5 px-5 py-2 text-body-sm disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={!canSchedule || !scheduleIso || pending}
-            onClick={onSave}
-            type="button"
-          >
-            {pending ? <Spinner className="text-white" size="sm" /> : admin.scheduleSave}
-          </button>
-        </>
-      )}
-
-      <div className="flex flex-wrap gap-3">
-        {!readOnly && scheduledStartAt && !started ? (
-          partyAReady && partyBReady && pipelineComplete ? (
-            <Link
-              className="btn-secondary inline-flex items-center gap-2 px-5 py-2.5 text-body-sm font-semibold"
-              href={`/mediator/rooms/${roomId}/lobby`}
-            >
-              <span className="material-symbols-outlined text-[20px]">meeting_room</span>
-              {admin.scheduleOpenLobby}
-            </Link>
+          {readOnly || started ? (
+            <div className="space-y-2">
+              <div>
+                <p className="mb-1 text-body-sm text-on-surface-variant">{admin.scheduleDateTimeLabel}</p>
+                <p className="text-body-md text-on-surface">
+                  {scheduledStartAt ? formatDateTime(new Date(scheduledStartAt), locale) : admin.scheduleNotSet}
+                </p>
+              </div>
+              <div>
+                <p className="mb-1 text-body-sm text-on-surface-variant">{admin.scheduleDurationLabel}</p>
+                <p className="text-body-md text-on-surface">
+                  {admin.scheduleDurationOption(durationMinutes)}
+                </p>
+              </div>
+              {complete && completedAt ? (
+                <div>
+                  <p className="mb-1 text-body-sm text-on-surface-variant">{admin.mediationCompletedAt}</p>
+                  <p className="text-body-md text-on-surface">
+                    {formatDateTime(new Date(completedAt), locale)}
+                  </p>
+                </div>
+              ) : null}
+            </div>
           ) : (
-            <span
-              aria-disabled="true"
-              className="btn-secondary inline-flex cursor-not-allowed items-center gap-2 px-5 py-2.5 text-body-sm font-semibold opacity-40"
-              title={admin.scheduleDisabledHint}
-            >
-              <span className="material-symbols-outlined text-[20px]">meeting_room</span>
-              {admin.scheduleOpenLobby}
-            </span>
-          )
-        ) : null}
-        {!readOnly && started && !complete ? (
-          <Link
-            className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-body-sm font-semibold shadow-sm"
-            href={`/mediator/rooms/${roomId}/session`}
-          >
-            <span className="material-symbols-outlined text-[20px]">videocam</span>
-            {admin.scheduleOpenSession}
-          </Link>
-        ) : null}
-      </div>
+            <>
+              {!(partyAReady && partyBReady && pipelineComplete) ? (
+                <p className="text-body-sm text-on-surface-variant">{admin.scheduleStartRequiresReadyHint}</p>
+              ) : null}
+
+              <ScheduleFields
+                date={date}
+                disabled={!canSchedule || pending}
+                durationMinutes={durationMinutes}
+                hour={hour}
+                idPrefix={`room-${roomId}`}
+                minute={minute}
+                onDateChange={setDate}
+                onDurationChange={setDurationMinutes}
+                onHourChange={setHour}
+                onMinuteChange={setMinute}
+              />
+
+              <button
+                className="btn-primary flex items-center gap-1.5 px-5 py-2 text-body-sm disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={!canSchedule || !scheduleIso || pending}
+                onClick={onSave}
+                type="button"
+              >
+                {pending ? <Spinner className="text-white" size="sm" /> : admin.scheduleSave}
+              </button>
+            </>
+          )}
+
+          <div className="flex flex-wrap gap-3">
+            {!readOnly && scheduledStartAt && !started ? (
+              partyAReady && partyBReady && pipelineComplete ? (
+                <Link
+                  className="btn-secondary inline-flex items-center gap-2 px-5 py-2.5 text-body-sm font-semibold"
+                  href={`/mediator/rooms/${roomId}/lobby`}
+                >
+                  <span className="material-symbols-outlined text-[20px]">meeting_room</span>
+                  {admin.scheduleOpenLobby}
+                </Link>
+              ) : (
+                <span
+                  aria-disabled="true"
+                  className="btn-secondary inline-flex cursor-not-allowed items-center gap-2 px-5 py-2.5 text-body-sm font-semibold opacity-40"
+                  title={admin.scheduleDisabledHint}
+                >
+                  <span className="material-symbols-outlined text-[20px]">meeting_room</span>
+                  {admin.scheduleOpenLobby}
+                </span>
+              )
+            ) : null}
+            {!readOnly && started && !complete ? (
+              <Link
+                className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-body-sm font-semibold shadow-sm"
+                href={`/mediator/rooms/${roomId}/session`}
+              >
+                <span className="material-symbols-outlined text-[20px]">videocam</span>
+                {admin.scheduleOpenSession}
+              </Link>
+            ) : null}
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }

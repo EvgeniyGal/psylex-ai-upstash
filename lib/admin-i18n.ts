@@ -194,6 +194,7 @@ export type AdminCopy = {
   mediationDetailsActionFailed: string;
   activityLogEmpty: string;
   scheduleSectionTitle: string;
+  preparationSectionTitle: string;
   scheduleSessionComplete: string;
   scheduleDateTimeLabel: string;
   scheduleDateLabel: string;
@@ -519,6 +520,7 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     mediationDetailsActionFailed: "Action failed",
     activityLogEmpty: "No activity recorded yet.",
     scheduleSectionTitle: "Mediation schedule",
+    preparationSectionTitle: "Party preparation",
     scheduleSessionComplete: "Mediation completed",
     scheduleDateTimeLabel: "Scheduled start",
     scheduleDateLabel: "Date",
@@ -941,6 +943,7 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     mediationDetailsActionFailed: "Не вдалося виконати дію",
     activityLogEmpty: "Активність ще не зафіксована.",
     scheduleSectionTitle: "Розклад медіації",
+    preparationSectionTitle: "Підготовка сторін",
     scheduleSessionComplete: "Медіацію завершено",
     scheduleDateTimeLabel: "Запланований старт",
     scheduleDateLabel: "Дата",

@@ -2,7 +2,6 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { rooms } from "@/drizzle/schema";
 import { setPartyNotification } from "@/lib/mediator-session/notifications";
-import { isMediatorFacilitatedRoom } from "@/lib/mediator-session/room-mode";
 import {
   DEFAULT_SCHEDULE_DURATION_MINUTES,
   isScheduleDurationOption,
@@ -87,7 +86,7 @@ export async function getMediatorSchedulingReadiness(
   roomId: string,
 ): Promise<MediatorSchedulingReadiness | null> {
   const [room] = await db.select().from(rooms).where(eq(rooms.id, roomId)).limit(1);
-  if (!room || !isMediatorFacilitatedRoom(room)) return null;
+  if (!room) return null;
 
   const sides = await getRoomSides(roomId);
   const partyA = sides.find((s) => s.role === "party_a");

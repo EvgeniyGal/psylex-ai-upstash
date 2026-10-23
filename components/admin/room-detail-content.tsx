@@ -328,18 +328,17 @@ export function RoomDetailContent({
         />
       ) : null}
 
-      {room.createdByUserId ? (
-        <SessionSchedulingSection
-          initialDurationMinutes={room.mediationDurationMinutes}
-          initialScheduledStartAt={room.scheduledStartAt?.toISOString() ?? null}
-          mediationCompletedAt={room.mediationCompletedAt?.toISOString() ?? null}
-          mediationStarted={!!room.mediationStartedAt}
-          partyUserIds={[partyA?.id, partyB?.id].filter((id): id is string => Boolean(id))}
-          readOnly={readOnly && basePath.startsWith("/admin")}
-          roomId={room.id}
-          sessionComplete={!!room.mediationCompletedAt || room.mediationPhase === "completed"}
-        />
-      ) : null}
+      <SessionSchedulingSection
+        initialDurationMinutes={room.mediationDurationMinutes}
+        initialScheduledStartAt={room.scheduledStartAt?.toISOString() ?? null}
+        mediationCompletedAt={room.mediationCompletedAt?.toISOString() ?? null}
+        mediationStarted={!!room.mediationStartedAt}
+        partyUserIds={[partyA?.id, partyB?.id].filter((id): id is string => Boolean(id))}
+        readOnly={readOnly && basePath.startsWith("/admin")}
+        roomId={room.id}
+        sessionComplete={!!room.mediationCompletedAt || room.mediationPhase === "completed"}
+        showScheduleControls={!!room.createdByUserId}
+      />
 
       <div className="glass-panel space-y-3 rounded-xl p-6">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
