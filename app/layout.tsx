@@ -71,7 +71,7 @@ export default function RootLayout({
             <ConditionalSiteFooter />
           </div>
         </AppProviders>
-        <Toaster richColors />
+        <Toaster closeButton duration={3500} richColors visibleToasts={3} />
       </body>
     </html>
   );

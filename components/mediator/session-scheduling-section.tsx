@@ -232,7 +232,7 @@ export function SessionSchedulingSection({
           return;
         }
         setScheduledStartAt(scheduleIso);
-        toast.success(admin.scheduleSaved);
+        toast.success(admin.scheduleSaved, { id: "schedule-saved", duration: 3500 });
       } catch {
         toast.error(admin.scheduleError);
       }

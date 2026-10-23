@@ -81,7 +81,7 @@ export function usePartyActionNotifications({
     const message = messageForType(notification.type, t);
     if (!message) return;
 
-    toast.message(message);
+    toast.message(message, { id: `party-notify-${notification.type}`, duration: 3500 });
     setBannerType(notification.type);
     setBanner(message);
   }, [enabled, notification, startWindowConsumed, t, viewerRole]);
