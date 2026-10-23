@@ -18,6 +18,7 @@ import {
   sendMediatorQuestionAction,
 } from "@/app/mediator/rooms/actions";
 import { SessionElapsedTimer } from "@/components/mediator/session-elapsed-timer";
+import { MediationCompromisePanel } from "@/components/portal/room/mediation-compromise-panel";
 import { MediationOptionsPanel } from "@/components/portal/room/mediation-options-panel";
 import { Spinner } from "@/components/ui/spinner";
 import { useLocale } from "@/components/locale-provider";
@@ -29,7 +30,12 @@ import type {
   MediatorSessionRoomState,
 } from "@/lib/mediator-session/orchestrator";
 import type { PartyRole } from "@/lib/participant-roles";
-import type { DraftAgreement, DraftObligation, MediationOption } from "@/lib/mediation/types";
+import type {
+  DraftAgreement,
+  DraftObligation,
+  MediationOption,
+  MediationPhase,
+} from "@/lib/mediation/types";
 import { listProtectiveClauses } from "@/lib/mediation/draft-agreement";
 import { protectiveClauseText } from "@/lib/mediation/protective-clauses";
 import { psychodynamicProfileLabels } from "@/lib/mediation/format-pdf-content";
@@ -491,11 +497,37 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
                 options={state.options}
                 partyAVoteOptionId={state.room.partyAVote ?? null}
                 partyBVoteOptionId={state.room.partyBVote ?? null}
-                phase={state.room.phase}
+                phase={state.room.phase as MediationPhase | null}
                 selectedOptionId={state.room.selectedOptionId}
                 selfVote={null}
                 showAllVotes
                 viewerRole="party_a"
+              />
+            </div>
+          ) : null}
+
+          {state.compromise &&
+          (state.room.phase === "voting_discrepancy" ||
+            state.room.phase === "agreement" ||
+            state.room.phase === "completed") ? (
+            <div className="mt-4 border-t border-hair pt-4">
+              <MediationCompromisePanel
+                compromise={{
+                  id: state.compromise.id,
+                  description: state.compromise.description,
+                  legalNorms: state.compromise.legalNorms,
+                  fulfillmentProbability: state.compromise.fulfillmentProbability,
+                  refusalRisks: state.compromise.refusalRisks,
+                }}
+                options={state.options}
+                partyACompromiseVote={state.room.partyACompromiseVote ?? null}
+                partyBCompromiseVote={state.room.partyBCompromiseVote ?? null}
+                partyAVoteOptionId={state.room.partyAVote ?? null}
+                partyBVoteOptionId={state.room.partyBVote ?? null}
+                phase={state.room.phase as MediationPhase | null}
+                review
+                selectedOptionId={state.room.selectedOptionId}
+                selfCompromiseVote={null}
               />
             </div>
           ) : null}

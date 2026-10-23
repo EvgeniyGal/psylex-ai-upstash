@@ -1373,6 +1373,8 @@ async function buildSessionState(
       agreementPublished,
       partyAVote: viewerKind === "mediator" ? room.partyAVoteOptionId : undefined,
       partyBVote: viewerKind === "mediator" ? room.partyBVoteOptionId : undefined,
+      partyACompromiseVote: viewerKind === "mediator" ? room.partyACompromiseVote : undefined,
+      partyBCompromiseVote: viewerKind === "mediator" ? room.partyBCompromiseVote : undefined,
       selfCompromiseVote:
         role === "party_a"
           ? room.partyACompromiseVote

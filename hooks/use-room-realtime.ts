@@ -5,22 +5,29 @@ import { useRealtime } from "@/lib/realtime-client";
 import { roomChannel, userChannel } from "@/lib/realtime/keys";
 
 const DEBOUNCE_MS = 150;
-const POLL_INTERVAL_MS = 15_000;
+const DEFAULT_FALLBACK_POLL_MS = 15_000;
 
 export type RoomRealtimeOptions = {
+  /** Kept for call-site compatibility; party readiness uses room.change (notifyRoom). */
   watchUsers?: boolean;
+  /** Kept for call-site compatibility; other users' channels are not authorized. */
   partyUserIds?: string[];
   enabled?: boolean;
+  /**
+   * Always poll in addition to realtime (useful for readiness checklists when SSE is quiet).
+   * Pass `false` to disable all polling; omit for fallback-only when disconnected/connecting.
+   */
+  pollIntervalMs?: number | false;
 };
 
-function openPolling(onEvent: () => void, intervalMs = POLL_INTERVAL_MS) {
+function openPolling(onEvent: () => void, intervalMs: number) {
   const id = window.setInterval(onEvent, intervalMs);
   return () => window.clearInterval(id);
 }
 
 /**
  * Live room updates via Upstash Redis Streams + SSE.
- * Polling is a last-resort fallback when the realtime connection is down.
+ * Polling falls back when disconnected, and can run always when pollIntervalMs is set.
  * Events are debounced so reconnect history does not double-refresh.
  */
 export function useRoomRealtime(
@@ -28,7 +35,7 @@ export function useRoomRealtime(
   onEvent: () => void,
   options: RoomRealtimeOptions = {},
 ) {
-  const { enabled = true } = options;
+  const { enabled = true, pollIntervalMs } = options;
   const onEventRef = useRef(onEvent);
   onEventRef.current = onEvent;
   const debounceId = useRef<number | undefined>(undefined);
@@ -55,9 +62,22 @@ export function useRoomRealtime(
     };
     document.addEventListener("visibilitychange", onVisible);
 
+    const needsFallback =
+      status === "disconnected" ||
+      status === "error" ||
+      status === "connecting";
+    const alwaysPoll =
+      typeof pollIntervalMs === "number" && pollIntervalMs > 0;
+    const interval =
+      alwaysPoll
+        ? pollIntervalMs
+        : needsFallback
+          ? DEFAULT_FALLBACK_POLL_MS
+          : null;
+
     let pollCleanup: (() => void) | null = null;
-    if (status === "disconnected" || status === "error") {
-      pollCleanup = openPolling(schedule);
+    if (interval !== null && pollIntervalMs !== false) {
+      pollCleanup = openPolling(schedule, interval);
     }
 
     return () => {
@@ -65,7 +85,7 @@ export function useRoomRealtime(
       pollCleanup?.();
       if (debounceId.current !== undefined) window.clearTimeout(debounceId.current);
     };
-  }, [roomId, enabled, status]);
+  }, [roomId, enabled, status, pollIntervalMs]);
 }
 
 /**
@@ -107,9 +127,9 @@ export function useDeadlineRefresh(
 export function useUserRealtime(
   userId: string | null | undefined,
   onEvent: () => void,
-  options: { enabled?: boolean } = {},
+  options: { enabled?: boolean; pollIntervalMs?: number | false } = {},
 ) {
-  const { enabled = true } = options;
+  const { enabled = true, pollIntervalMs } = options;
   const onEventRef = useRef(onEvent);
   onEventRef.current = onEvent;
   const debounceId = useRef<number | undefined>(undefined);
@@ -136,9 +156,22 @@ export function useUserRealtime(
     };
     document.addEventListener("visibilitychange", onVisible);
 
+    const needsFallback =
+      status === "disconnected" ||
+      status === "error" ||
+      status === "connecting";
+    const alwaysPoll =
+      typeof pollIntervalMs === "number" && pollIntervalMs > 0;
+    const interval =
+      alwaysPoll
+        ? pollIntervalMs
+        : needsFallback
+          ? DEFAULT_FALLBACK_POLL_MS
+          : null;
+
     let pollCleanup: (() => void) | null = null;
-    if (status === "disconnected" || status === "error") {
-      pollCleanup = openPolling(schedule);
+    if (interval !== null && pollIntervalMs !== false) {
+      pollCleanup = openPolling(schedule, interval);
     }
 
     return () => {
@@ -146,5 +179,5 @@ export function useUserRealtime(
       pollCleanup?.();
       if (debounceId.current !== undefined) window.clearTimeout(debounceId.current);
     };
-  }, [userId, enabled, status]);
+  }, [userId, enabled, status, pollIntervalMs]);
 }

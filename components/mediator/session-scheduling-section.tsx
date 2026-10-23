@@ -210,11 +210,13 @@ export function SessionSchedulingSection({
     refreshReadiness();
   }, [refreshReadiness]);
 
+  // Always poll: pipeline/test updates can finish while SSE is quiet or "connected"
+  // without delivering room.change — mediator otherwise never sees Ready.
   useRoomRealtime(roomId, () => {
     refreshReadiness();
   }, {
     enabled: true,
-    watchUsers: true,
+    pollIntervalMs: 8_000,
     partyUserIds,
   });
 
