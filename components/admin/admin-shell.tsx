@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useHelp } from "@/components/help/help-provider";
 import { useLocale } from "@/components/locale-provider";
-import { LocaleSwitcher } from "@/components/locale-switcher";
+import { StaffLocaleSwitcher } from "@/components/staff-locale-switcher";
 import { siteHeaderSurfaceClassName, useHeaderScrolled } from "@/components/site-header";
 import { cn } from "@/lib/utils";
 
@@ -65,7 +65,7 @@ export function AdminSidebar() {
           <span className="text-body-md">{portal.helpTitle}</span>
         </button>
         <div className="flex justify-center rounded-full border border-hair py-3">
-          <LocaleSwitcher />
+          <StaffLocaleSwitcher />
         </div>
         <button
           className="btn-secondary flex w-full items-center justify-center gap-2 px-4 py-3"

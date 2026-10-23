@@ -195,6 +195,7 @@ async function deliverMediatorQuestion(params: {
   sourceLocale?: Locale | null;
   /** False for LLM candidates (adaptations already localized per party). */
   translate?: boolean;
+  translations?: MessageTranslations | null;
 }) {
   const { partyA, partyB } = await getRoomPartiesForPipeline(params.roomId);
   if (!partyA || !partyB) throw new Error("Party not found.");
@@ -217,6 +218,7 @@ async function deliverMediatorQuestion(params: {
     senderUserId: params.mediatorUserId,
     sourceLocale: params.sourceLocale,
     translate: params.translate,
+    translations: params.translations,
   });
 
   await db
@@ -270,22 +272,39 @@ export async function sendMediatorQuestion(params: {
   const candidate = list.find((c) => c.id === params.candidateId);
   if (!candidate) throw new Error("Candidate not found.");
 
+  const baseline =
+    params.partyRole === "party_a" ? candidate.partyA.trim() : candidate.partyB.trim();
   const edited = params.editedText?.trim();
-  const canonicalContent = edited || candidate.canonicalContent;
-  const adaptations =
-    params.partyRole === "party_a"
-      ? {
-          party_a: edited || candidate.partyA,
-          party_b: candidate.partyB,
-        }
-      : {
-          party_a: candidate.partyA,
-          party_b: edited || candidate.partyB,
-        };
+  // UI always prefills the textarea — only treat as free-text when it differs.
+  const isFreeTextEdit = !!edited && edited !== baseline;
 
-  // Unedited LLM candidates already include per-party wording — don't overwrite with
-  // a fresh machine translation keyed off the mediator UI locale.
-  const isFreeTextEdit = !!edited;
+  let canonicalContent = candidate.canonicalContent;
+  let adaptations: PartyAdaptations =
+    params.partyRole === "party_a"
+      ? { party_a: candidate.partyA, party_b: candidate.partyB }
+      : { party_a: candidate.partyA, party_b: candidate.partyB };
+  let sourceLocale: Locale | null = null;
+  let translations: MessageTranslations | null = null;
+  let translate = false;
+
+  if (isFreeTextEdit && edited) {
+    const { bilingualTranslationsFromContent } = await import("@/lib/mediation/translate");
+    const bilingual = await bilingualTranslationsFromContent({
+      content: edited,
+      hint: params.sourceLocale,
+    });
+    sourceLocale = bilingual.sourceLocale;
+    translations = bilingual.translations;
+    canonicalContent = edited;
+    const { partyA, partyB } = await getRoomPartiesForPipeline(params.roomId);
+    const partyALocale = normalizeLocale(partyA?.preferredLocale);
+    const partyBLocale = normalizeLocale(partyB?.preferredLocale);
+    adaptations = {
+      party_a: translations[partyALocale] ?? edited,
+      party_b: translations[partyBLocale] ?? edited,
+    };
+    translate = false; // translations already built
+  }
 
   await deliverMediatorQuestion({
     roomId: params.roomId,
@@ -293,8 +312,9 @@ export async function sendMediatorQuestion(params: {
     mediatorUserId: params.mediatorUserId,
     canonicalContent,
     adaptations,
-    sourceLocale: isFreeTextEdit ? (params.sourceLocale ?? null) : null,
-    translate: isFreeTextEdit,
+    sourceLocale,
+    translate,
+    translations,
   });
 
   const nextCandidates: MediatorQuestionCandidates = {
@@ -322,31 +342,30 @@ export async function sendCustomMediatorQuestion(params: {
   const text = params.text.trim();
   if (!text) throw new Error("Question cannot be empty.");
 
-  const sourceLocale = normalizeLocale(params.sourceLocale);
+  const { bilingualTranslationsFromContent } = await import("@/lib/mediation/translate");
+  const { sourceLocale, translations } = await bilingualTranslationsFromContent({
+    content: text,
+    hint: params.sourceLocale,
+  });
+
   const { partyA, partyB } = await getRoomPartiesForPipeline(params.roomId);
   if (!partyA || !partyB) throw new Error("Party not found.");
 
   const partyALocale = normalizeLocale(partyA.preferredLocale);
   const partyBLocale = normalizeLocale(partyB.preferredLocale);
 
-  const { translateText } = await import("@/lib/mediation/translate");
-  const [partyAText, partyBText] = await Promise.all([
-    partyALocale === sourceLocale
-      ? Promise.resolve(text)
-      : translateText({ text, from: sourceLocale, to: partyALocale }),
-    partyBLocale === sourceLocale
-      ? Promise.resolve(text)
-      : translateText({ text, from: sourceLocale, to: partyBLocale }),
-  ]);
-
   await deliverMediatorQuestion({
     roomId: params.roomId,
     audience: params.audience,
     mediatorUserId: params.mediatorUserId,
     canonicalContent: text,
-    adaptations: { party_a: partyAText, party_b: partyBText },
+    adaptations: {
+      party_a: translations[partyALocale] ?? text,
+      party_b: translations[partyBLocale] ?? text,
+    },
     sourceLocale,
-    translate: true,
+    translate: false,
+    translations,
   });
 }
 
@@ -513,11 +532,61 @@ export async function publishMediatorCompromise(params: {
     throw new Error("Compromise publishing is not available.");
   }
 
+  const existing =
+    (room.mediatorCompromiseDraft as MediationOption | null) ??
+    (room.compromiseOption as MediationOption | null);
+  const [mediatorRow] = await db
+    .select({ preferredLocale: users.preferredLocale })
+    .from(users)
+    .where(eq(users.id, params.mediatorUserId))
+    .limit(1);
+  const mediatorLocale: Locale = mediatorRow?.preferredLocale === "uk" ? "uk" : "en";
+  const otherLocale: Locale = mediatorLocale === "uk" ? "en" : "uk";
+  const {
+    optionFieldsFrom,
+    mergeOptionLocales,
+    repairOptionFieldsLocale,
+  } = await import("@/lib/mediation/localize-artifacts");
+  const { translateText } = await import("@/lib/mediation/translate");
+
+  const editedFields = await repairOptionFieldsLocale(
+    optionFieldsFrom(params.draft),
+    mediatorLocale,
+  );
+  const existingOther = existing?.byLocale?.[otherLocale];
+  let otherFields = existingOther ? optionFieldsFrom(existingOther) : null;
+  if (!otherFields) {
+    const keys = [
+      "canonicalDescription",
+      "legalNorms",
+      "fulfillmentProbability",
+      "refusalRisks",
+      "partyA",
+      "partyB",
+    ] as const;
+    const translated = await Promise.all(
+      keys.map(async (key) => [
+        key,
+        await translateText({
+          text: editedFields[key],
+          from: mediatorLocale,
+          to: otherLocale,
+        }),
+      ]),
+    );
+    otherFields = Object.fromEntries(translated) as typeof editedFields;
+  }
+
+  const merged = mergeOptionLocales("en", {
+    [mediatorLocale]: { id: params.draft.id, ...editedFields },
+    [otherLocale]: { id: params.draft.id, ...otherFields },
+  });
+
   await db
     .update(rooms)
     .set({
-      compromiseOption: params.draft,
-      mediatorCompromiseDraft: params.draft,
+      compromiseOption: merged,
+      mediatorCompromiseDraft: merged,
       partyACompromiseVote: null,
       partyBCompromiseVote: null,
     })
@@ -534,8 +603,9 @@ export async function publishMediatorCompromise(params: {
     agentKey: "mediation",
     eventType: "compromise_published",
     payload: {
-      optionId: params.draft.id,
-      canonicalDescription: params.draft.canonicalDescription,
+      optionId: merged.id,
+      canonicalDescription: merged.canonicalDescription,
+      byLocaleKeys: Object.keys(merged.byLocale ?? {}),
     },
   });
 
@@ -745,17 +815,42 @@ export async function saveMediatorDraftAgreement(
     .where(eq(users.id, mediatorUserId))
     .limit(1);
   const mediatorLocale: Locale = mediatorRow?.preferredLocale === "uk" ? "uk" : "en";
+  const otherLocale: Locale = mediatorLocale === "uk" ? "en" : "uk";
   next = mergeProtectiveClausesIntoDraft(next, next.protectiveClauseIds, mediatorLocale);
-  // Preserve dual-locale copies when mediator edits the primary fields.
-  if (draft.byLocale) {
-    next = { ...next, byLocale: { ...draft.byLocale, [mediatorLocale]: {
-      title: next.title,
-      body: next.body,
-      obligations: next.obligations,
-      terms: next.terms,
-    } } };
+
+  const existing = room.draftAgreement as DraftAgreement | null;
+  const editedSlot = {
+    title: next.title,
+    body: next.body,
+    obligations: next.obligations,
+    terms: next.terms,
+  };
+  const priorByLocale = draft.byLocale ?? existing?.byLocale ?? {};
+  let otherSlot = priorByLocale[otherLocale] ?? null;
+  if (!otherSlot) {
+    const { translateText } = await import("@/lib/mediation/translate");
+    otherSlot = {
+      title: await translateText({ text: next.title, from: mediatorLocale, to: otherLocale }),
+      body: await translateText({ text: next.body, from: mediatorLocale, to: otherLocale }),
+      obligations: await Promise.all(
+        next.obligations.map(async (o) => ({
+          ...o,
+          text: await translateText({ text: o.text, from: mediatorLocale, to: otherLocale }),
+        })),
+      ),
+      terms: [],
+    };
+    otherSlot.terms = obligationsToTerms(otherSlot.obligations);
   }
-  next = { ...next, terms: obligationsToTerms(next.obligations) };
+  next = {
+    ...next,
+    byLocale: {
+      ...priorByLocale,
+      [mediatorLocale]: editedSlot,
+      [otherLocale]: otherSlot,
+    },
+    terms: obligationsToTerms(next.obligations),
+  };
 
   await db.update(rooms).set({ draftAgreement: next }).where(eq(rooms.id, roomId));
   notifyRoom(roomId);
@@ -773,16 +868,20 @@ export async function publishMediatorDraftAgreement(mediatorUserId: string, room
   const { normalizeDraftAgreement, obligationsToTerms } = await import(
     "@/lib/mediation/draft-agreement"
   );
-  const published = normalizeDraftAgreement({
-    title: existing.title,
-    body: existing.body,
-    obligations: existing.obligations,
-    protectiveClauseIds: existing.protectiveClauseIds,
-    status: "published",
-    publishedAt: new Date().toISOString(),
-    generatedAt: existing.generatedAt,
-    terms: obligationsToTerms(existing.obligations ?? []),
-  });
+  const published = {
+    ...normalizeDraftAgreement({
+      title: existing.title,
+      body: existing.body,
+      obligations: existing.obligations,
+      protectiveClauseIds: existing.protectiveClauseIds,
+      status: "published",
+      publishedAt: new Date().toISOString(),
+      generatedAt: existing.generatedAt,
+      terms: obligationsToTerms(existing.obligations ?? []),
+    }),
+    // Preserve bilingual copies — normalizeDraftAgreement drops byLocale.
+    ...(existing.byLocale ? { byLocale: existing.byLocale } : {}),
+  };
 
   await db.update(rooms).set({ draftAgreement: published }).where(eq(rooms.id, roomId));
   await setPartyNotification({
@@ -867,11 +966,13 @@ async function ensureDraftAgreement(roomId: string, optionId: string) {
       context: ctx,
       partyALocale: partyA?.preferredLocale,
       partyBLocale: partyB?.preferredLocale,
-      extraInstruction: buildAgreementDraftExtraInstruction({
-        optionId,
-        option,
-        suggestedProtectiveIds,
-      }),
+      extraInstruction: (locale) =>
+        buildAgreementDraftExtraInstruction({
+          optionId,
+          option,
+          suggestedProtectiveIds,
+          targetLocale: locale,
+        }),
       normalize: normalizeDraftAgreement,
       mergeProtective: mergeProtectiveClausesIntoDraft,
       suggestedProtectiveIds,
@@ -942,7 +1043,14 @@ export async function getMediatorConsoleSessionState(mediatorUserId: string, roo
     fresh = (await loadRoom(room.id)) ?? fresh;
   }
 
-  return buildSessionState(fresh, mediatorUserId, "en", "mediator");
+  const [mediatorRow] = await db
+    .select({ preferredLocale: users.preferredLocale })
+    .from(users)
+    .where(eq(users.id, mediatorUserId))
+    .limit(1);
+  const locale: Locale = mediatorRow?.preferredLocale === "uk" ? "uk" : "en";
+
+  return buildSessionState(fresh, mediatorUserId, locale, "mediator");
 }
 
 async function buildSessionState(

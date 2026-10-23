@@ -7,8 +7,7 @@ import type { Locale } from "@/lib/i18n";
 import type { PartyRole } from "@/lib/participant-roles";
 import { resolveLocalizedSystemMessage } from "@/lib/mediation/system-messages";
 import {
-  ensureMessageTranslations,
-  getRoomLocalesForTranslation,
+  bilingualTranslationsFromContent,
   type MessageTranslations,
 } from "@/lib/mediation/translate";
 import { normalizeLocale } from "@/lib/pipeline/locale";
@@ -91,8 +90,8 @@ export async function insertAgentMessage(params: {
   /** Mediator user id when a human mediator authored the message. */
   senderUserId?: string | null;
   /**
-   * Locale the mediator (or author) wrote in — typically the UI locale.
-   * Required for correct free-text translation; falls back to the author's preferredLocale.
+   * Locale the author wrote in. When translating without prebuilt translations,
+   * content language is detected (hint = this value or author preferredLocale).
    */
   sourceLocale?: Locale | null;
   /**
@@ -100,22 +99,24 @@ export async function insertAgentMessage(params: {
    * Defaults to true whenever senderUserId is set.
    */
   translate?: boolean;
+  /** Prebuilt bilingual map — skips a second MT pass when provided. */
+  translations?: MessageTranslations | null;
 }) {
   const channel =
     params.channel ?? (params.addresseeUserId ? "private" : "shared");
 
   let sourceLocale: Locale | null = params.sourceLocale ?? null;
-  let translations: MessageTranslations | null = null;
+  let translations: MessageTranslations | null = params.translations ?? null;
   const shouldTranslate = params.translate ?? !!params.senderUserId;
 
-  if (params.senderUserId && shouldTranslate) {
-    sourceLocale = sourceLocale ?? (await localeForUser(params.senderUserId));
-    const needed = await getRoomLocalesForTranslation(params.roomId);
-    translations = await ensureMessageTranslations({
+  if (params.senderUserId && shouldTranslate && !translations) {
+    const hint = sourceLocale ?? (await localeForUser(params.senderUserId));
+    const bilingual = await bilingualTranslationsFromContent({
       content: params.canonicalContent,
-      sourceLocale,
-      neededLocales: needed,
+      hint,
     });
+    sourceLocale = bilingual.sourceLocale;
+    translations = bilingual.translations;
   } else if (params.sourceLocale) {
     sourceLocale = params.sourceLocale;
   }
@@ -145,14 +146,13 @@ export async function insertParticipantMessage(params: {
   userId: string;
   content: string;
   channel?: "shared" | "private";
+  /** Optional hint only; actual source comes from content language detection. */
   sourceLocale?: Locale;
 }) {
-  const sourceLocale = params.sourceLocale ?? (await localeForUser(params.userId));
-  const needed = await getRoomLocalesForTranslation(params.roomId);
-  const translations = await ensureMessageTranslations({
+  const hint = params.sourceLocale ?? (await localeForUser(params.userId));
+  const { sourceLocale, translations } = await bilingualTranslationsFromContent({
     content: params.content,
-    sourceLocale,
-    neededLocales: needed,
+    hint,
   });
 
   const [row] = await db

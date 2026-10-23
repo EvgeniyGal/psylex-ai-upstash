@@ -1,4 +1,5 @@
 import type { Locale } from "@/lib/i18n";
+import { repairTextLocale } from "@/lib/mediation/translate";
 import type {
   DraftAgreement,
   DraftAgreementLocaleFields,
@@ -24,8 +25,52 @@ export function resolveOptionForLocale(
 ): MediationOptionLocaleFields & { id: string } {
   const lang = normalizeLocale(locale);
   const localized = option.byLocale?.[lang];
-  const fields = localized ?? optionFieldsFrom(option);
-  return { id: option.id, ...fields };
+  if (localized) return { id: option.id, ...optionFieldsFrom(localized) };
+  // Legacy rows without byLocale[lang]: use top-level (primary) fields.
+  return { id: option.id, ...optionFieldsFrom(option) };
+}
+
+/** Re-translate option string fields that are clearly not in the target locale. */
+export async function repairOptionFieldsLocale(
+  fields: MediationOptionLocaleFields,
+  targetLocale: Locale,
+): Promise<MediationOptionLocaleFields> {
+  const keys = [
+    "canonicalDescription",
+    "legalNorms",
+    "fulfillmentProbability",
+    "refusalRisks",
+    "partyA",
+    "partyB",
+  ] as const;
+  const repaired = { ...fields };
+  await Promise.all(
+    keys.map(async (key) => {
+      repaired[key] = await repairTextLocale(fields[key], targetLocale);
+    }),
+  );
+  return repaired;
+}
+
+export async function repairDraftFieldsLocale(
+  fields: DraftAgreementLocaleFields,
+  targetLocale: Locale,
+): Promise<DraftAgreementLocaleFields> {
+  const [title, body, ...obligationTexts] = await Promise.all([
+    repairTextLocale(fields.title, targetLocale),
+    repairTextLocale(fields.body, targetLocale),
+    ...fields.obligations.map((o) => repairTextLocale(o.text, targetLocale)),
+  ]);
+  const terms = await Promise.all(fields.terms.map((t) => repairTextLocale(t, targetLocale)));
+  return {
+    title,
+    body,
+    terms,
+    obligations: fields.obligations.map((o, index) => ({
+      ...o,
+      text: obligationTexts[index] ?? o.text,
+    })),
+  };
 }
 
 export function mergeOptionLocales(

@@ -1,4 +1,9 @@
 import type { Locale } from "@/lib/i18n";
+import {
+  detectMessageLocale,
+  detectMessageLocaleHeuristic,
+  SUPPORTED_MESSAGE_LOCALES,
+} from "@/lib/mediation/detect-locale";
 import { normalizeLocale } from "@/lib/pipeline/locale";
 import {
   chatTemperature,
@@ -12,6 +17,8 @@ const LOCALE_LABEL: Record<Locale, string> = {
   en: "English",
   uk: "Ukrainian (українська)",
 };
+
+export { SUPPORTED_MESSAGE_LOCALES };
 
 export async function translateText(params: {
   text: string;
@@ -70,6 +77,46 @@ export async function ensureMessageTranslations(params: {
   );
 
   return translations;
+}
+
+/** Always produce both `en` and `uk` keys for free-text storage. */
+export async function ensureBilingualTranslations(params: {
+  content: string;
+  sourceLocale: Locale;
+}): Promise<MessageTranslations> {
+  return ensureMessageTranslations({
+    content: params.content,
+    sourceLocale: params.sourceLocale,
+    neededLocales: SUPPORTED_MESSAGE_LOCALES,
+  });
+}
+
+/**
+ * Detect language, then always fill en+uk translations.
+ * `hint` is only used when detection is inconclusive.
+ */
+export async function bilingualTranslationsFromContent(params: {
+  content: string;
+  hint?: Locale | null;
+}): Promise<{ sourceLocale: Locale; translations: MessageTranslations }> {
+  const sourceLocale = await detectMessageLocale(params.content, params.hint);
+  const translations = await ensureBilingualTranslations({
+    content: params.content,
+    sourceLocale,
+  });
+  return { sourceLocale, translations };
+}
+
+/** Re-translate a string when heuristic says it is not in the target locale. */
+export async function repairTextLocale(
+  text: string,
+  targetLocale: Locale,
+): Promise<string> {
+  const trimmed = text.trim();
+  if (!trimmed) return text;
+  const detected = detectMessageLocaleHeuristic(trimmed);
+  if (!detected || detected === targetLocale) return text;
+  return translateText({ text: trimmed, from: detected, to: targetLocale });
 }
 
 /** Collect preferred locales for parties (+ optional mediator) in a room. */

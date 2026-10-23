@@ -5,6 +5,8 @@ import {
   mergeDraftLocales,
   mergeOptionLocales,
   optionFieldsFrom,
+  repairDraftFieldsLocale,
+  repairOptionFieldsLocale,
 } from "@/lib/mediation/localize-artifacts";
 import { runMediationAgent } from "@/lib/mediation/run-agent";
 import {
@@ -12,19 +14,24 @@ import {
   mediationCompromiseSchema,
   mediationOptionsSchema,
 } from "@/lib/mediation/schemas";
+import { SUPPORTED_MESSAGE_LOCALES } from "@/lib/mediation/translate";
 import type { DraftAgreement, MediationOption } from "@/lib/mediation/types";
-import { getUniqueRoomLocales, normalizeLocale } from "@/lib/pipeline/locale";
+import { normalizeLocale } from "@/lib/pipeline/locale";
+
+/** Always generate both product languages for documents and cross-locale rooms. */
+const ARTIFACT_LOCALES: Locale[] = SUPPORTED_MESSAGE_LOCALES;
+
+function artifactLocales(_partyALocale?: string | null, _partyBLocale?: string | null): Locale[] {
+  return [...ARTIFACT_LOCALES];
+}
 
 export async function generateLocalizedOptions(params: {
   context: MediationContext;
   partyALocale?: string | null;
   partyBLocale?: string | null;
 }): Promise<MediationOption[]> {
-  const locales = getUniqueRoomLocales([
-    { preferredLocale: params.partyALocale ?? "en" },
-    { preferredLocale: params.partyBLocale ?? "en" },
-  ]);
-  const primary = locales[0] ?? "en";
+  const locales = artifactLocales(params.partyALocale, params.partyBLocale);
+  const primary: Locale = "en";
 
   const results = await Promise.all(
     locales.map(async (locale) => {
@@ -34,7 +41,13 @@ export async function generateLocalizedOptions(params: {
         schema: mediationOptionsSchema,
         targetLocale: locale,
       });
-      return { locale, options: result.options };
+      const options = await Promise.all(
+        result.options.map(async (option) => ({
+          id: option.id,
+          ...(await repairOptionFieldsLocale(optionFieldsFrom(option), locale)),
+        })),
+      );
+      return { locale, options };
     }),
   );
 
@@ -52,11 +65,18 @@ export async function generateLocalizedOptions(params: {
   }
 
   // If ids diverge across locales, fall back to index alignment from primary result.
-  if (byId.size === 0 || (locales.length > 1 && byId.size < (results[0]?.options.length ?? 0))) {
-    const primaryOptions = results.find((r) => r.locale === primary)?.options ?? results[0]?.options ?? [];
+  const primaryCount = results.find((r) => r.locale === primary)?.options.length ?? 0;
+  if (byId.size === 0 || (locales.length > 1 && byId.size < primaryCount)) {
+    console.warn(
+      "[generateLocalizedOptions] option ids diverged across locales; aligning by index",
+      { byIdSize: byId.size, primaryCount },
+    );
+    const primaryOptions =
+      results.find((r) => r.locale === primary)?.options ?? results[0]?.options ?? [];
     return primaryOptions.map((option, index) => {
-      const byLocale: Partial<Record<Locale, ReturnType<typeof optionFieldsFrom> & { id: string }>> =
-        {};
+      const byLocale: Partial<
+        Record<Locale, ReturnType<typeof optionFieldsFrom> & { id: string }>
+      > = {};
       for (const { locale, options } of results) {
         const match = options[index] ?? options.find((o) => o.id === option.id) ?? option;
         byLocale[locale] = { id: option.id, ...optionFieldsFrom(match) };
@@ -74,15 +94,13 @@ export async function generateLocalizedCompromise(params: {
   partyALocale?: string | null;
   partyBLocale?: string | null;
 }): Promise<MediationOption> {
-  const locales = getUniqueRoomLocales([
-    { preferredLocale: params.partyALocale ?? "en" },
-    { preferredLocale: params.partyBLocale ?? "en" },
-  ]);
-  const primary = locales[0] ?? "en";
+  const locales = artifactLocales(params.partyALocale, params.partyBLocale);
+  const primary: Locale = "en";
   const byLocale: Partial<
     Record<Locale, ReturnType<typeof optionFieldsFrom> & { id: string }>
   > = {};
 
+  let sharedId: string | null = null;
   for (const locale of locales) {
     const compromise = await runMediationAgent({
       mode: "compromise",
@@ -91,9 +109,14 @@ export async function generateLocalizedCompromise(params: {
       targetLocale: locale,
       extraInstruction: params.extraInstruction,
     });
+    sharedId = sharedId ?? compromise.option.id;
+    const repaired = await repairOptionFieldsLocale(
+      optionFieldsFrom(compromise.option),
+      locale,
+    );
     byLocale[locale] = {
-      id: compromise.option.id,
-      ...optionFieldsFrom(compromise.option),
+      id: sharedId,
+      ...repaired,
     };
   }
 
@@ -102,7 +125,8 @@ export async function generateLocalizedCompromise(params: {
 
 export async function generateLocalizedAgreementDraft(params: {
   context: MediationContext;
-  extraInstruction: string;
+  /** Prefer a per-locale builder so each generation gets locale-matched option text. */
+  extraInstruction: string | ((locale: Locale) => string);
   partyALocale?: string | null;
   partyBLocale?: string | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -112,22 +136,24 @@ export async function generateLocalizedAgreementDraft(params: {
   status: DraftAgreement["status"];
   publishedAt?: string;
 }): Promise<DraftAgreement> {
-  const locales = getUniqueRoomLocales([
-    { preferredLocale: params.partyALocale ?? "en" },
-    { preferredLocale: params.partyBLocale ?? "en" },
-  ]);
-  const primary = locales[0] ?? "en";
+  const locales = artifactLocales(params.partyALocale, params.partyBLocale);
+  const primary: Locale = "en";
   const byLocale: Partial<Record<Locale, ReturnType<typeof draftFieldsFrom>>> = {};
 
   let baseMeta: DraftAgreement | null = null;
 
   for (const locale of locales) {
+    const extra =
+      typeof params.extraInstruction === "function"
+        ? params.extraInstruction(locale)
+        : params.extraInstruction;
+
     const draft = await runMediationAgent({
       mode: "agreement_draft",
       context: params.context,
       schema: mediationAgreementDraftSchema,
       targetLocale: locale,
-      extraInstruction: params.extraInstruction,
+      extraInstruction: extra,
     });
 
     let agreement = params.normalize(
@@ -140,7 +166,7 @@ export async function generateLocalizedAgreementDraft(params: {
       { suggestProtectiveIds: params.suggestedProtectiveIds },
     );
     agreement = params.mergeProtective(agreement, params.suggestedProtectiveIds, locale);
-    byLocale[locale] = draftFieldsFrom(agreement);
+    byLocale[locale] = await repairDraftFieldsLocale(draftFieldsFrom(agreement), locale);
     if (!baseMeta) baseMeta = agreement;
   }
 

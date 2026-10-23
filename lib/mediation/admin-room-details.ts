@@ -8,6 +8,7 @@ import {
   buildMediationResultsSummary,
   type MediationResultsSummary,
 } from "@/lib/mediation/results-summary";
+import { resolveOptionForLocale } from "@/lib/mediation/localize-artifacts";
 import type { getMediationRoomState } from "@/lib/mediation/orchestrator";
 import type { MediationOption } from "@/lib/mediation/types";
 import { partyRoleLabel } from "@/lib/party-labels";
@@ -52,14 +53,15 @@ export type AdminMediationDetails = {
   resultsSummary: MediationResultsSummary | null;
 };
 
-function mapOption(option: MediationOption): AdminMediationOptionView {
+function mapOption(option: MediationOption, locale: Locale): AdminMediationOptionView {
+  const resolved = resolveOptionForLocale(option, locale);
   return {
     id: option.id,
-    partyADescription: option.partyA,
-    partyBDescription: option.partyB,
-    legalNorms: option.legalNorms,
-    fulfillmentProbability: option.fulfillmentProbability,
-    refusalRisks: option.refusalRisks,
+    partyADescription: resolved.partyA,
+    partyBDescription: resolved.partyB,
+    legalNorms: resolved.legalNorms,
+    fulfillmentProbability: resolved.fulfillmentProbability,
+    refusalRisks: resolved.refusalRisks,
   };
 }
 
@@ -116,15 +118,19 @@ function buildAdminMediationState(
   room: typeof rooms.$inferSelect,
   options: MediationOption[],
   compromise: MediationOption | null,
+  locale: Locale,
 ): MediationState {
-  const mapOptionForState = (option: MediationOption) => ({
-    id: option.id,
-    description: option.partyA,
-    legalNorms: option.legalNorms,
-    fulfillmentProbability: option.fulfillmentProbability,
-    refusalRisks: option.refusalRisks,
-    canonicalDescription: option.canonicalDescription,
-  });
+  const mapOptionForState = (option: MediationOption) => {
+    const resolved = resolveOptionForLocale(option, locale);
+    return {
+      id: option.id,
+      description: resolved.partyA,
+      legalNorms: resolved.legalNorms,
+      fulfillmentProbability: resolved.fulfillmentProbability,
+      refusalRisks: resolved.refusalRisks,
+      canonicalDescription: resolved.canonicalDescription,
+    };
+  };
 
   return {
     room: {
@@ -180,26 +186,32 @@ function enhanceAdminResultsSummary(
 
   if (!selected) return summary;
 
+  const resolved = resolveOptionForLocale(selected, locale);
   const copy = portalCopy[locale];
   const solutionParts = [
-    `${partyRoleLabel("party_a", locale)}: ${selected.partyA}`,
-    `${partyRoleLabel("party_b", locale)}: ${selected.partyB}`,
-    `${copy.mediationFulfillment}: ${selected.fulfillmentProbability}`,
-    `${copy.mediationRefusalRisks}: ${selected.refusalRisks}`,
+    `${partyRoleLabel("party_a", locale)}: ${resolved.partyA}`,
+    `${partyRoleLabel("party_b", locale)}: ${resolved.partyB}`,
+    `${copy.mediationFulfillment}: ${resolved.fulfillmentProbability}`,
+    `${copy.mediationRefusalRisks}: ${resolved.refusalRisks}`,
   ];
 
   summary.solution = solutionParts.join("\n\n");
   return summary;
 }
 
-export async function getAdminMediationDetails(roomId: string): Promise<AdminMediationDetails | null> {
+export async function getAdminMediationDetails(
+  roomId: string,
+  uiLocale?: Locale,
+): Promise<AdminMediationDetails | null> {
   const [room] = await db.select().from(rooms).where(eq(rooms.id, roomId)).limit(1);
   if (!room?.mediationStartedAt) return null;
 
   const { partyA, partyB } = await getRoomPartiesForPipeline(roomId);
   if (!partyA || !partyB) return null;
 
-  const locale: Locale = partyA.preferredLocale === "uk" || partyB.preferredLocale === "uk" ? "uk" : "en";
+  const locale: Locale =
+    uiLocale ??
+    (partyA.preferredLocale === "uk" || partyB.preferredLocale === "uk" ? "uk" : "en");
 
   const messages = await listRoomMessages(roomId);
   const options = (room.mediationOptions as MediationOption[] | null) ?? [];
@@ -235,7 +247,7 @@ export async function getAdminMediationDetails(roomId: string): Promise<AdminMed
 
   let resultsSummary: MediationResultsSummary | null = null;
   if (room.mediationPhase === "completed") {
-    const state = buildAdminMediationState(room, options, compromise);
+    const state = buildAdminMediationState(room, options, compromise, locale);
     const summary = await buildMediationResultsSummary(state, locale);
     resultsSummary = enhanceAdminResultsSummary(
       summary,
@@ -255,11 +267,11 @@ export async function getAdminMediationDetails(roomId: string): Promise<AdminMed
     partyBTitle: partyB.title,
     partyAMessages,
     partyBMessages,
-    options: options.map(mapOption),
+    options: options.map((option) => mapOption(option, locale)),
     partyAVoteOptionId: room.partyAVoteOptionId,
     partyBVoteOptionId: room.partyBVoteOptionId,
     selectedOptionId: room.selectedOptionId,
-    compromise: compromise ? mapOption(compromise) : null,
+    compromise: compromise ? mapOption(compromise, locale) : null,
     partyACompromiseVote: room.partyACompromiseVote,
     partyBCompromiseVote: room.partyBCompromiseVote,
     resultsSummary,
@@ -275,7 +287,7 @@ export async function buildAdminMediationDownload(roomId: string, locale: Locale
 
   const options = (room.mediationOptions as MediationOption[] | null) ?? [];
   const compromise = room.compromiseOption as MediationOption | null;
-  const state = buildAdminMediationState(room, options, compromise);
+  const state = buildAdminMediationState(room, options, compromise, locale);
   const summary = enhanceAdminResultsSummary(
     await buildMediationResultsSummary(state, locale),
     room,

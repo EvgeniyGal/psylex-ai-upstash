@@ -1,3 +1,5 @@
+import type { Locale } from "@/lib/i18n";
+import { resolveOptionForLocale } from "@/lib/mediation/localize-artifacts";
 import type { MediationOption } from "@/lib/mediation/types";
 
 /** Extra instruction for agreement_draft including full selected option text. */
@@ -5,14 +7,20 @@ export function buildAgreementDraftExtraInstruction(params: {
   optionId: string;
   option: MediationOption | null;
   suggestedProtectiveIds: string[];
+  /** When set, feed locale-matched option fields into the prompt (avoids EN contamination of UK drafts). */
+  targetLocale?: Locale;
 }) {
-  const optionBlock = params.option
+  const resolved = params.option
+    ? resolveOptionForLocale(params.option, params.targetLocale ?? "en")
+    : null;
+
+  const optionBlock = resolved
     ? [
         `Selected option id: ${params.optionId}`,
-        `Canonical description: ${params.option.canonicalDescription}`,
-        `Party A presentation (voting only, do NOT copy first-person into the agreement): ${params.option.partyA}`,
-        `Party B presentation (voting only, do NOT copy first-person into the agreement): ${params.option.partyB}`,
-        `Legal norms (information): ${params.option.legalNorms}`,
+        `Canonical description: ${resolved.canonicalDescription}`,
+        `Party A presentation (voting only, do NOT copy first-person into the agreement): ${resolved.partyA}`,
+        `Party B presentation (voting only, do NOT copy first-person into the agreement): ${resolved.partyB}`,
+        `Legal norms (information): ${resolved.legalNorms}`,
       ].join("\n")
     : `Selected option id: ${params.optionId}`;
 

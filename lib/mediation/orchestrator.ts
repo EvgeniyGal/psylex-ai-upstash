@@ -820,11 +820,13 @@ async function generateDraftAgreement(roomId: string, optionId: string) {
     context: ctx,
     partyALocale: partyA?.preferredLocale,
     partyBLocale: partyB?.preferredLocale,
-    extraInstruction: buildAgreementDraftExtraInstruction({
-      optionId,
-      option,
-      suggestedProtectiveIds,
-    }),
+    extraInstruction: (locale) =>
+      buildAgreementDraftExtraInstruction({
+        optionId,
+        option,
+        suggestedProtectiveIds,
+        targetLocale: locale,
+      }),
     normalize: normalizeDraftAgreement,
     mergeProtective: mergeProtectiveClausesIntoDraft,
     suggestedProtectiveIds,
