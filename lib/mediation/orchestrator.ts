@@ -870,6 +870,20 @@ export async function acceptAgreement(userId: string) {
     ...((updated.draftAgreement as Record<string, unknown> | null) ?? {}),
     status: "accepted",
   };
+
+  // Mode B: both accepts mark the draft accepted but only the mediator may complete the session.
+  if (isMediatorFacilitatedRoom(updated)) {
+    await db
+      .update(rooms)
+      .set({
+        agreementFinalizedAt: finalizedAt,
+        draftAgreement: acceptedDraft,
+      })
+      .where(eq(rooms.id, room.id));
+    notifyRoom(room.id);
+    return loadRoom(room.id);
+  }
+
   await db
     .update(rooms)
     .set({
@@ -898,15 +912,6 @@ export async function acceptAgreement(userId: string) {
     partyAAcceptedAt: updated.partyAAgreementAcceptedAt,
     partyBAcceptedAt: updated.partyBAgreementAcceptedAt,
   });
-
-  if (isMediatorFacilitatedRoom(updated)) {
-    const { setPartyNotification } = await import("@/lib/mediator-session/notifications");
-    await setPartyNotification({
-      roomId: room.id,
-      type: "session_completed",
-      targetRole: "all",
-    });
-  }
 
   return loadRoom(room.id);
 }

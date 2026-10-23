@@ -1,6 +1,7 @@
+import { createHash } from "crypto";
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { rooms, users } from "@/drizzle/schema";
+import { mediationFilingReceipts, rooms, users } from "@/drizzle/schema";
 import {
   assembleMediationContext,
   isAttackHeuristic,
@@ -819,22 +820,31 @@ export async function endMediatorSession(
   }
 
   const existing = room.draftAgreement as DraftAgreement | null;
+  const bothAccepted =
+    !!room.partyAAgreementAcceptedAt && !!room.partyBAgreementAcceptedAt;
+  const draftAlreadyAccepted = existing?.status === "accepted" || bothAccepted;
   const hasAgreementPath =
     room.mediationPhase === "agreement" ||
-    (existing && (existing.status === "published" || existing.status === "draft"));
+    (existing &&
+      (existing.status === "published" ||
+        existing.status === "draft" ||
+        existing.status === "accepted"));
+
+  const completedAt = new Date();
 
   if (hasAgreementPath && existing) {
     const { normalizeDraftAgreement, obligationsToTerms } = await import(
       "@/lib/mediation/draft-agreement"
     );
-    const published = {
+    const finalStatus = draftAlreadyAccepted ? "accepted" : "published";
+    const finalizedDraft = {
       ...normalizeDraftAgreement({
         title: existing.title,
         body: existing.body,
         obligations: existing.obligations,
         protectiveClauseIds: existing.protectiveClauseIds,
-        status: "published",
-        publishedAt: existing.publishedAt ?? new Date().toISOString(),
+        status: finalStatus,
+        publishedAt: existing.publishedAt ?? completedAt.toISOString(),
         generatedAt: existing.generatedAt,
         terms: obligationsToTerms(existing.obligations ?? []),
       }),
@@ -844,24 +854,57 @@ export async function endMediatorSession(
     await db
       .update(rooms)
       .set({
-        draftAgreement: published,
+        draftAgreement: finalizedDraft,
         mediationPhase: "completed",
-        mediationCompletedAt: new Date(),
+        mediationCompletedAt: completedAt,
+        ...(draftAlreadyAccepted && !room.agreementFinalizedAt
+          ? { agreementFinalizedAt: completedAt }
+          : {}),
       })
       .where(eq(rooms.id, roomId));
+
+    if (bothAccepted) {
+      const [existingReceipt] = await db
+        .select({ id: mediationFilingReceipts.id })
+        .from(mediationFilingReceipts)
+        .where(eq(mediationFilingReceipts.roomId, roomId))
+        .limit(1);
+      if (!existingReceipt) {
+        const filingDraft = {
+          title: finalizedDraft.title,
+          body: finalizedDraft.body,
+          terms: finalizedDraft.terms,
+        };
+        const hash = createHash("sha256")
+          .update(JSON.stringify(filingDraft))
+          .digest("hex");
+        await db.insert(mediationFilingReceipts).values({
+          roomId,
+          selectedOptionId: room.selectedOptionId ?? "unknown",
+          documentVersion: "1",
+          contentHash: hash,
+          partyAAcceptedAt: room.partyAAgreementAcceptedAt!,
+          partyBAcceptedAt: room.partyBAgreementAcceptedAt!,
+        });
+      }
+    }
 
     await logPipelineEvent({
       roomId,
       agentKey: "mediation",
       eventType: "session_completed_with_agreement",
-      payload: { title: published.title, reason: "mediator_completed" },
+      payload: {
+        title: finalizedDraft.title,
+        reason: "mediator_completed",
+        accepted: draftAlreadyAccepted,
+      },
     });
   } else {
     await db
       .update(rooms)
       .set({
         mediationPhase: "completed",
-        mediationCompletedAt: new Date(),
+        mediationCompletedAt: completedAt,
       })
       .where(eq(rooms.id, roomId));
 

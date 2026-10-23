@@ -86,6 +86,11 @@ export function MediatorPartyRoom({
 
   const flowStep = resolveRoomFlowStep(phase, review);
 
+  const bothAccepted =
+    !!state.room.agreementAccepted && !!state.room.otherAgreementAccepted;
+  const waitingForMediatorComplete =
+    phase === "agreement" && bothAccepted && !isSessionComplete;
+
   const actionBanner =
     banner ||
     (state.room.pendingQuestion
@@ -94,15 +99,17 @@ export function MediatorPartyRoom({
         ? t.modeBWaitingCompromisePublish
         : awaitingMediatorPublish
           ? t.modeBWaitingAgreementPublish
-          : waitingForPeerVote
-            ? t.mediationVoteRecorded
-            : phase === "voting"
-              ? t.modeBNotifyOptions
-              : phase === "voting_discrepancy" && state.compromise
-                ? t.modeBNotifyCompromise
-                : phase === "agreement" && state.room.agreementPublished
-                  ? t.modeBNotifyAgreement
-                  : null);
+          : waitingForMediatorComplete
+            ? t.modeBWaitingMediatorComplete
+            : waitingForPeerVote
+              ? t.mediationVoteRecorded
+              : phase === "voting"
+                ? t.modeBNotifyOptions
+                : phase === "voting_discrepancy" && state.compromise
+                  ? t.modeBNotifyCompromise
+                  : phase === "agreement" && state.room.agreementPublished
+                    ? t.modeBNotifyAgreement
+                    : null);
 
   const onSend = () => {
     if (!reply.trim()) return;
@@ -424,6 +431,9 @@ export function MediatorPartyRoom({
                 ) : null}
                 {state.room.agreementAccepted && !state.room.otherAgreementAccepted ? (
                   <p className="text-body-sm text-on-surface-variant">{t.mediationWaitingOtherAccept}</p>
+                ) : null}
+                {waitingForMediatorComplete ? (
+                  <p className="text-body-sm text-on-surface-variant">{t.modeBWaitingMediatorComplete}</p>
                 ) : null}
               </div>
             ) : null}

@@ -93,6 +93,7 @@ type PortalCopy = {
   modeBSessionTimeUp: string;
   modeBWaitingCompromisePublish: string;
   modeBWaitingAgreementPublish: string;
+  modeBWaitingMediatorComplete: string;
   myRoomsTitle: string;
   myRoomsSubtitle: string;
   myRoomsEmpty: string;
@@ -359,6 +360,8 @@ export const portalCopy: Record<Locale, PortalCopy> = {
       "Scheduled session time is up. The mediator will complete the session when ready.",
     modeBWaitingCompromisePublish: "Waiting for the mediator to publish a compromise option.",
     modeBWaitingAgreementPublish: "Waiting for the mediator to finalize the agreement.",
+    modeBWaitingMediatorComplete:
+      "Both parties have accepted. Waiting for the mediator to complete the session.",
     myRoomsTitle: "My rooms",
     myRoomsSubtitle: "Select a mediation room to continue.",
     myRoomsEmpty: "You are not assigned to any rooms yet.",
@@ -646,6 +649,8 @@ export const portalCopy: Record<Locale, PortalCopy> = {
       "Запланований час сесії минув. Медіатор завершить сесію, коли буде готовий.",
     modeBWaitingCompromisePublish: "Очікуємо, поки медіатор опублікує компромісний варіант.",
     modeBWaitingAgreementPublish: "Очікуємо, поки медіатор фіналізує угоду.",
+    modeBWaitingMediatorComplete:
+      "Обидві сторони прийняли угоду. Очікуємо, поки медіатор завершить сесію.",
     myRoomsTitle: "Мої кімнати",
     myRoomsSubtitle: "Оберіть кімнату медіації, щоб продовжити.",
     myRoomsEmpty: "Вас ще не додано до жодної кімнати.",
