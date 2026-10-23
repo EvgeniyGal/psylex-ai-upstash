@@ -23,6 +23,7 @@ import {
   normalizeLocale,
 } from "@/lib/pipeline/locale";
 import {
+  chatTemperature,
   getOpenAIChatModel,
   getOpenAIClient,
   parseJsonFromModelResponse,
@@ -75,7 +76,7 @@ async function generateLegalAnalysisForLocale(params: {
 
   const completion = await client.chat.completions.create({
     model,
-    temperature: 0,
+    ...chatTemperature(model, 0),
     response_format: { type: "json_object" },
     messages: [
       { role: "system", content: systemPrompt },

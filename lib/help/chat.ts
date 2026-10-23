@@ -1,4 +1,8 @@
-import { getOpenAIChatModel, getOpenAIClient } from "@/lib/pipeline/openai-client";
+import {
+  chatTemperature,
+  getOpenAIChatModel,
+  getOpenAIClient,
+} from "@/lib/pipeline/openai-client";
 import { listHelpDocuments } from "@/lib/help/documents";
 import type { HelpViewerRole } from "@/lib/help/types";
 import type { Locale } from "@/lib/i18n";
@@ -48,7 +52,7 @@ export async function answerHelpChat(params: {
 
   const completion = await client.chat.completions.create({
     model,
-    temperature: 0.2,
+    ...chatTemperature(model, 0.2),
     messages: [
       { role: "system", content: buildSystemPrompt(params.locale, documents) },
       ...history.map((message) => ({

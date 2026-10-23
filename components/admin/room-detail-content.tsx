@@ -38,16 +38,23 @@ export type RoomDetailRow = {
   description: string;
   jurisdiction: RoomJurisdiction;
   usaSubJurisdiction: string | null;
-  createdAt: Date;
+  /** Date from the server, or ISO string after RSC → client serialization. */
+  createdAt: Date | string;
   createdByUserId?: string | null;
-  scheduledStartAt?: Date | null;
+  scheduledStartAt?: Date | string | null;
   mediationDurationMinutes?: number;
-  mediationStartedAt: Date | null;
+  mediationStartedAt: Date | string | null;
   mediationPhase: string | null;
   mediationRound: number;
-  mediationCompletedAt: Date | null;
+  mediationCompletedAt: Date | string | null;
   selectedOptionId: string | null;
 };
+
+function toIsoOrNull(value: Date | string | null | undefined): string | null {
+  if (value == null) return null;
+  if (typeof value === "string") return value;
+  return value.toISOString();
+}
 
 const inputClass =
   "w-full rounded-md border border-hair bg-paper px-3 py-2 text-ink focus:border-law focus:outline-none focus:ring-1 focus:ring-law";
@@ -330,8 +337,8 @@ export function RoomDetailContent({
 
       <SessionSchedulingSection
         initialDurationMinutes={room.mediationDurationMinutes}
-        initialScheduledStartAt={room.scheduledStartAt?.toISOString() ?? null}
-        mediationCompletedAt={room.mediationCompletedAt?.toISOString() ?? null}
+        initialScheduledStartAt={toIsoOrNull(room.scheduledStartAt)}
+        mediationCompletedAt={toIsoOrNull(room.mediationCompletedAt)}
         mediationStarted={!!room.mediationStartedAt}
         partyUserIds={[partyA?.id, partyB?.id].filter((id): id is string => Boolean(id))}
         readOnly={readOnly && basePath.startsWith("/admin")}

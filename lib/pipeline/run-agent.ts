@@ -4,6 +4,7 @@ import type { PostIntakeAgentKey } from "@/lib/pipeline/agent-keys";
 import { localeInstruction } from "@/lib/pipeline/locale";
 import { loadAgentPrompt } from "@/lib/pipeline/load-prompt";
 import {
+  chatTemperature,
   getOpenAIChatModel,
   getOpenAIClient,
   parseJsonFromModelResponse,
@@ -28,7 +29,7 @@ export async function runAgent<T extends PostIntakeAgentKey>(params: RunAgentPar
   const callModel = async (extraInstruction?: string) => {
     const completion = await client.chat.completions.create({
       model,
-      temperature: 0,
+      ...chatTemperature(model, 0),
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt },

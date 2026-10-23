@@ -6,8 +6,10 @@ import {
 import { getPlatformSettings } from "@/lib/platform-settings";
 
 export {
+  chatTemperature,
   FALLBACK_OPENAI_CHAT_MODEL,
   isLikelyChatModelId,
+  modelSupportsCustomTemperature,
   RECOMMENDED_OPENAI_CHAT_MODEL,
 } from "@/lib/pipeline/openai-models";
 

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { Locale } from "@/lib/i18n";
 import {
+  chatTemperature,
   getOpenAIChatModel,
   getOpenAIClient,
   parseJsonFromModelResponse,
@@ -102,7 +103,7 @@ export async function prepareLegalSearch(params: PrepareLegalSearchParams): Prom
     const model = await getOpenAIChatModel();
     const completion = await client.chat.completions.create({
       model,
-      temperature: 0,
+      ...chatTemperature(model, 0),
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: PLANNER_SYSTEM_PROMPT },

@@ -1,6 +1,10 @@
 import type { Locale } from "@/lib/i18n";
 import { normalizeLocale } from "@/lib/pipeline/locale";
-import { getOpenAIChatModel, getOpenAIClient } from "@/lib/pipeline/openai-client";
+import {
+  chatTemperature,
+  getOpenAIChatModel,
+  getOpenAIClient,
+} from "@/lib/pipeline/openai-client";
 
 export type MessageTranslations = Partial<Record<Locale, string>>;
 
@@ -22,7 +26,7 @@ export async function translateText(params: {
   const model = await getOpenAIChatModel();
   const completion = await client.chat.completions.create({
     model,
-    temperature: 0,
+    ...chatTemperature(model, 0),
     messages: [
       {
         role: "system",

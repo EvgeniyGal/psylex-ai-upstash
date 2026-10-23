@@ -11,6 +11,7 @@ import {
   type FooterDemoMode,
 } from "@/lib/footer-demo-mode";
 import { isPartyRole } from "@/lib/participant-roles";
+import { isUuid } from "@/lib/utils";
 
 async function resolveUserId() {
   const session = await getServerSession(authOptions);
@@ -29,6 +30,8 @@ async function resolveUserId() {
 }
 
 async function demoModeForRoomId(roomId: string): Promise<"modeA" | "modeB" | null> {
+  if (!isUuid(roomId)) return null;
+
   const [room] = await db
     .select({ createdByUserId: rooms.createdByUserId })
     .from(rooms)
