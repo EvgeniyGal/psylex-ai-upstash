@@ -1,11 +1,16 @@
+import type { Locale } from "@/lib/i18n";
 import type { MediationOption } from "@/lib/mediation/types";
 import type { PartyRole } from "@/lib/participant-roles";
 
-export type QuestionCandidate = {
-  id: string;
+export type QuestionCandidateLocaleFields = {
   canonicalContent: string;
   partyA: string;
   partyB: string;
+};
+
+export type QuestionCandidate = QuestionCandidateLocaleFields & {
+  id: string;
+  byLocale?: Partial<Record<Locale, QuestionCandidateLocaleFields>>;
 };
 
 export type MediatorQuestionCandidates = {
@@ -22,7 +27,9 @@ export type PartyNotificationType =
   | "options_ready"
   | "compromise_pending"
   | "compromise_ready"
+  | "compromise_rejected"
   | "agreement_ready"
+  | "session_time_up"
   | "session_completed";
 
 export type PartyNotification = {

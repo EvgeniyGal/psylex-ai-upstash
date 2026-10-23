@@ -2,6 +2,7 @@
 
 import { useCallback, useState, useTransition } from "react";
 import { toast } from "sonner";
+
 import {
   downloadMediatorPartyResults,
   fetchMediatorPartyRoomState,
@@ -185,7 +186,16 @@ export function MediatorPartyRoom({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="font-display text-headline-md text-on-surface">{state.room.title}</h1>
           {!isSessionComplete ? (
-            <SessionElapsedTimer startedAt={state.room.mediationStartedAt} />
+            <SessionElapsedTimer
+              durationMinutes={state.room.mediationDurationMinutes}
+              onTimeUp={() => {
+                toast.message(t.modeBSessionTimeUp, {
+                  id: "session-time-up",
+                  duration: 8000,
+                });
+              }}
+              startedAt={state.room.mediationStartedAt}
+            />
           ) : null}
         </div>
 

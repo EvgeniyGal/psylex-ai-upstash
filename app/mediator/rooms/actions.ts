@@ -130,14 +130,18 @@ export async function startMediatorSessionNow(roomId: string) {
   return state;
 }
 
-export async function fetchMediatorSessionState(roomId: string) {
+export async function fetchMediatorSessionState(roomId: string, viewerLocale?: Locale) {
   const userId = await requireMediator();
-  return getMediatorConsoleSessionState(userId, roomId);
+  return getMediatorConsoleSessionState(userId, roomId, viewerLocale);
 }
 
-export async function generateMediatorQuestionCandidatesAction(roomId: string) {
+export async function generateMediatorQuestionCandidatesAction(
+  roomId: string,
+  viewerLocale?: Locale,
+) {
   const userId = await requireMediator();
-  return generateQuestionCandidates(roomId, userId);
+  await generateQuestionCandidates(roomId, userId);
+  return getMediatorConsoleSessionState(userId, roomId, viewerLocale);
 }
 
 export async function sendMediatorQuestionAction(params: {
@@ -146,6 +150,7 @@ export async function sendMediatorQuestionAction(params: {
   candidateId: string;
   editedText?: string;
   sourceLocale?: Locale;
+  viewerLocale?: Locale;
 }) {
   const userId = await requireMediator();
   try {
@@ -155,14 +160,14 @@ export async function sendMediatorQuestionAction(params: {
       partyRole: params.partyRole,
       candidateId: params.candidateId,
       editedText: params.editedText,
-      sourceLocale: params.sourceLocale,
+      sourceLocale: params.sourceLocale ?? params.viewerLocale,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to send question.";
     console.error("sendMediatorQuestionAction failed:", message, error);
     throw new Error(message);
   }
-  return getMediatorConsoleSessionState(userId, params.roomId);
+  return getMediatorConsoleSessionState(userId, params.roomId, params.viewerLocale);
 }
 
 export async function sendCustomMediatorQuestionAction(params: {
@@ -170,6 +175,7 @@ export async function sendCustomMediatorQuestionAction(params: {
   audience: MediatorAudience;
   text: string;
   sourceLocale: Locale;
+  viewerLocale?: Locale;
 }) {
   const userId = await requireMediator();
   try {
@@ -185,18 +191,19 @@ export async function sendCustomMediatorQuestionAction(params: {
     console.error("sendCustomMediatorQuestionAction failed:", message, error);
     throw new Error(message);
   }
-  return getMediatorConsoleSessionState(userId, params.roomId);
+  return getMediatorConsoleSessionState(userId, params.roomId, params.viewerLocale);
 }
 
-export async function generateMediatorOptionsAction(roomId: string) {
+export async function generateMediatorOptionsAction(roomId: string, viewerLocale?: Locale) {
   const userId = await requireMediator();
   await generateMediatorOptions(roomId, userId);
-  return getMediatorConsoleSessionState(userId, roomId);
+  return getMediatorConsoleSessionState(userId, roomId, viewerLocale);
 }
 
 export async function publishMediatorCompromiseAction(params: {
   roomId: string;
   draft: MediationOption;
+  viewerLocale?: Locale;
 }) {
   const userId = await requireMediator();
   await publishMediatorCompromise({
@@ -204,12 +211,12 @@ export async function publishMediatorCompromiseAction(params: {
     mediatorUserId: userId,
     draft: params.draft,
   });
-  return getMediatorConsoleSessionState(userId, params.roomId);
+  return getMediatorConsoleSessionState(userId, params.roomId, params.viewerLocale);
 }
 
-export async function endMediatorSessionAction(roomId: string) {
+export async function endMediatorSessionAction(roomId: string, viewerLocale?: Locale) {
   const userId = await requireMediator();
-  const state = await endMediatorSession(userId, roomId);
+  const state = await endMediatorSession(userId, roomId, viewerLocale);
   revalidatePath(`/mediator/rooms/${roomId}`);
   revalidatePath(`/mediator/rooms/${roomId}/session`);
   revalidatePath("/mediation");
@@ -219,17 +226,27 @@ export async function endMediatorSessionAction(roomId: string) {
 export async function saveMediatorDraftAgreementAction(
   roomId: string,
   draft: DraftAgreement,
+  viewerLocale?: Locale,
 ) {
   const userId = await requireMediator();
-  return saveMediatorDraftAgreement(userId, roomId, draft);
+  await saveMediatorDraftAgreement(userId, roomId, draft);
+  return getMediatorConsoleSessionState(userId, roomId, viewerLocale);
 }
 
-export async function publishMediatorDraftAgreementAction(roomId: string) {
+export async function publishMediatorDraftAgreementAction(
+  roomId: string,
+  viewerLocale?: Locale,
+) {
   const userId = await requireMediator();
-  return publishMediatorDraftAgreement(userId, roomId);
+  await publishMediatorDraftAgreement(userId, roomId);
+  return getMediatorConsoleSessionState(userId, roomId, viewerLocale);
 }
 
-export async function returnMediatorSessionToDialogueAction(roomId: string) {
+export async function returnMediatorSessionToDialogueAction(
+  roomId: string,
+  viewerLocale?: Locale,
+) {
   const userId = await requireMediator();
-  return returnMediatorSessionToDialogue(userId, roomId);
+  await returnMediatorSessionToDialogue(userId, roomId);
+  return getMediatorConsoleSessionState(userId, roomId, viewerLocale);
 }

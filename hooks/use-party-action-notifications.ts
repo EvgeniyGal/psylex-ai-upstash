@@ -38,8 +38,12 @@ function messageForType(
       return t.modeBWaitingCompromisePublish;
     case "compromise_ready":
       return t.modeBNotifyCompromise;
+    case "compromise_rejected":
+      return t.modeBNotifyCompromiseRejected;
     case "agreement_ready":
       return t.modeBNotifyAgreement;
+    case "session_time_up":
+      return t.modeBSessionTimeUp;
     case "session_completed":
       return t.modeBNotifyCompleted;
     default:

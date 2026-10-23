@@ -131,18 +131,27 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
 
   const refresh = useCallback(async () => {
     try {
-      const next = await fetchMediatorSessionState(roomId);
+      const next = await fetchMediatorSessionState(roomId, locale);
       if (next) setState(next);
     } catch {
       /* ignore */
     }
-  }, [roomId]);
+  }, [roomId, locale]);
 
   useRoomRealtime(roomId, () => {
     void refresh();
   }, {
     watchUsers: false,
   });
+
+  // Re-resolve bilingual fields when UI locale changes.
+  useEffect(() => {
+    void refresh();
+  }, [locale, refresh]);
+
+  const onSessionTimeUp = useCallback(() => {
+    toast.message(t.modeBSessionTimeUp, { id: "session-time-up", duration: 8000 });
+  }, [t.modeBSessionTimeUp]);
 
   useEffect(() => {
     if (!state.compromiseDraft || state.compromisePublished) {
@@ -218,8 +227,9 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
   const onGenerateQuestions = () => {
     startTransition(async () => {
       try {
-        await generateMediatorQuestionCandidatesAction(roomId);
-        await refresh();
+        const next = await generateMediatorQuestionCandidatesAction(roomId, locale);
+        if (next) setState(next);
+        else await refresh();
         toast.success(admin.mediatorGenerateQuestions);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
@@ -237,6 +247,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
           candidateId: selectedCandidateId,
           editedText: editText,
           sourceLocale: locale,
+          viewerLocale: locale,
         });
         if (next) setState(next);
         setSelectedCandidateId(null);
@@ -257,6 +268,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
           audience: selectedAudience,
           text: customText,
           sourceLocale: locale,
+          viewerLocale: locale,
         });
         if (next) setState(next);
         setCustomText("");
@@ -270,7 +282,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
   const onGenerateOptions = () => {
     startTransition(async () => {
       try {
-        const next = await generateMediatorOptionsAction(roomId);
+        const next = await generateMediatorOptionsAction(roomId, locale);
         if (next) setState(next);
         toast.success(admin.mediatorGenerateOptions);
       } catch (error) {
@@ -286,6 +298,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
         const next = await publishMediatorCompromiseAction({
           roomId,
           draft: compromiseEdit,
+          viewerLocale: locale,
         });
         if (next) setState(next);
         toast.success(admin.mediatorPublishCompromise);
@@ -299,7 +312,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
     if (!window.confirm(admin.mediatorReturnToDialogueConfirm)) return;
     startTransition(async () => {
       try {
-        const next = await returnMediatorSessionToDialogueAction(roomId);
+        const next = await returnMediatorSessionToDialogueAction(roomId, locale);
         if (next) setState(next);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
@@ -311,7 +324,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
     if (!draftEdit) return;
     startTransition(async () => {
       try {
-        const next = await saveMediatorDraftAgreementAction(roomId, draftEdit);
+        const next = await saveMediatorDraftAgreementAction(roomId, draftEdit, locale);
         if (next) setState(next);
         toast.success(admin.mediatorDraftSaved);
       } catch (error) {
@@ -324,8 +337,8 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
     if (!draftEdit) return;
     startTransition(async () => {
       try {
-        await saveMediatorDraftAgreementAction(roomId, draftEdit);
-        const next = await publishMediatorDraftAgreementAction(roomId);
+        await saveMediatorDraftAgreementAction(roomId, draftEdit, locale);
+        const next = await publishMediatorDraftAgreementAction(roomId, locale);
         if (next) setState(next);
         toast.success(admin.mediatorDraftPublished);
       } catch (error) {
@@ -358,7 +371,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
     if (!window.confirm(admin.mediatorEndSessionConfirm)) return;
     startTransition(async () => {
       try {
-        const next = await endMediatorSessionAction(roomId);
+        const next = await endMediatorSessionAction(roomId, locale);
         if (next) setState(next);
       } catch {
         toast.error(admin.mediatorEndSessionError);
@@ -388,7 +401,12 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
               {admin.mediatorEndSession}
             </button>
           ) : null}
-          <SessionElapsedTimer startedAt={state.room.mediationStartedAt} />
+          <SessionElapsedTimer
+            durationMinutes={state.room.mediationDurationMinutes}
+            onTimeUp={onSessionTimeUp}
+            sessionComplete={sessionEnded}
+            startedAt={state.room.mediationStartedAt}
+          />
         </div>
       </div>
 

@@ -144,25 +144,49 @@ export async function generateQuestionCandidates(roomId: string, mediatorUserId:
   agentWork.add(roomId);
   try {
     const { ctx } = await buildContext(room);
-    const result = await runMediationAgent({
-      mode: "question_candidates",
-      context: ctx,
-      schema: mediationQuestionCandidatesSchema,
-    });
+    const { mergeCandidateLocaleRuns } = await import(
+      "@/lib/mediator-session/question-candidates"
+    );
+    const locales: Locale[] = ["en", "uk"];
+    const primaryLocale: Locale = "en";
+
+    const localeResults = await Promise.all(
+      locales.map(async (locale) => {
+        const result = await runMediationAgent({
+          mode: "question_candidates",
+          context: ctx,
+          schema: mediationQuestionCandidatesSchema,
+          targetLocale: locale,
+        });
+        return {
+          locale,
+          party_a: result.partyA.candidates.map((c) => ({
+            id: c.id,
+            canonicalContent: c.canonicalContent,
+            partyA: c.partyA,
+            partyB: c.partyB,
+          })),
+          party_b: result.partyB.candidates.map((c) => ({
+            id: c.id,
+            canonicalContent: c.canonicalContent,
+            partyA: c.partyA,
+            partyB: c.partyB,
+          })),
+        };
+      }),
+    );
 
     const candidates: MediatorQuestionCandidates = {
-      party_a: result.partyA.candidates.map((c) => ({
-        id: c.id,
-        canonicalContent: c.canonicalContent,
-        partyA: c.partyA,
-        partyB: c.partyB,
-      })),
-      party_b: result.partyB.candidates.map((c) => ({
-        id: c.id,
-        canonicalContent: c.canonicalContent,
-        partyA: c.partyA,
-        partyB: c.partyB,
-      })),
+      party_a: await mergeCandidateLocaleRuns({
+        primaryLocale,
+        locales,
+        runs: localeResults.map((r) => ({ locale: r.locale, candidates: r.party_a })),
+      }),
+      party_b: await mergeCandidateLocaleRuns({
+        primaryLocale,
+        locales,
+        runs: localeResults.map((r) => ({ locale: r.locale, candidates: r.party_b })),
+      }),
     };
 
     await db
@@ -244,7 +268,8 @@ function assertCanGenerateQuestions(phase: string | null) {
 }
 
 function assertSessionAllowsMediatorSend(phase: string | null) {
-  if (phase === "completed" || phase === "agreement") {
+  // Messaging stays open through agreement until the mediator completes the session.
+  if (phase === "completed") {
     throw new Error("Session already ended.");
   }
   if (!phase) {
@@ -272,17 +297,24 @@ export async function sendMediatorQuestion(params: {
   const candidate = list.find((c) => c.id === params.candidateId);
   if (!candidate) throw new Error("Candidate not found.");
 
+  const { resolveQuestionCandidate } = await import(
+    "@/lib/mediator-session/question-candidates"
+  );
+  const uiLocale = normalizeLocale(params.sourceLocale);
+  const resolvedForUi = resolveQuestionCandidate(candidate, uiLocale);
   const baseline =
-    params.partyRole === "party_a" ? candidate.partyA.trim() : candidate.partyB.trim();
+    params.partyRole === "party_a"
+      ? resolvedForUi.partyA.trim()
+      : resolvedForUi.partyB.trim();
   const edited = params.editedText?.trim();
   // UI always prefills the textarea — only treat as free-text when it differs.
   const isFreeTextEdit = !!edited && edited !== baseline;
 
   let canonicalContent = candidate.canonicalContent;
-  let adaptations: PartyAdaptations =
-    params.partyRole === "party_a"
-      ? { party_a: candidate.partyA, party_b: candidate.partyB }
-      : { party_a: candidate.partyA, party_b: candidate.partyB };
+  let adaptations: PartyAdaptations = {
+    party_a: candidate.partyA,
+    party_b: candidate.partyB,
+  };
   let sourceLocale: Locale | null = null;
   let translations: MessageTranslations | null = null;
   let translate = false;
@@ -303,7 +335,29 @@ export async function sendMediatorQuestion(params: {
       party_a: translations[partyALocale] ?? edited,
       party_b: translations[partyBLocale] ?? edited,
     };
-    translate = false; // translations already built
+    translate = false;
+  } else {
+    // Unedited LLM candidate: ship per-party preferred-locale adaptations from byLocale.
+    const { partyA, partyB } = await getRoomPartiesForPipeline(params.roomId);
+    const partyALocale = normalizeLocale(partyA?.preferredLocale);
+    const partyBLocale = normalizeLocale(partyB?.preferredLocale);
+    const forA = resolveQuestionCandidate(candidate, partyALocale);
+    const forB = resolveQuestionCandidate(candidate, partyBLocale);
+    const forEn = resolveQuestionCandidate(candidate, "en");
+    const forUk = resolveQuestionCandidate(candidate, "uk");
+    adaptations = {
+      party_a: forA.partyA,
+      party_b: forB.partyB,
+    };
+    // Addressee-facing text for the selected party role (both locales for message store).
+    const addresseeKey = params.partyRole === "party_a" ? "partyA" : "partyB";
+    translations = {
+      en: forEn[addresseeKey],
+      uk: forUk[addresseeKey],
+    };
+    canonicalContent = forEn.canonicalContent;
+    sourceLocale = "en";
+    translate = false;
   }
 
   await deliverMediatorQuestion({
@@ -724,32 +778,35 @@ export async function castMediatorCompromiseVote(userId: string, accepted: boole
     return loadRoom(room.id);
   }
 
-  await db
-    .update(rooms)
-    .set({
-      mediationPhase: "completed",
-      mediationCompletedAt: new Date(),
-    })
-    .where(eq(rooms.id, room.id));
-
+  // One or both rejected — stay in live session; only the mediator completes.
   await logPipelineEvent({
     roomId: room.id,
     agentKey: "mediation",
-    eventType: "session_ended_without_agreement",
-    payload: { reason: "compromise_rejected" },
+    eventType: "compromise_rejected",
+    payload: {
+      partyAVote: updated.partyACompromiseVote,
+      partyBVote: updated.partyBCompromiseVote,
+    },
   });
 
   await setPartyNotification({
     roomId: room.id,
-    type: "session_completed",
+    type: "compromise_rejected",
     targetRole: "all",
   });
 
   return loadRoom(room.id);
 }
 
-/** Mediator force-end: same outcome as no mutual agreement (phase completed). */
-export async function endMediatorSession(mediatorUserId: string, roomId: string) {
+/**
+ * Mediator-only session completion. Finalizes draft agreement when present,
+ * otherwise ends without agreement. Never auto-triggered by votes or timer.
+ */
+export async function endMediatorSession(
+  mediatorUserId: string,
+  roomId: string,
+  viewerLocale?: Locale | null,
+) {
   const room = await loadRoom(roomId);
   if (!room || !isMediatorFacilitatedRoom(room) || room.createdByUserId !== mediatorUserId) {
     throw new Error("Unauthorized");
@@ -761,13 +818,61 @@ export async function endMediatorSession(mediatorUserId: string, roomId: string)
     throw new Error("Session already ended.");
   }
 
-  await db
-    .update(rooms)
-    .set({
-      mediationPhase: "completed",
-      mediationCompletedAt: new Date(),
-    })
-    .where(eq(rooms.id, roomId));
+  const existing = room.draftAgreement as DraftAgreement | null;
+  const hasAgreementPath =
+    room.mediationPhase === "agreement" ||
+    (existing && (existing.status === "published" || existing.status === "draft"));
+
+  if (hasAgreementPath && existing) {
+    const { normalizeDraftAgreement, obligationsToTerms } = await import(
+      "@/lib/mediation/draft-agreement"
+    );
+    const published = {
+      ...normalizeDraftAgreement({
+        title: existing.title,
+        body: existing.body,
+        obligations: existing.obligations,
+        protectiveClauseIds: existing.protectiveClauseIds,
+        status: "published",
+        publishedAt: existing.publishedAt ?? new Date().toISOString(),
+        generatedAt: existing.generatedAt,
+        terms: obligationsToTerms(existing.obligations ?? []),
+      }),
+      ...(existing.byLocale ? { byLocale: existing.byLocale } : {}),
+    };
+
+    await db
+      .update(rooms)
+      .set({
+        draftAgreement: published,
+        mediationPhase: "completed",
+        mediationCompletedAt: new Date(),
+      })
+      .where(eq(rooms.id, roomId));
+
+    await logPipelineEvent({
+      roomId,
+      agentKey: "mediation",
+      eventType: "session_completed_with_agreement",
+      payload: { title: published.title, reason: "mediator_completed" },
+    });
+  } else {
+    await db
+      .update(rooms)
+      .set({
+        mediationPhase: "completed",
+        mediationCompletedAt: new Date(),
+      })
+      .where(eq(rooms.id, roomId));
+
+    await logPipelineEvent({
+      roomId,
+      agentKey: "mediation",
+      eventType: "session_ended_without_agreement",
+      payload: { reason: "mediator_completed" },
+    });
+  }
+
   notifyRoom(roomId);
 
   await setPartyNotification({
@@ -776,14 +881,7 @@ export async function endMediatorSession(mediatorUserId: string, roomId: string)
     targetRole: "all",
   });
 
-  await logPipelineEvent({
-    roomId,
-    agentKey: "mediation",
-    eventType: "session_ended_without_agreement",
-    payload: { reason: "mediator_ended" },
-  });
-
-  return getMediatorConsoleSessionState(mediatorUserId, roomId);
+  return getMediatorConsoleSessionState(mediatorUserId, roomId, viewerLocale);
 }
 
 export async function saveMediatorDraftAgreement(
@@ -1023,7 +1121,11 @@ export async function getMediatorSessionRoomState(userId: string) {
   return buildSessionState(fresh, userId, participant.user.preferredLocale, "party");
 }
 
-export async function getMediatorConsoleSessionState(mediatorUserId: string, roomId: string) {
+export async function getMediatorConsoleSessionState(
+  mediatorUserId: string,
+  roomId: string,
+  viewerLocale?: Locale | null,
+) {
   const room = await loadRoom(roomId);
   if (!room || room.createdByUserId !== mediatorUserId || !room.mediationStartedAt) {
     return null;
@@ -1043,12 +1145,15 @@ export async function getMediatorConsoleSessionState(mediatorUserId: string, roo
     fresh = (await loadRoom(room.id)) ?? fresh;
   }
 
-  const [mediatorRow] = await db
-    .select({ preferredLocale: users.preferredLocale })
-    .from(users)
-    .where(eq(users.id, mediatorUserId))
-    .limit(1);
-  const locale: Locale = mediatorRow?.preferredLocale === "uk" ? "uk" : "en";
+  let locale: Locale = viewerLocale === "uk" || viewerLocale === "en" ? viewerLocale : "en";
+  if (!viewerLocale) {
+    const [mediatorRow] = await db
+      .select({ preferredLocale: users.preferredLocale })
+      .from(users)
+      .where(eq(users.id, mediatorUserId))
+      .limit(1);
+    locale = mediatorRow?.preferredLocale === "uk" ? "uk" : "en";
+  }
 
   return buildSessionState(fresh, mediatorUserId, locale, "mediator");
 }
@@ -1183,6 +1288,9 @@ async function buildSessionState(
     resolveDraftForLocale,
     resolveOptionForLocale,
   } = await import("@/lib/mediation/localize-artifacts");
+  const { resolveQuestionCandidate } = await import(
+    "@/lib/mediator-session/question-candidates"
+  );
 
   const mapOption = (option: MediationOption) => {
     const resolved = resolveOptionForLocale(option, locale);
@@ -1206,10 +1314,9 @@ async function buildSessionState(
     room.mediationPhase === "agreement" ||
     room.mediationPhase === "completed";
 
+  // Messaging stays open through agreement until the mediator completes the session.
   const sessionAllowsReply =
-    !!room.mediationPhase &&
-    room.mediationPhase !== "completed" &&
-    room.mediationPhase !== "agreement";
+    !!room.mediationPhase && room.mediationPhase !== "completed";
 
   const pendingQuestion =
     viewerKind === "party" &&
@@ -1250,6 +1357,7 @@ async function buildSessionState(
       activeParty: null,
       mediationStartedAt:
         (room.mediatorSessionStartedAt ?? room.mediationStartedAt)!.toISOString(),
+      mediationDurationMinutes: room.mediationDurationMinutes,
       scheduledStartAt: room.scheduledStartAt?.toISOString() ?? null,
       selfVote: role === "party_a" ? room.partyAVoteOptionId : role === "party_b" ? room.partyBVoteOptionId : null,
       otherVote: otherVoteVisible
@@ -1302,7 +1410,31 @@ async function buildSessionState(
     compromiseDraft:
       viewerKind === "mediator" && compromiseDraft ? mapOption(compromiseDraft) : null,
     compromisePublished: !!compromise,
-    questionCandidates: viewerKind === "mediator" ? candidates : emptyCandidates(),
+    questionCandidates:
+      viewerKind === "mediator"
+        ? {
+            party_a: candidates.party_a.map((c) => {
+              const resolved = resolveQuestionCandidate(c, locale);
+              return {
+                id: c.id,
+                canonicalContent: resolved.canonicalContent,
+                partyA: resolved.partyA,
+                partyB: resolved.partyB,
+                byLocale: c.byLocale,
+              };
+            }),
+            party_b: candidates.party_b.map((c) => {
+              const resolved = resolveQuestionCandidate(c, locale);
+              return {
+                id: c.id,
+                canonicalContent: resolved.canonicalContent,
+                partyA: resolved.partyA,
+                partyB: resolved.partyB,
+                byLocale: c.byLocale,
+              };
+            }),
+          }
+        : emptyCandidates(),
     draftAgreement,
     profiles:
       viewerKind === "mediator"

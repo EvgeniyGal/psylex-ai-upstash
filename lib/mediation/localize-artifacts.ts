@@ -26,6 +26,16 @@ export function resolveOptionForLocale(
   const lang = normalizeLocale(locale);
   const localized = option.byLocale?.[lang];
   if (localized) return { id: option.id, ...optionFieldsFrom(localized) };
+
+  const otherLang: Locale = lang === "uk" ? "en" : "uk";
+  const other = option.byLocale?.[otherLang];
+  if (other) {
+    // Incomplete bilingual row — avoid silently showing the wrong language.
+    console.warn("[resolveOptionForLocale] missing byLocale." + lang, {
+      optionId: option.id,
+      available: Object.keys(option.byLocale ?? {}),
+    });
+  }
   // Legacy rows without byLocale[lang]: use top-level (primary) fields.
   return { id: option.id, ...optionFieldsFrom(option) };
 }

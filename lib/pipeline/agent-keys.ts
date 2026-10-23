@@ -30,5 +30,7 @@ export type PipelineEventType =
   | "options_published"
   | "option_vote_cast"
   | "compromise_published"
+  | "compromise_rejected"
   | "agreement_published"
+  | "session_completed_with_agreement"
   | "session_ended_without_agreement";

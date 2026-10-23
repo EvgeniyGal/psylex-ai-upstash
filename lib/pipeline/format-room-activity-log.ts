@@ -128,7 +128,9 @@ function formatPayloadLines(
 
   if (
     entry.kind === "compromise_published" ||
+    entry.kind === "compromise_rejected" ||
     entry.kind === "agreement_published" ||
+    entry.kind === "session_completed_with_agreement" ||
     entry.kind === "session_ended_without_agreement"
   ) {
     if (payload.canonicalDescription) {

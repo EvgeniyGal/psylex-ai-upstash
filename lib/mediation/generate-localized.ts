@@ -14,15 +14,136 @@ import {
   mediationCompromiseSchema,
   mediationOptionsSchema,
 } from "@/lib/mediation/schemas";
-import { SUPPORTED_MESSAGE_LOCALES } from "@/lib/mediation/translate";
-import type { DraftAgreement, MediationOption } from "@/lib/mediation/types";
+import { SUPPORTED_MESSAGE_LOCALES, translateText } from "@/lib/mediation/translate";
+import type { DraftAgreement, MediationOption, MediationOptionLocaleFields } from "@/lib/mediation/types";
 import { normalizeLocale } from "@/lib/pipeline/locale";
 
 /** Always generate both product languages for documents and cross-locale rooms. */
 const ARTIFACT_LOCALES: Locale[] = SUPPORTED_MESSAGE_LOCALES;
 
+type LocalizedOptionPayload = MediationOptionLocaleFields & { id: string };
+
 function artifactLocales(_partyALocale?: string | null, _partyBLocale?: string | null): Locale[] {
   return [...ARTIFACT_LOCALES];
+}
+
+function idsFullyAligned(
+  results: { locale: Locale; options: LocalizedOptionPayload[] }[],
+  primary: Locale,
+): boolean {
+  const primaryOptions = results.find((r) => r.locale === primary)?.options ?? [];
+  if (primaryOptions.length === 0) return false;
+  for (const { locale, options } of results) {
+    if (locale === primary) continue;
+    if (options.length !== primaryOptions.length) return false;
+    for (const option of primaryOptions) {
+      if (!options.some((o) => o.id === option.id)) return false;
+    }
+  }
+  return true;
+}
+
+async function fillMissingOptionLocale(
+  fields: MediationOptionLocaleFields,
+  from: Locale,
+  to: Locale,
+): Promise<MediationOptionLocaleFields> {
+  const keys = [
+    "canonicalDescription",
+    "legalNorms",
+    "fulfillmentProbability",
+    "refusalRisks",
+    "partyA",
+    "partyB",
+  ] as const;
+  const translated = await Promise.all(
+    keys.map(async (key) => [
+      key,
+      await translateText({ text: fields[key], from, to }),
+    ]),
+  );
+  return Object.fromEntries(translated) as MediationOptionLocaleFields;
+}
+
+async function ensureCompleteOptionLocales(
+  primary: Locale,
+  byLocale: Partial<Record<Locale, LocalizedOptionPayload>>,
+  locales: Locale[],
+): Promise<MediationOption> {
+  const source =
+    byLocale[primary] ??
+    (Object.values(byLocale).find(Boolean) as LocalizedOptionPayload | undefined);
+  if (!source) throw new Error("No option locale payload to merge.");
+
+  const complete: Partial<Record<Locale, LocalizedOptionPayload>> = { ...byLocale };
+  for (const locale of locales) {
+    if (complete[locale]) continue;
+    const sourceLocale = (Object.keys(complete)[0] as Locale | undefined) ?? primary;
+    const sourceFields = complete[sourceLocale] ?? source;
+    const filled = await fillMissingOptionLocale(
+      optionFieldsFrom(sourceFields),
+      sourceLocale,
+      locale,
+    );
+    const repaired = await repairOptionFieldsLocale(filled, locale);
+    complete[locale] = { id: source.id, ...repaired };
+  }
+
+  return mergeOptionLocales(primary, complete);
+}
+
+/**
+ * Merge parallel locale generations into one option list.
+ * Prefer id alignment; if ids diverge or counts mismatch, index-align from primary
+ * so we never emit mono-locale duplicate options (mixed EN/UK list).
+ */
+async function mergeLocalizedOptionResults(params: {
+  results: { locale: Locale; options: LocalizedOptionPayload[] }[];
+  locales: Locale[];
+  primary: Locale;
+}): Promise<MediationOption[]> {
+  const { results, locales, primary } = params;
+  const primaryOptions =
+    results.find((r) => r.locale === primary)?.options ?? results[0]?.options ?? [];
+
+  if (primaryOptions.length === 0) return [];
+
+  if (idsFullyAligned(results, primary)) {
+    return Promise.all(
+      primaryOptions.map(async (option) => {
+        const byLocale: Partial<Record<Locale, LocalizedOptionPayload>> = {};
+        for (const { locale, options } of results) {
+          const match = options.find((o) => o.id === option.id);
+          if (match) byLocale[locale] = { id: option.id, ...optionFieldsFrom(match) };
+        }
+        return ensureCompleteOptionLocales(primary, byLocale, locales);
+      }),
+    );
+  }
+
+  console.warn(
+    "[generateLocalizedOptions] option ids diverged across locales; aligning by index",
+    {
+      primaryCount: primaryOptions.length,
+      perLocale: results.map((r) => ({
+        locale: r.locale,
+        ids: r.options.map((o) => o.id),
+      })),
+    },
+  );
+
+  return Promise.all(
+    primaryOptions.map(async (option, index) => {
+      const byLocale: Partial<Record<Locale, LocalizedOptionPayload>> = {};
+      for (const { locale, options } of results) {
+        const match = options[index] ?? options.find((o) => o.id === option.id);
+        if (match) {
+          byLocale[locale] = { id: option.id, ...optionFieldsFrom(match) };
+        }
+      }
+      return ensureCompleteOptionLocales(primary, byLocale, locales);
+    }),
+  );
 }
 
 export async function generateLocalizedOptions(params: {
@@ -51,41 +172,7 @@ export async function generateLocalizedOptions(params: {
     }),
   );
 
-  const byId = new Map<
-    string,
-    Partial<Record<Locale, ReturnType<typeof optionFieldsFrom> & { id: string }>>
-  >();
-
-  for (const { locale, options } of results) {
-    for (const option of options) {
-      const existing = byId.get(option.id) ?? {};
-      existing[locale] = { id: option.id, ...optionFieldsFrom(option) };
-      byId.set(option.id, existing);
-    }
-  }
-
-  // If ids diverge across locales, fall back to index alignment from primary result.
-  const primaryCount = results.find((r) => r.locale === primary)?.options.length ?? 0;
-  if (byId.size === 0 || (locales.length > 1 && byId.size < primaryCount)) {
-    console.warn(
-      "[generateLocalizedOptions] option ids diverged across locales; aligning by index",
-      { byIdSize: byId.size, primaryCount },
-    );
-    const primaryOptions =
-      results.find((r) => r.locale === primary)?.options ?? results[0]?.options ?? [];
-    return primaryOptions.map((option, index) => {
-      const byLocale: Partial<
-        Record<Locale, ReturnType<typeof optionFieldsFrom> & { id: string }>
-      > = {};
-      for (const { locale, options } of results) {
-        const match = options[index] ?? options.find((o) => o.id === option.id) ?? option;
-        byLocale[locale] = { id: option.id, ...optionFieldsFrom(match) };
-      }
-      return mergeOptionLocales(primary, byLocale);
-    });
-  }
-
-  return [...byId.values()].map((byLocale) => mergeOptionLocales(primary, byLocale));
+  return mergeLocalizedOptionResults({ results, locales, primary });
 }
 
 export async function generateLocalizedCompromise(params: {
@@ -96,9 +183,7 @@ export async function generateLocalizedCompromise(params: {
 }): Promise<MediationOption> {
   const locales = artifactLocales(params.partyALocale, params.partyBLocale);
   const primary: Locale = "en";
-  const byLocale: Partial<
-    Record<Locale, ReturnType<typeof optionFieldsFrom> & { id: string }>
-  > = {};
+  const byLocale: Partial<Record<Locale, LocalizedOptionPayload>> = {};
 
   let sharedId: string | null = null;
   for (const locale of locales) {
@@ -120,7 +205,7 @@ export async function generateLocalizedCompromise(params: {
     };
   }
 
-  return mergeOptionLocales(primary, byLocale);
+  return ensureCompleteOptionLocales(primary, byLocale, locales);
 }
 
 export async function generateLocalizedAgreementDraft(params: {

@@ -2,6 +2,12 @@ export function isMediatorFacilitatedRoom(room: { createdByUserId: string | null
   return !!room.createdByUserId;
 }
 
+/** True only when the mediator has completed the session (not merely agreement phase). */
 export function isMediatorSessionEnded(phase: string | null | undefined) {
-  return phase === "agreement" || phase === "completed";
+  return phase === "completed";
+}
+
+/** Session is still live for messaging / console (includes agreement wrapping-up). */
+export function isMediatorSessionLive(phase: string | null | undefined) {
+  return !!phase && phase !== "completed";
 }

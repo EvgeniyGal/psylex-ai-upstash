@@ -655,9 +655,9 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     mediatorQuestionCandidates: "Question candidates",
     mediatorOwnQuestion: "Your question",
     mediatorSessionFinished: "Session finished. Returning to room details…",
-    mediatorEndSession: "End without agreement",
+    mediatorEndSession: "Complete session",
     mediatorEndSessionConfirm:
-      "End this session without an agreement? This is recorded in the activity log. Parties will see the session as completed.",
+      "Complete this session now? Parties will be notified. If an agreement draft exists it will be finalized for documents. Only you can complete the session.",
     mediatorEndSessionError: "Could not end the session.",
     mediatorSelectCandidate: "Select a question",
     mediatorCompromiseDraft: "Propose compromise",
@@ -1113,9 +1113,9 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     mediatorQuestionCandidates: "Варіанти запитань",
     mediatorOwnQuestion: "Ваше запитання",
     mediatorSessionFinished: "Сесію завершено. Повертаємо до деталей кімнати…",
-    mediatorEndSession: "Завершити без угоди",
+    mediatorEndSession: "Завершити сесію",
     mediatorEndSessionConfirm:
-      "Завершити сесію без угоди? Це буде записано в журнал активності. Сторони побачать сесію як завершену.",
+      "Завершити сесію зараз? Сторони отримають сповіщення. Якщо є чернетка угоди, її буде фіналізовано для документів. Завершити сесію можете лише ви.",
     mediatorEndSessionError: "Не вдалося завершити сесію.",
     mediatorSelectCandidate: "Оберіть запитання",
     mediatorCompromiseDraft: "Запропонувати компроміс",

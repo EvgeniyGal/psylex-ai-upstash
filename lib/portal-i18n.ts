@@ -87,8 +87,10 @@ type PortalCopy = {
   modeBNotifyQuestion: string;
   modeBNotifyOptions: string;
   modeBNotifyCompromise: string;
+  modeBNotifyCompromiseRejected: string;
   modeBNotifyAgreement: string;
   modeBNotifyCompleted: string;
+  modeBSessionTimeUp: string;
   modeBWaitingCompromisePublish: string;
   modeBWaitingAgreementPublish: string;
   myRoomsTitle: string;
@@ -349,8 +351,12 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     modeBNotifyQuestion: "You have a new question from the mediator.",
     modeBNotifyOptions: "Solution options are ready to review.",
     modeBNotifyCompromise: "A compromise option is ready for your vote.",
+    modeBNotifyCompromiseRejected:
+      "Compromise was not accepted by both parties. The mediator may continue the session.",
     modeBNotifyAgreement: "The agreement is ready for your confirmation.",
     modeBNotifyCompleted: "The mediation session has completed.",
+    modeBSessionTimeUp:
+      "Scheduled session time is up. The mediator will complete the session when ready.",
     modeBWaitingCompromisePublish: "Waiting for the mediator to publish a compromise option.",
     modeBWaitingAgreementPublish: "Waiting for the mediator to finalize the agreement.",
     myRoomsTitle: "My rooms",
@@ -632,8 +638,12 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     modeBNotifyQuestion: "У вас нове запитання від медіатора.",
     modeBNotifyOptions: "Варіанти рішення готові до перегляду.",
     modeBNotifyCompromise: "Компромісний варіант готовий до голосування.",
+    modeBNotifyCompromiseRejected:
+      "Компроміс не прийнято обома сторонами. Медіатор може продовжити сесію.",
     modeBNotifyAgreement: "Угода готова до вашого підтвердження.",
     modeBNotifyCompleted: "Сесію медіації завершено.",
+    modeBSessionTimeUp:
+      "Запланований час сесії минув. Медіатор завершить сесію, коли буде готовий.",
     modeBWaitingCompromisePublish: "Очікуємо, поки медіатор опублікує компромісний варіант.",
     modeBWaitingAgreementPublish: "Очікуємо, поки медіатор фіналізує угоду.",
     myRoomsTitle: "Мої кімнати",
