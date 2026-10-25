@@ -1,10 +1,7 @@
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
 import { RoomExperience } from "@/components/portal/room/room-experience";
 import { MediatorPartyRoom } from "@/components/portal/room/mediator-party-room";
 import { fetchMediationRoomState } from "@/app/(participant)/room/actions";
-import { db } from "@/lib/db";
-import { users } from "@/drizzle/schema";
 import { getMediationLobbyData, hasSubmittedDisputeIntake } from "@/lib/dispute-intake";
 import { getUserOnboardingStatus } from "@/lib/onboarding";
 import { isFlowReviewMode, requireParticipantSession } from "@/lib/portal-auth";
@@ -33,10 +30,14 @@ export default async function RoomPage({ searchParams }: RoomPageProps) {
     redirect(status.nextPath);
   }
 
-  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-  if (!user) redirect("/login");
+  const { getParticipantRoom } = await import("@/lib/room/helpers");
+  const participant = await getParticipantRoom(userId);
+  if (!participant) {
+    redirect("/rooms");
+  }
 
-  if (!hasSubmittedDisputeIntake(user)) {
+  // Intake lives on room_participants (merged into participant.user), not users.
+  if (!hasSubmittedDisputeIntake(participant.user)) {
     redirect("/dispute-intake");
   }
 

@@ -1,9 +1,6 @@
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
 import { PartyMediatorLobby } from "@/components/portal/party-mediator-lobby";
 import { MediationLobby } from "@/components/portal/mediation-lobby";
-import { db } from "@/lib/db";
-import { users } from "@/drizzle/schema";
 import { getMediationLobbyData, hasSubmittedDisputeIntake } from "@/lib/dispute-intake";
 import { getUserOnboardingStatus } from "@/lib/onboarding";
 import { resolveMediationLobbyFlowStep } from "@/lib/participant-flow";
@@ -26,10 +23,14 @@ export default async function MediationPage() {
     redirect("/onboarding/tests");
   }
 
-  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-  if (!user) redirect("/login");
+  const { getParticipantRoom } = await import("@/lib/room/helpers");
+  const participant = await getParticipantRoom(userId);
+  if (!participant) {
+    redirect("/rooms");
+  }
 
-  if (!hasSubmittedDisputeIntake(user)) {
+  // Intake lives on room_participants (merged into participant.user), not users.
+  if (!hasSubmittedDisputeIntake(participant.user)) {
     redirect("/dispute-intake");
   }
 

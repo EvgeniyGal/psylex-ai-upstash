@@ -21,12 +21,20 @@ export async function getParticipantFlowProgressForUser(
   if (user.onboardingCompletedAt && user.personalBotReadyAt) {
     maxReached = 2;
   }
-  if (hasSubmittedDisputeIntake(user)) {
+
+  // Intake is per room membership; fall back to legacy users column.
+  const { getParticipantRoom } = await import("@/lib/room/helpers");
+  const participant = await getParticipantRoom(userId);
+  const intakeSubmitted = participant
+    ? hasSubmittedDisputeIntake(participant.user)
+    : hasSubmittedDisputeIntake(user);
+  if (intakeSubmitted) {
     maxReached = 3;
   }
 
-  if (user.roomId) {
-    const [room] = await db.select().from(rooms).where(eq(rooms.id, user.roomId)).limit(1);
+  const roomId = participant?.roomId ?? user.roomId;
+  if (roomId) {
+    const [room] = await db.select().from(rooms).where(eq(rooms.id, roomId)).limit(1);
     if (room?.mediationStartedAt) {
       maxReached = 4;
     }
