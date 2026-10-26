@@ -1,5 +1,4 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { Spinner } from "@/components/ui/spinner";
 
 export default function MediationLoading() {
   return (
@@ -41,10 +40,6 @@ export default function MediationLoading() {
             </div>
             <Skeleton className="h-8 w-20 rounded-full" />
           </div>
-        </div>
-
-        <div className="flex justify-center">
-          <Spinner size="lg" />
         </div>
       </main>
     </div>

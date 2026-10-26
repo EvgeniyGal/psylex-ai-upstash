@@ -1,5 +1,4 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { Spinner } from "@/components/ui/spinner";
 
 export default function RoomLoading() {
   return (
@@ -26,10 +25,6 @@ export default function RoomLoading() {
           <div className="flex items-start gap-3 self-end">
             <Skeleton className="h-12 w-1/2 rounded-lg" />
             <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
-          </div>
-
-          <div className="mt-auto flex items-center justify-center pt-8">
-            <Spinner size="lg" />
           </div>
 
           <div className="flex gap-2 border-t border-hair pt-4">
