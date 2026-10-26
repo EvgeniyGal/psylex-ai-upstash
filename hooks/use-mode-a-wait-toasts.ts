@@ -1,6 +1,6 @@
 "use client";
 
-import { createElement, useEffect, useRef } from "react";
+import { createElement, useEffect } from "react";
 import { toast } from "sonner";
 import { ModeAToastSpinner } from "@/components/ui/mode-a-toast-spinner";
 import { useLocale } from "@/components/locale-provider";
@@ -35,6 +35,10 @@ const WAIT_IDS = {
   handshakeOppositeReady: "mode-a-handshake-opposite-ready",
   handshakeStarting: "mode-a-handshake-starting",
   otherPartyReadyForOptions: "mode-a-other-ready-for-options",
+  newQuestion: "mode-a-new-question",
+  optionsReady: "mode-a-options-ready",
+  compromiseReady: "mode-a-compromise-ready",
+  agreementReady: "mode-a-agreement-ready",
 } as const;
 
 function waitIcon() {
@@ -169,6 +173,12 @@ export function useModeARoomWaitToasts(params: {
   waitingOtherReady: boolean;
   waitingOtherAccept: boolean;
   otherReadyForOptions: boolean;
+  /** True until the viewer votes on options. */
+  needsOptionsVote: boolean;
+  /** True until the viewer accepts/rejects compromise. */
+  needsCompromiseVote: boolean;
+  /** True until the viewer accepts the draft agreement. */
+  needsAgreementAccept: boolean;
   enabled?: boolean;
 }) {
   const { portal: t } = useLocale();
@@ -185,13 +195,11 @@ export function useModeARoomWaitToasts(params: {
     waitingOtherReady,
     waitingOtherAccept,
     otherReadyForOptions,
+    needsOptionsVote,
+    needsCompromiseVote,
+    needsAgreementAccept,
     enabled = true,
   } = params;
-
-  const prevMyQuestionReady = useRef(false);
-  const prevHasOptions = useRef(false);
-  const prevHasCompromise = useRef(false);
-  const prevHasDraft = useRef(false);
 
   const waitingForQuestion =
     phase === "dialogue" && isMyTurn && !questionReady;
@@ -201,6 +209,12 @@ export function useModeARoomWaitToasts(params: {
   const compromiseWait =
     isCompromiseGenerating || (phase === "voting_discrepancy" && !hasCompromise);
   const agreementWait = phase === "agreement" && !hasDraftAgreement;
+  const actionNewQuestion = isMyTurn && questionReady && phase === "dialogue";
+  const actionOptionsReady = needsOptionsVote && hasOptions && phase === "voting";
+  const actionCompromiseReady =
+    needsCompromiseVote && hasCompromise && phase === "voting_discrepancy";
+  const actionAgreementReady =
+    needsAgreementAccept && hasDraftAgreement && phase === "agreement";
 
   useEffect(() => {
     syncWait(
@@ -286,38 +300,42 @@ export function useModeARoomWaitToasts(params: {
     );
   }, [enabled, agreementWait, t.modeAToastGeneratingAgreement]);
 
+  // Persist until the user acts — do not auto-dismiss action toasts.
   useEffect(() => {
-    if (!enabled) return;
-    const ready = isMyTurn && questionReady;
-    if (ready && !prevMyQuestionReady.current) {
-      showReady("mode-a-new-question", t.modeAToastNewQuestion);
-    }
-    prevMyQuestionReady.current = ready;
-  }, [enabled, isMyTurn, questionReady, t.modeAToastNewQuestion]);
+    syncReadyPersistent(
+      enabled,
+      actionNewQuestion,
+      WAIT_IDS.newQuestion,
+      t.modeAToastNewQuestion,
+    );
+  }, [enabled, actionNewQuestion, t.modeAToastNewQuestion]);
 
   useEffect(() => {
-    if (!enabled) return;
-    if (hasOptions && phase === "voting" && !prevHasOptions.current) {
-      showReady("mode-a-options-ready", t.modeAToastOptionsReady);
-    }
-    prevHasOptions.current = hasOptions && phase === "voting";
-  }, [enabled, hasOptions, phase, t.modeAToastOptionsReady]);
+    syncReadyPersistent(
+      enabled,
+      actionOptionsReady,
+      WAIT_IDS.optionsReady,
+      t.modeAToastOptionsReady,
+    );
+  }, [enabled, actionOptionsReady, t.modeAToastOptionsReady]);
 
   useEffect(() => {
-    if (!enabled) return;
-    if (hasCompromise && phase === "voting_discrepancy" && !prevHasCompromise.current) {
-      showReady("mode-a-compromise-ready", t.modeAToastCompromiseReady);
-    }
-    prevHasCompromise.current = hasCompromise && phase === "voting_discrepancy";
-  }, [enabled, hasCompromise, phase, t.modeAToastCompromiseReady]);
+    syncReadyPersistent(
+      enabled,
+      actionCompromiseReady,
+      WAIT_IDS.compromiseReady,
+      t.modeAToastCompromiseReady,
+    );
+  }, [enabled, actionCompromiseReady, t.modeAToastCompromiseReady]);
 
   useEffect(() => {
-    if (!enabled) return;
-    if (hasDraftAgreement && phase === "agreement" && !prevHasDraft.current) {
-      showReady("mode-a-agreement-ready", t.modeAToastAgreementReady);
-    }
-    prevHasDraft.current = hasDraftAgreement && phase === "agreement";
-  }, [enabled, hasDraftAgreement, phase, t.modeAToastAgreementReady]);
+    syncReadyPersistent(
+      enabled,
+      actionAgreementReady,
+      WAIT_IDS.agreementReady,
+      t.modeAToastAgreementReady,
+    );
+  }, [enabled, actionAgreementReady, t.modeAToastAgreementReady]);
 }
 
 export function showModeAIntakeToast(message: string) {

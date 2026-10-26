@@ -261,6 +261,9 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
     waitingOtherReady,
     waitingOtherAccept,
     otherReadyForOptions,
+    needsOptionsVote: !state.room.selfVote,
+    needsCompromiseVote: state.room.selfCompromiseVote == null,
+    needsAgreementAccept: !state.room.selfAccepted,
     enabled: !review && !isSessionComplete,
   });
 
