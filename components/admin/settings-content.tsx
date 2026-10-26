@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
   loadOpenAIChatModels,
@@ -63,6 +63,16 @@ function resolveSlotInitial(settings: PlatformSettingsRow, slot: OpenAIModelSlot
   return slotValue || settings.openaiModel || FALLBACK_OPENAI_CHAT_MODEL;
 }
 
+function slotModelsFromSettings(settings: PlatformSettingsRow): Record<OpenAIModelSlot, string> {
+  return Object.fromEntries(
+    OPENAI_CHAT_MODEL_SLOTS.map((slot) => [slot, resolveSlotInitial(settings, slot)]),
+  ) as Record<OpenAIModelSlot, string>;
+}
+
+function settingsModelsKey(settings: PlatformSettingsRow) {
+  return OPENAI_CHAT_MODEL_SLOTS.map((slot) => resolveSlotInitial(settings, slot)).join("|");
+}
+
 type SettingsContentProps = {
   settings: PlatformSettingsRow;
   documents: LegalDocumentRow[];
@@ -76,10 +86,10 @@ export function SettingsContent({ settings, documents, prompts, helpDocuments }:
   const [showOpenaiKey, setShowOpenaiKey] = useState(false);
   const [showAirtableKey, setShowAirtableKey] = useState(false);
   const [slotModels, setSlotModels] = useState<Record<OpenAIModelSlot, string>>(() =>
-    Object.fromEntries(
-      OPENAI_CHAT_MODEL_SLOTS.map((slot) => [slot, resolveSlotInitial(settings, slot)]),
-    ) as Record<OpenAIModelSlot, string>,
+    slotModelsFromSettings(settings),
   );
+  const slotModelsRef = useRef(slotModels);
+  slotModelsRef.current = slotModels;
   const [modelOptions, setModelOptions] = useState<string[]>(() => {
     const seeded = new Set<string>();
     for (const slot of OPENAI_CHAT_MODEL_SLOTS) {
@@ -140,18 +150,10 @@ export function SettingsContent({ settings, documents, prompts, helpDocuments }:
     setModelsError(false);
     void loadOpenAIChatModels(apiKeyOverride)
       .then((ids) => {
-        setSlotModels((current) => {
-          const selected = Object.values(current).filter(Boolean);
-          const merged = [...selected.filter((id) => !ids.includes(id)), ...ids];
-          setModelOptions(merged.length > 0 ? merged : [FALLBACK_OPENAI_CHAT_MODEL]);
-          const next = { ...current };
-          for (const slot of OPENAI_CHAT_MODEL_SLOTS) {
-            if (!next[slot] || (ids.length > 0 && !merged.includes(next[slot]))) {
-              next[slot] = next[slot] && merged.includes(next[slot]) ? next[slot] : merged[0];
-            }
-          }
-          return next;
-        });
+        // Only refresh the dropdown options — never overwrite the user's slot selections.
+        const selected = Object.values(slotModelsRef.current).filter(Boolean);
+        const merged = [...new Set([...selected.filter((id) => !ids.includes(id)), ...ids])];
+        setModelOptions(merged.length > 0 ? merged : [FALLBACK_OPENAI_CHAT_MODEL]);
       })
       .catch(() => {
         setModelsError(true);
@@ -168,9 +170,23 @@ export function SettingsContent({ settings, documents, prompts, helpDocuments }:
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount / key presence only
   }, [settings.openaiApiKey]);
 
+  // After save + revalidate, keep selects aligned with persisted settings.
+  const savedModelsKey = settingsModelsKey(settings);
+  useEffect(() => {
+    setSlotModels(slotModelsFromSettings(settings));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sync when saved model values change
+  }, [savedModelsKey]);
+
   const onSaveCredentials = (formData: FormData) => {
     startCredentialsTransition(async () => {
       await saveApiCredentials(formData);
+      const next = Object.fromEntries(
+        OPENAI_CHAT_MODEL_SLOTS.map((slot) => {
+          const value = String(formData.get(slotCopy[slot].name) ?? "").trim();
+          return [slot, value || FALLBACK_OPENAI_CHAT_MODEL];
+        }),
+      ) as Record<OpenAIModelSlot, string>;
+      setSlotModels(next);
       toast.success(admin.settingsSaved);
     });
   };
