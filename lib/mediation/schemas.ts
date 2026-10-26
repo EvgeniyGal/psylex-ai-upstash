@@ -6,9 +6,33 @@ const adaptedMessageSchema = z.object({
   partyB: z.string(),
 });
 
-const adaptedQuestionSchema = adaptedMessageSchema.extend({
-  addressee: z.enum(["party_a", "party_b"]),
-});
+/** Normalize common LLM variants ("partyA", "Party A", "side_b", …) to party_a | party_b. */
+function normalizeAddressee(val: unknown): "party_a" | "party_b" | undefined {
+  if (typeof val !== "string") return undefined;
+  const n = val.trim().toLowerCase().replace(/[\s-]+/g, "_");
+  if (n === "party_a" || n === "partya" || n === "a" || n === "side_a" || n === "sidea") {
+    return "party_a";
+  }
+  if (n === "party_b" || n === "partyb" || n === "b" || n === "side_b" || n === "sideb") {
+    return "party_b";
+  }
+  return undefined;
+}
+
+const adaptedQuestionSchema = z.preprocess((val) => {
+  if (!val || typeof val !== "object" || Array.isArray(val)) return val;
+  const obj = val as Record<string, unknown>;
+  const addressee = normalizeAddressee(obj.addressee ?? obj.addressedTo ?? obj.to);
+  return {
+    canonicalContent: obj.canonicalContent ?? obj.canonical ?? obj.content ?? obj.question,
+    partyA: obj.partyA ?? obj.party_a ?? obj.forPartyA,
+    partyB: obj.partyB ?? obj.party_b ?? obj.forPartyB,
+    ...(addressee ? { addressee } : {}),
+  };
+}, adaptedMessageSchema.extend({
+  // Orchestrator already knows the addressee; ignore unknown/missing LLM values.
+  addressee: z.enum(["party_a", "party_b"]).optional(),
+}));
 
 export const mediationOpeningSchema = adaptedMessageSchema;
 export const mediationDialogueQuestionSchema = adaptedQuestionSchema;
@@ -115,7 +139,7 @@ export const mediationModeInstructions: Record<MediationAgentMode, string> = {
   opening:
     'Run mode "opening". Present the dispute situation to both parties with identical substance and per-party adapted text.',
   dialogue_question:
-    'Run mode "dialogue_question". Ask one structured question to the addressee party. Include "addressee": "party_a" | "party_b".',
+    'Run mode "dialogue_question". Ask one structured question to the addressee party. Return canonicalContent, partyA, partyB. Optionally include "addressee": "party_a" | "party_b" (exact snake_case).',
   question_candidates:
     'Run mode "question_candidates". Return JSON with this exact shape: {"partyA":{"candidates":[{"id":"a1","canonicalContent":"...","partyA":"...","partyB":"..."},{"id":"a2",...},{"id":"a3",...}]},"partyB":{"candidates":[{"id":"b1","canonicalContent":"...","partyA":"...","partyB":"..."},{"id":"b2",...},{"id":"b3",...}]}}. Generate exactly three candidates under partyA.candidates (questions intended for party_a) and exactly three under partyB.candidates (questions intended for party_b). Tailor each using psychodynamic profiles, emotional triggers, interests, and legal analysis. partyA/partyB fields on each candidate are adapted wording for each party; do not return arrays at the partyA/partyB roots.',
   round_summary:

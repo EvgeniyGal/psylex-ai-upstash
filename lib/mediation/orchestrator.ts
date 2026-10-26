@@ -177,7 +177,7 @@ async function askDialogueQuestion(
       mode: "dialogue_question",
       context: ctx,
       schema: mediationDialogueQuestionSchema,
-      extraInstruction: `Set addressee to "${addressee}". Round ${room.mediationRound}.`,
+      extraInstruction: `Address "${addressee}" only. Round ${room.mediationRound}. Return canonicalContent, partyA, partyB.`,
       partyAdaptationLocales: partyAdaptationLocalesFromSides({
         partyA: sideA,
         partyB: sideB,
@@ -198,6 +198,13 @@ async function askDialogueQuestion(
       .where(eq(rooms.id, room.id));
     // Final notify so clients fetch question + deadline together (insert already notified).
     notifyRoom(room.id);
+  } catch (error) {
+    // Release turn claim so resume/tick can retry instead of leaving a stuck active party.
+    await db
+      .update(rooms)
+      .set({ mediationActiveParty: null, mediationTurnDeadlineAt: null })
+      .where(and(eq(rooms.id, room.id), eq(rooms.mediationActiveParty, addressee)));
+    throw error;
   } finally {
     if (ownsLock) mediationAgentWork.delete(room.id);
   }
