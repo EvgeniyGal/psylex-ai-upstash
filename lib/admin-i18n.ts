@@ -18,6 +18,7 @@ export type AdminCopy = {
   sidesFilterMediator: string;
   sidesFilterMediatorAll: string;
   sidesRoomColumn: string;
+  sidesNoRooms: string;
   sidesLoginColumn: string;
   sidesRoleColumn: string;
   sidesTestsColumn: string;
@@ -372,6 +373,7 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     sidesFilterMediator: "Mediator",
     sidesFilterMediatorAll: "All mediators",
     sidesRoomColumn: "Rooms",
+    sidesNoRooms: "No rooms",
     sidesLoginColumn: "Login",
     sidesRoleColumn: "Role",
     sidesTestsColumn: "Tests",
@@ -399,11 +401,11 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     sidesDeleteConfirm: (partyTitle, roomTitles) => {
       const rooms =
         roomTitles.length === 0
-          ? "no rooms"
+          ? "This party is not in any rooms"
           : roomTitles.length === 1
-            ? `1 room (${roomTitles[0]})`
-            : `${roomTitles.length} rooms (${roomTitles.join(", ")})`;
-      return `Delete party "${partyTitle}"? This will permanently delete ${rooms} where this party took part, and remove the party account. This cannot be undone.`;
+            ? `This will permanently delete 1 room (${roomTitles[0]})`
+            : `This will permanently delete ${roomTitles.length} rooms (${roomTitles.join(", ")})`;
+      return `Delete party "${partyTitle}"? ${rooms}. Other parties in those rooms are kept as free accounts (not deleted). The party account itself will be removed. This cannot be undone.`;
     },
     sidesDeleteSuccess: "Party deleted.",
     sidesDeleteError: "Could not delete party.",
@@ -841,6 +843,7 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     sidesFilterMediator: "Медіатор",
     sidesFilterMediatorAll: "Усі медіатори",
     sidesRoomColumn: "Кімнати",
+    sidesNoRooms: "Без кімнат",
     sidesLoginColumn: "Логін",
     sidesRoleColumn: "Роль",
     sidesTestsColumn: "Тести",
@@ -868,11 +871,11 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     sidesDeleteConfirm: (partyTitle, roomTitles) => {
       const rooms =
         roomTitles.length === 0
-          ? "жодної кімнати"
+          ? "Ця сторона не входить до жодної кімнати"
           : roomTitles.length === 1
-            ? `1 кімнату (${roomTitles[0]})`
-            : `${roomTitles.length} кімнат (${roomTitles.join(", ")})`;
-      return `Видалити сторону «${partyTitle}»? Це назавжди видалить ${rooms}, у яких ця сторона брала участь, а також обліковий запис сторони. Цю дію не можна скасувати.`;
+            ? `Буде назавжди видалено 1 кімнату (${roomTitles[0]})`
+            : `Буде назавжди видалено ${roomTitles.length} кімнат (${roomTitles.join(", ")})`;
+      return `Видалити сторону «${partyTitle}»? ${rooms}. Інші сторони з цих кімнат залишаться вільними обліковими записами (їх не буде видалено). Сам обліковий запис цієї сторони буде видалено. Цю дію не можна скасувати.`;
     },
     sidesDeleteSuccess: "Сторону видалено.",
     sidesDeleteError: "Не вдалося видалити сторону.",

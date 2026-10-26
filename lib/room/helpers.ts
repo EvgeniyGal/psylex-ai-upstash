@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, ne, notInArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { PARTY_ROLES, roomParticipants, rooms, userTestCompletions, users } from "@/drizzle/schema";
 import type { Locale } from "@/lib/i18n";
@@ -290,7 +290,25 @@ export async function searchPartyUsers(
       .from(roomParticipants)
       .innerJoin(rooms, eq(rooms.id, roomParticipants.roomId))
       .where(eq(rooms.createdByUserId, options.createdByUserId));
-    scopedUserIds = owned.map((row) => row.userId);
+
+    // Also allow unassigned (roomless) parties so survivors of a deleted room can be reused.
+    const withAnyRoom = await db
+      .selectDistinct({ userId: roomParticipants.userId })
+      .from(roomParticipants);
+    const withAnyRoomIds = withAnyRoom.map((row) => row.userId);
+    const roomless = await db
+      .select({ userId: users.id })
+      .from(users)
+      .where(
+        and(
+          inArray(users.role, [...PARTY_ROLES]),
+          withAnyRoomIds.length > 0 ? notInArray(users.id, withAnyRoomIds) : undefined,
+        ),
+      );
+
+    scopedUserIds = [
+      ...new Set([...owned.map((row) => row.userId), ...roomless.map((row) => row.userId)]),
+    ];
     if (scopedUserIds.length === 0) return [];
   }
 

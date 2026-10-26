@@ -293,7 +293,10 @@ export function SidesContent({
         roleLabel: admin.roles[row.partyRole] ?? row.partyRole,
         roleShort: row.partyRole === "party_a" ? "A" : "B",
         visibleRooms: row.rooms,
-        roomsLabel: row.rooms.map((room) => room.roomTitle).join(", "),
+        roomsLabel:
+          row.rooms.length > 0
+            ? row.rooms.map((room) => room.roomTitle).join(", ")
+            : admin.sidesNoRooms,
         mediatorIds,
         mediatorDisplay:
           mediatorTitles.length > 0 ? mediatorTitles.join(", ") : admin.unknownMediator,
@@ -303,18 +306,25 @@ export function SidesContent({
         ),
       };
     });
-  }, [rows, admin.roles, admin.unknownMediator]);
+  }, [rows, admin.roles, admin.sidesNoRooms, admin.unknownMediator]);
 
   const tabBaseRows = useMemo(() => {
     if (!showTabs) return tableRows;
 
     return tableRows
       .map((row) => {
+        const roomless = row.rooms.length === 0;
         const visibleRooms =
           activeTab === "admin"
             ? row.rooms.filter((room) => !room.roomCreatedByUserId)
             : row.rooms.filter((room) => !!room.roomCreatedByUserId);
-        if (visibleRooms.length === 0) return null;
+
+        // Roomless (unassigned) parties appear on the admin tab.
+        if (activeTab === "admin") {
+          if (!roomless && visibleRooms.length === 0) return null;
+        } else if (visibleRooms.length === 0) {
+          return null;
+        }
 
         const mediatorTitles = [
           ...new Set(
@@ -334,14 +344,17 @@ export function SidesContent({
         return {
           ...row,
           visibleRooms,
-          roomsLabel: visibleRooms.map((room) => room.roomTitle).join(", "),
+          roomsLabel:
+            visibleRooms.length > 0
+              ? visibleRooms.map((room) => room.roomTitle).join(", ")
+              : admin.sidesNoRooms,
           mediatorIds,
           mediatorDisplay:
             mediatorTitles.length > 0 ? mediatorTitles.join(", ") : admin.unknownMediator,
         };
       })
       .filter((row): row is SideTableRow => row != null);
-  }, [tableRows, showTabs, activeTab, admin.unknownMediator]);
+  }, [tableRows, showTabs, activeTab, admin.sidesNoRooms, admin.unknownMediator]);
 
   const showMediatorColumn = showTabs && activeTab === "mediator";
 
@@ -508,26 +521,32 @@ export function SidesContent({
         accessorKey: "roomsLabel",
         id: "rooms",
         header: admin.sidesRoomColumn,
-        cell: ({ row }) => (
-          <ul className="flex min-w-[10rem] max-w-[16rem] flex-col gap-1">
-            {row.original.visibleRooms.map((room) => (
-              <li className="flex items-start gap-1.5 text-body-sm text-on-surface" key={room.roomId}>
-                <span
-                  className={cn(
-                    "mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded text-[10px] font-bold",
-                    room.partyRole === "party_a"
-                      ? "bg-primary/15 text-primary"
-                      : "bg-tertiary/15 text-tertiary",
-                  )}
-                  title={admin.roles[room.partyRole]}
+        cell: ({ row }) =>
+          row.original.visibleRooms.length === 0 ? (
+            <span className="text-body-sm italic text-on-surface-variant">{admin.sidesNoRooms}</span>
+          ) : (
+            <ul className="flex min-w-[10rem] max-w-[16rem] flex-col gap-1">
+              {row.original.visibleRooms.map((room) => (
+                <li
+                  className="flex items-start gap-1.5 text-body-sm text-on-surface"
+                  key={room.roomId}
                 >
-                  {room.partyRole === "party_a" ? "A" : "B"}
-                </span>
-                <span className="leading-snug">{room.roomTitle}</span>
-              </li>
-            ))}
-          </ul>
-        ),
+                  <span
+                    className={cn(
+                      "mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded text-[10px] font-bold",
+                      room.partyRole === "party_a"
+                        ? "bg-primary/15 text-primary"
+                        : "bg-tertiary/15 text-tertiary",
+                    )}
+                    title={admin.roles[room.partyRole]}
+                  >
+                    {room.partyRole === "party_a" ? "A" : "B"}
+                  </span>
+                  <span className="leading-snug">{room.roomTitle}</span>
+                </li>
+              ))}
+            </ul>
+          ),
       },
       {
         accessorKey: "testsCompleteCount",

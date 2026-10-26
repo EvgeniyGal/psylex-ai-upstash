@@ -103,7 +103,8 @@ export async function redoFullPartyProfileAction(userId: string) {
 }
 
 /**
- * Deletes the party user and every room where they participate.
+ * Deletes this party account and every room they participate in.
+ * Other parties in those rooms are kept as free (roomless) accounts.
  * Mediators may only do this when every such room is one they own.
  */
 export async function deletePartyAction(userId: string) {
@@ -128,6 +129,7 @@ export async function deletePartyAction(userId: string) {
   }
 
   const roomIds = [...new Set(memberships.map((row) => row.roomId))];
+  const survivorUserIds = new Set<string>();
 
   if (roomIds.length > 0) {
     const members = await db
@@ -136,12 +138,14 @@ export async function deletePartyAction(userId: string) {
       .where(inArray(roomParticipants.roomId, roomIds));
 
     for (const member of members) {
+      if (member.userId !== userId) survivorUserIds.add(member.userId);
       await db
         .update(users)
         .set({ roomId: null })
         .where(and(eq(users.id, member.userId), eq(users.roomId, member.roomId)));
     }
 
+    // Deletes rooms + memberships via FK cascade. Does not delete other party users.
     await db.delete(rooms).where(inArray(rooms.id, roomIds));
     for (const roomId of roomIds) {
       notifyRoom(roomId);
@@ -150,6 +154,9 @@ export async function deletePartyAction(userId: string) {
 
   await db.delete(users).where(eq(users.id, userId));
   notifyUser(userId);
+  for (const survivorId of survivorUserIds) {
+    notifyUser(survivorId);
+  }
 
   revalidateSidesPaths();
   for (const roomId of roomIds) {
