@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useLocale } from "@/components/locale-provider";
 import {
   type AttentionSurface,
+  dismissAttentionToast,
+  showAttentionReady,
   syncAttentionReadyPersistent,
   syncAttentionWait,
 } from "@/hooks/attention-toasts";
@@ -44,6 +46,15 @@ const IDS = {
   agreementDraftReady: "mode-b-med-agreement-draft",
   waitAccepts: "mode-b-med-wait-accepts",
   bothAcceptedEnd: "mode-b-med-both-accepted",
+  partyAVoted: "mode-b-med-party-a-voted",
+  partyBVoted: "mode-b-med-party-b-voted",
+  partyACompromise: "mode-b-med-party-a-compromise",
+  partyBCompromise: "mode-b-med-party-b-compromise",
+  compromiseBothRejected: "mode-b-med-compromise-both-rejected",
+  partyAAgreement: "mode-b-med-party-a-agreement",
+  partyBAgreement: "mode-b-med-party-b-agreement",
+  partyAReplied: "mode-b-med-party-a-replied",
+  partyBReplied: "mode-b-med-party-b-replied",
 } as const;
 
 /** Shared lobby stack for parties and mediator. */
@@ -370,6 +381,12 @@ export function useModeBMediatorRoomWaitToasts(params: {
     phase === "voting_discrepancy" &&
     compromisePublished &&
     (partyACompromiseVote == null || partyBCompromiseVote == null);
+  const bothCompromiseRejected =
+    phase === "voting_discrepancy" &&
+    compromisePublished &&
+    partyACompromiseVote != null &&
+    partyBCompromiseVote != null &&
+    !(partyACompromiseVote && partyBCompromiseVote);
   const agreementGen =
     generatingAgreement || (phase === "agreement" && !hasAgreementDraft && !agreementPublished);
   const agreementDraftReady =
@@ -386,6 +403,149 @@ export function useModeBMediatorRoomWaitToasts(params: {
     !partyBPendingReply &&
     !generatingCandidates &&
     !generatingOptions;
+
+  type Snapshot = {
+    phase: MediationPhase | null | undefined;
+    partyAVote: string | null | undefined;
+    partyBVote: string | null | undefined;
+    partyACompromiseVote: boolean | null | undefined;
+    partyBCompromiseVote: boolean | null | undefined;
+    partyAAccepted: boolean;
+    partyBAccepted: boolean;
+    partyAPendingReply: boolean;
+    partyBPendingReply: boolean;
+  };
+  const prevRef = useRef<Snapshot | null>(null);
+
+  useEffect(() => {
+    if (!enabled) {
+      prevRef.current = null;
+      return;
+    }
+
+    const prev = prevRef.current;
+    const next: Snapshot = {
+      phase,
+      partyAVote,
+      partyBVote,
+      partyACompromiseVote,
+      partyBCompromiseVote,
+      partyAAccepted,
+      partyBAccepted,
+      partyAPendingReply,
+      partyBPendingReply,
+    };
+
+    if (prev) {
+      if (!prev.partyAVote && partyAVote) {
+        showAttentionReady(IDS.partyAVoted, t.modeBToastPartyAVoted, true, surface);
+      }
+      if (!prev.partyBVote && partyBVote) {
+        showAttentionReady(IDS.partyBVoted, t.modeBToastPartyBVoted, true, surface);
+      }
+
+      if (prev.partyACompromiseVote == null && partyACompromiseVote === true) {
+        showAttentionReady(
+          IDS.partyACompromise,
+          t.modeBToastPartyAAcceptedCompromise,
+          true,
+          surface,
+        );
+      }
+      if (prev.partyACompromiseVote == null && partyACompromiseVote === false) {
+        showAttentionReady(
+          IDS.partyACompromise,
+          t.modeBToastPartyARejectedCompromise,
+          true,
+          surface,
+        );
+      }
+      if (prev.partyBCompromiseVote == null && partyBCompromiseVote === true) {
+        showAttentionReady(
+          IDS.partyBCompromise,
+          t.modeBToastPartyBAcceptedCompromise,
+          true,
+          surface,
+        );
+      }
+      if (prev.partyBCompromiseVote == null && partyBCompromiseVote === false) {
+        showAttentionReady(
+          IDS.partyBCompromise,
+          t.modeBToastPartyBRejectedCompromise,
+          true,
+          surface,
+        );
+      }
+
+      if (!prev.partyAAccepted && partyAAccepted) {
+        showAttentionReady(
+          IDS.partyAAgreement,
+          t.modeBToastPartyAAcceptedAgreement,
+          true,
+          surface,
+        );
+      }
+      if (!prev.partyBAccepted && partyBAccepted) {
+        showAttentionReady(
+          IDS.partyBAgreement,
+          t.modeBToastPartyBAcceptedAgreement,
+          true,
+          surface,
+        );
+      }
+
+      if (prev.partyAPendingReply && !partyAPendingReply) {
+        showAttentionReady(IDS.partyAReplied, t.modeBToastPartyAReplied, true, surface);
+      }
+      if (prev.partyBPendingReply && !partyBPendingReply) {
+        showAttentionReady(IDS.partyBReplied, t.modeBToastPartyBReplied, true, surface);
+      }
+
+      if (prev.phase === "voting" && phase !== "voting") {
+        dismissAttentionToast(IDS.partyAVoted, surface);
+        dismissAttentionToast(IDS.partyBVoted, surface);
+      }
+      if (prev.phase === "voting_discrepancy" && phase !== "voting_discrepancy") {
+        dismissAttentionToast(IDS.partyACompromise, surface);
+        dismissAttentionToast(IDS.partyBCompromise, surface);
+        dismissAttentionToast(IDS.compromiseBothRejected, surface);
+      }
+      if (prev.phase === "agreement" && phase !== "agreement") {
+        dismissAttentionToast(IDS.partyAAgreement, surface);
+        dismissAttentionToast(IDS.partyBAgreement, surface);
+      }
+      const wasDialogue = prev.phase === "dialogue" || prev.phase === "opening";
+      if (wasDialogue && !dialogueLike) {
+        dismissAttentionToast(IDS.partyAReplied, surface);
+        dismissAttentionToast(IDS.partyBReplied, surface);
+      }
+    }
+
+    prevRef.current = next;
+  }, [
+    enabled,
+    phase,
+    partyAVote,
+    partyBVote,
+    partyACompromiseVote,
+    partyBCompromiseVote,
+    partyAAccepted,
+    partyBAccepted,
+    partyAPendingReply,
+    partyBPendingReply,
+    dialogueLike,
+    surface,
+    t.modeBToastPartyAVoted,
+    t.modeBToastPartyBVoted,
+    t.modeBToastPartyAAcceptedCompromise,
+    t.modeBToastPartyBAcceptedCompromise,
+    t.modeBToastPartyARejectedCompromise,
+    t.modeBToastPartyBRejectedCompromise,
+    t.modeBToastPartyAAcceptedAgreement,
+    t.modeBToastPartyBAcceptedAgreement,
+    t.modeBToastPartyAReplied,
+    t.modeBToastPartyBReplied,
+  ]);
 
   useEffect(() => {
     syncAttentionWait(
@@ -487,6 +647,16 @@ export function useModeBMediatorRoomWaitToasts(params: {
       surface,
     );
   }, [enabled, waitingCompromiseVotes, t.modeBToastWaitingCompromiseVotes, surface]);
+
+  useEffect(() => {
+    syncAttentionReadyPersistent(
+      enabled,
+      bothCompromiseRejected,
+      IDS.compromiseBothRejected,
+      t.modeBToastCompromiseBothRejected,
+      surface,
+    );
+  }, [enabled, bothCompromiseRejected, t.modeBToastCompromiseBothRejected, surface]);
 
   useEffect(() => {
     syncAttentionWait(

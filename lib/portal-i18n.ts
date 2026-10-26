@@ -109,6 +109,17 @@ type PortalCopy = {
   modeBToastWaitingCompromiseVotes: string;
   modeBToastBothAcceptedEnd: string;
   modeBToastSessionStarting: string;
+  modeBToastPartyAVoted: string;
+  modeBToastPartyBVoted: string;
+  modeBToastPartyAAcceptedCompromise: string;
+  modeBToastPartyBAcceptedCompromise: string;
+  modeBToastPartyARejectedCompromise: string;
+  modeBToastPartyBRejectedCompromise: string;
+  modeBToastCompromiseBothRejected: string;
+  modeBToastPartyAAcceptedAgreement: string;
+  modeBToastPartyBAcceptedAgreement: string;
+  modeBToastPartyAReplied: string;
+  modeBToastPartyBReplied: string;
   myRoomsTitle: string;
   myRoomsSubtitle: string;
   myRoomsEmpty: string;
@@ -405,6 +416,17 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     modeBToastWaitingCompromiseVotes: "Waiting for parties to vote on the compromise.",
     modeBToastBothAcceptedEnd: "Both parties accepted — you can complete the session.",
     modeBToastSessionStarting: "Everyone is ready — session is starting…",
+    modeBToastPartyAVoted: "Party A selected a solution option.",
+    modeBToastPartyBVoted: "Party B selected a solution option.",
+    modeBToastPartyAAcceptedCompromise: "Party A accepted the compromise.",
+    modeBToastPartyBAcceptedCompromise: "Party B accepted the compromise.",
+    modeBToastPartyARejectedCompromise: "Party A rejected the compromise.",
+    modeBToastPartyBRejectedCompromise: "Party B rejected the compromise.",
+    modeBToastCompromiseBothRejected: "Both parties rejected the compromise.",
+    modeBToastPartyAAcceptedAgreement: "Party A accepted the agreement.",
+    modeBToastPartyBAcceptedAgreement: "Party B accepted the agreement.",
+    modeBToastPartyAReplied: "Party A replied.",
+    modeBToastPartyBReplied: "Party B replied.",
     myRoomsTitle: "My rooms",
     myRoomsSubtitle: "Select a mediation room to continue.",
     myRoomsEmpty: "You are not assigned to any rooms yet.",
@@ -729,6 +751,17 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     modeBToastWaitingCompromiseVotes: "Очікуємо голосування сторін за компроміс.",
     modeBToastBothAcceptedEnd: "Обидві сторони прийняли угоду — можна завершити сесію.",
     modeBToastSessionStarting: "Усі готові — сесія починається…",
+    modeBToastPartyAVoted: "Сторона A обрала варіант рішення.",
+    modeBToastPartyBVoted: "Сторона B обрала варіант рішення.",
+    modeBToastPartyAAcceptedCompromise: "Сторона A прийняла компроміс.",
+    modeBToastPartyBAcceptedCompromise: "Сторона B прийняла компроміс.",
+    modeBToastPartyARejectedCompromise: "Сторона A відхилила компроміс.",
+    modeBToastPartyBRejectedCompromise: "Сторона B відхилила компроміс.",
+    modeBToastCompromiseBothRejected: "Обидві сторони відхилили компроміс.",
+    modeBToastPartyAAcceptedAgreement: "Сторона A прийняла угоду.",
+    modeBToastPartyBAcceptedAgreement: "Сторона B прийняла угоду.",
+    modeBToastPartyAReplied: "Сторона A відповіла.",
+    modeBToastPartyBReplied: "Сторона B відповіла.",
     myRoomsTitle: "Мої кімнати",
     myRoomsSubtitle: "Оберіть кімнату медіації, щоб продовжити.",
     myRoomsEmpty: "Вас ще не додано до жодної кімнати.",
