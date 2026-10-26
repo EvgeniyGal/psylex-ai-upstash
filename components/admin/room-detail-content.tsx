@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
+import { toast } from "sonner";
 import {
   deleteRoom,
+  deleteRoomWithParties,
   requestProfileRefresh,
   updateParticipantMeta,
   updateRoomMeta,
@@ -13,6 +15,7 @@ import type { PartyProfileStatus } from "@/lib/room/party-profile-status";
 import { CredentialActions, CredentialField } from "@/components/credential-actions";
 import { RoomMediationDetailsModal } from "@/components/admin/room-mediation-details-modal";
 import { SessionSchedulingSection } from "@/components/mediator/session-scheduling-section";
+import { ModalOverlay } from "@/components/ui/modal";
 import { Spinner } from "@/components/ui/spinner";
 import { useLocale } from "@/components/locale-provider";
 import { formatDateTime } from "@/lib/format-datetime";
@@ -252,7 +255,7 @@ export function RoomDetailContent({
   const { admin, locale } = useLocale();
   const router = useRouter();
   const jurisdictionDisplay = formatRoomJurisdiction(room, locale);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmDeleteMode, setConfirmDeleteMode] = useState<"room" | "parties" | null>(null);
   const [title, setTitle] = useState(room.title);
   const [description, setDescription] = useState(room.description);
   const [roomPending, startRoomTransition] = useTransition();
@@ -278,9 +281,29 @@ export function RoomDetailContent({
     });
   };
 
-  const onDelete = (formData: FormData) => {
+  const onDeleteRoomOnly = () => {
+    const formData = new FormData();
+    formData.set("roomId", room.id);
     startDeleteTransition(async () => {
-      await deleteRoom(formData);
+      try {
+        await deleteRoom(formData);
+      } catch (error) {
+        setConfirmDeleteMode(null);
+        toast.error(error instanceof Error ? error.message : admin.deleteRoom);
+      }
+    });
+  };
+
+  const onDeleteRoomWithParties = () => {
+    const formData = new FormData();
+    formData.set("roomId", room.id);
+    startDeleteTransition(async () => {
+      try {
+        await deleteRoomWithParties(formData);
+      } catch (error) {
+        setConfirmDeleteMode(null);
+        toast.error(error instanceof Error ? error.message : admin.deleteRoom);
+      }
     });
   };
 
@@ -465,43 +488,96 @@ export function RoomDetailContent({
       </div>
 
       {canDelete ? (
-        <div className="glass-panel rounded-xl border border-error/20 p-6">
-          {!confirmDelete ? (
+        <div className="glass-panel space-y-4 rounded-xl border border-error/20 p-6">
+          <h4 className="font-display text-headline-sm text-error">{admin.deleteRoom}</h4>
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <button
-              className="flex items-center gap-2 text-body-sm font-semibold text-error transition-opacity hover:opacity-80"
-              onClick={() => setConfirmDelete(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-error/40 px-4 py-2.5 text-body-sm font-semibold text-error transition-colors hover:bg-error/10 disabled:opacity-60"
+              disabled={deletePending}
+              onClick={() => setConfirmDeleteMode("room")}
               type="button"
             >
-              <span className="material-symbols-outlined text-[18px]">delete</span>
-              {admin.deleteRoom}
+              <span className="material-symbols-outlined text-[18px]">meeting_room</span>
+              {admin.deleteRoomOnly}
             </button>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-body-sm text-on-surface">{admin.deleteRoomConfirm}</p>
-              <div className="flex gap-3">
-                <button
-                  className="rounded-lg border border-outline-variant/30 px-4 py-2 text-body-sm text-on-surface-variant hover:bg-surface-container-high"
-                  disabled={deletePending}
-                  onClick={() => setConfirmDelete(false)}
-                  type="button"
-                >
-                  {admin.cancel}
-                </button>
-                <form action={onDelete}>
-                  <input name="roomId" type="hidden" value={room.id} />
-                  <button
-                    className="flex items-center gap-1.5 rounded-lg bg-error px-4 py-2 text-body-sm font-semibold text-white disabled:opacity-60"
-                    disabled={deletePending}
-                    type="submit"
-                  >
-                    {deletePending ? <Spinner size="sm" className="text-white" /> : admin.deleteRoom}
-                  </button>
-                </form>
-              </div>
-            </div>
-          )}
+            <button
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-error/40 px-4 py-2.5 text-body-sm font-semibold text-error transition-colors hover:bg-error/10 disabled:opacity-60"
+              disabled={deletePending}
+              onClick={() => setConfirmDeleteMode("parties")}
+              type="button"
+            >
+              <span className="material-symbols-outlined text-[18px]">group_off</span>
+              {admin.deleteRoomWithParties}
+            </button>
+          </div>
         </div>
       ) : null}
+
+      <ModalOverlay
+        onClose={() => {
+          if (!deletePending) setConfirmDeleteMode(null);
+        }}
+        open={confirmDeleteMode !== null}
+        panelClassName="max-w-md"
+      >
+        {confirmDeleteMode ? (
+          <div
+            aria-labelledby="room-delete-title"
+            aria-modal="true"
+            className="space-y-5 rounded-xl border border-error/30 bg-surface-container p-6 shadow-xl"
+            role="dialog"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2
+                  className="font-display text-headline-md text-error"
+                  id="room-delete-title"
+                >
+                  {confirmDeleteMode === "room"
+                    ? admin.deleteRoomOnly
+                    : admin.deleteRoomWithParties}
+                </h2>
+                <p className="mt-2 text-body-sm text-on-surface">
+                  {confirmDeleteMode === "room"
+                    ? admin.deleteRoomOnlyConfirm
+                    : admin.deleteRoomWithPartiesConfirm}
+                </p>
+              </div>
+              <button
+                className="grid h-8 w-8 place-items-center rounded-full border border-hair text-on-surface-variant hover:text-on-surface disabled:opacity-50"
+                disabled={deletePending}
+                onClick={() => setConfirmDeleteMode(null)}
+                type="button"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                className="rounded-lg border border-outline-variant/30 px-4 py-2 text-on-surface-variant hover:bg-surface-container-high"
+                disabled={deletePending}
+                onClick={() => setConfirmDeleteMode(null)}
+                type="button"
+              >
+                {admin.cancel}
+              </button>
+              <button
+                className="flex items-center gap-1.5 rounded-lg bg-error px-4 py-2 font-semibold text-white disabled:opacity-60"
+                disabled={deletePending}
+                onClick={
+                  confirmDeleteMode === "room" ? onDeleteRoomOnly : onDeleteRoomWithParties
+                }
+                type="button"
+              >
+                {deletePending ? <Spinner size="sm" className="text-white" /> : null}
+                {confirmDeleteMode === "room"
+                  ? admin.deleteRoomOnly
+                  : admin.deleteRoomWithParties}
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </ModalOverlay>
     </section>
   );
 }

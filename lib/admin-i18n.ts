@@ -58,7 +58,10 @@ export type AdminCopy = {
   roomUsaSubJurisdiction: string;
   roomUsaSubJurisdictionHelp: string;
   deleteRoom: string;
-  deleteRoomConfirm: string;
+  deleteRoomOnly: string;
+  deleteRoomOnlyConfirm: string;
+  deleteRoomWithParties: string;
+  deleteRoomWithPartiesConfirm: string;
   returnToRooms: string;
   createRoomSubtitle: string;
   roomDetails: string;
@@ -427,8 +430,13 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     roomUsaSubJurisdiction: "State / territory / Federal",
     roomUsaSubJurisdictionHelp:
       "Select the US state or territory whose law applies to this dispute, or Federal for nationwide federal law.",
-    deleteRoom: "Delete Room",
-    deleteRoomConfirm: "Delete this room and all its participants? This cannot be undone.",
+    deleteRoom: "Delete room",
+    deleteRoomOnly: "Delete room only",
+    deleteRoomOnlyConfirm:
+      "Delete this room only? Party accounts are kept and become free if they are not in other rooms. This cannot be undone.",
+    deleteRoomWithParties: "Delete room and parties",
+    deleteRoomWithPartiesConfirm:
+      "Delete this room and its party accounts? Every other room those parties participate in will also be deleted. Other parties only in those related rooms stay as free accounts. This cannot be undone.",
     returnToRooms: "Return to rooms",
     createRoomSubtitle: "Set up the room and both sides. Credentials will be generated when you create the room.",
     roomDetails: "Room details",
@@ -898,7 +906,12 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     roomUsaSubJurisdictionHelp:
       "Оберіть штат або територію США, право яких застосовується до цього спору, або Федеральну для загальнодержавного права.",
     deleteRoom: "Видалити кімнату",
-    deleteRoomConfirm: "Видалити цю кімнату та всіх учасників? Цю дію не можна скасувати.",
+    deleteRoomOnly: "Видалити лише кімнату",
+    deleteRoomOnlyConfirm:
+      "Видалити лише цю кімнату? Облікові записи сторін збережуться і стануть вільними, якщо вони не входять до інших кімнат. Цю дію не можна скасувати.",
+    deleteRoomWithParties: "Видалити кімнату зі сторонами",
+    deleteRoomWithPartiesConfirm:
+      "Видалити цю кімнату та облікові записи її сторін? Також будуть видалені всі інші кімнати, у яких ці сторони беруть участь. Інші сторони лише з пов’язаних кімнат залишаться вільними обліковими записами. Цю дію не можна скасувати.",
     returnToRooms: "Повернутися до кімнат",
     createRoomSubtitle: "Налаштуйте кімнату та обидві сторони. Облікові дані буде згенеровано після створення.",
     roomDetails: "Деталі кімнати",

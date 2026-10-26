@@ -1,6 +1,6 @@
 "use server";
 
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
@@ -187,29 +187,126 @@ export async function updateParticipantMeta(formData: FormData) {
   if (user?.roomId) revalidatePath(`/admin/rooms/${user.roomId}`);
 }
 
+async function detachMembersAndDeleteRooms(roomIds: string[]) {
+  if (roomIds.length === 0) return;
+
+  const members = await db
+    .select({ userId: roomParticipants.userId, roomId: roomParticipants.roomId })
+    .from(roomParticipants)
+    .where(inArray(roomParticipants.roomId, roomIds));
+
+  for (const member of members) {
+    await db
+      .update(users)
+      .set({ roomId: null })
+      .where(and(eq(users.id, member.userId), eq(users.roomId, member.roomId)));
+  }
+
+  await db.delete(rooms).where(inArray(rooms.id, roomIds));
+  for (const id of roomIds) {
+    notifyRoom(id);
+  }
+}
+
+function revalidateAfterRoomDelete(roomIds: string[]) {
+  revalidatePath("/admin/rooms");
+  revalidatePath("/admin/mediators");
+  revalidatePath("/admin/sides");
+  revalidatePath("/mediator/rooms");
+  revalidatePath("/mediator/sides");
+  for (const roomId of roomIds) {
+    revalidatePath(`/admin/rooms/${roomId}`);
+    revalidatePath(`/mediator/rooms/${roomId}`);
+  }
+}
+
+/** Delete this room only. Party accounts stay and become free (roomless) if they have no other rooms. */
 export async function deleteRoom(formData: FormData) {
   const roomId = String(formData.get("roomId"));
   const { role } = await assertCanManageRooms();
   await assertCanAccessRoom(roomId);
 
-  // Detach only: clear lastActiveRoomId for members of this room, keep user accounts.
-  const members = await db
-    .select({ userId: roomParticipants.userId })
+  await detachMembersAndDeleteRooms([roomId]);
+  revalidateAfterRoomDelete([roomId]);
+  redirect(role === "mediator" ? "/mediator/rooms" : "/admin/rooms");
+}
+
+/**
+ * Delete this room and its party accounts.
+ * Also deletes every other room those parties participate in.
+ * Other parties only in those related rooms (not in the deleted party set) stay as free accounts.
+ */
+export async function deleteRoomWithParties(formData: FormData) {
+  const roomId = String(formData.get("roomId"));
+  const { role, userId: actorId } = await assertCanManageRooms();
+  await assertCanAccessRoom(roomId);
+
+  const partiesInRoom = await db
+    .select({
+      userId: roomParticipants.userId,
+      role: users.role,
+    })
     .from(roomParticipants)
+    .innerJoin(users, eq(users.id, roomParticipants.userId))
     .where(eq(roomParticipants.roomId, roomId));
-  for (const member of members) {
-    await db
-      .update(users)
-      .set({ roomId: null })
-      .where(and(eq(users.id, member.userId), eq(users.roomId, roomId)));
+
+  const partyUserIds = [
+    ...new Set(
+      partiesInRoom.filter((row) => isPartyRole(row.role)).map((row) => row.userId),
+    ),
+  ];
+
+  if (partyUserIds.length === 0) {
+    await detachMembersAndDeleteRooms([roomId]);
+    revalidateAfterRoomDelete([roomId]);
+    redirect(role === "mediator" ? "/mediator/rooms" : "/admin/rooms");
   }
 
-  await db.delete(rooms).where(eq(rooms.id, roomId));
-  notifyRoom(roomId);
+  const relatedMemberships = await db
+    .select({
+      roomId: roomParticipants.roomId,
+      userId: roomParticipants.userId,
+      createdByUserId: rooms.createdByUserId,
+    })
+    .from(roomParticipants)
+    .innerJoin(rooms, eq(rooms.id, roomParticipants.roomId))
+    .where(inArray(roomParticipants.userId, partyUserIds));
 
-  revalidatePath("/admin/rooms");
-  revalidatePath("/admin/mediators");
-  revalidatePath("/mediator/rooms");
+  const roomsToDelete = [...new Set(relatedMemberships.map((row) => row.roomId))];
+
+  if (role === "mediator") {
+    const foreign = relatedMemberships.filter((row) => row.createdByUserId !== actorId);
+    if (foreign.length > 0) {
+      throw new Error(
+        "These parties also belong to rooms you do not own. An admin must delete the room with parties.",
+      );
+    }
+  }
+
+  const allMembersInRelatedRooms = await db
+    .select({ userId: roomParticipants.userId, roomId: roomParticipants.roomId })
+    .from(roomParticipants)
+    .where(inArray(roomParticipants.roomId, roomsToDelete));
+
+  const partyIdSet = new Set(partyUserIds);
+  const survivorIds = new Set<string>();
+  for (const member of allMembersInRelatedRooms) {
+    if (!partyIdSet.has(member.userId)) survivorIds.add(member.userId);
+  }
+
+  await detachMembersAndDeleteRooms(roomsToDelete);
+
+  if (partyUserIds.length > 0) {
+    await db.delete(users).where(inArray(users.id, partyUserIds));
+    for (const id of partyUserIds) {
+      notifyUser(id);
+    }
+  }
+  for (const id of survivorIds) {
+    notifyUser(id);
+  }
+
+  revalidateAfterRoomDelete(roomsToDelete);
   redirect(role === "mediator" ? "/mediator/rooms" : "/admin/rooms");
 }
 
