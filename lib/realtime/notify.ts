@@ -12,6 +12,8 @@ import {
 type NotifyBatch = {
   rooms: Set<string>;
   users: Set<string>;
+  /** True while a flush is queued for this batch. */
+  flushScheduled: boolean;
 };
 
 const storage = new AsyncLocalStorage<NotifyBatch>();
@@ -20,22 +22,35 @@ function peekBatch(): NotifyBatch | undefined {
   return storage.getStore();
 }
 
+function scheduleFlush(batch: NotifyBatch) {
+  if (batch.flushScheduled) return;
+  batch.flushScheduled = true;
+
+  const run = () => {
+    void flush(batch);
+  };
+
+  // Always microtask so emits work inside scheduleMediationWork / nested after().
+  queueMicrotask(run);
+
+  // Also end-of-request after() when available (HTTP path); no-op if batch already empty.
+  try {
+    after(run);
+  } catch {
+    // microtask already covers background / nested-after contexts
+  }
+}
+
 function getBatch(): NotifyBatch {
   const existing = peekBatch();
   if (existing) return existing;
 
-  const batch: NotifyBatch = { rooms: new Set(), users: new Set() };
+  const batch: NotifyBatch = {
+    rooms: new Set(),
+    users: new Set(),
+    flushScheduled: false,
+  };
   storage.enterWith(batch);
-
-  const run = () => flush(batch);
-  try {
-    after(run);
-  } catch {
-    queueMicrotask(() => {
-      void run();
-    });
-  }
-
   return batch;
 }
 
@@ -45,13 +60,17 @@ export function isRoomDirty(roomId: string) {
 
 export function notifyRoom(roomId: string | null | undefined) {
   if (!roomId) return;
-  getBatch().rooms.add(roomId);
+  const batch = getBatch();
+  batch.rooms.add(roomId);
+  scheduleFlush(batch);
   void invalidateRoomCache(roomId);
 }
 
 export function notifyUser(userId: string | null | undefined) {
   if (!userId) return;
-  getBatch().users.add(userId);
+  const batch = getBatch();
+  batch.users.add(userId);
+  scheduleFlush(batch);
 }
 
 async function invalidateRoomCache(roomId: string) {
@@ -68,6 +87,8 @@ async function flush(batch: NotifyBatch) {
   const userIds = [...batch.users];
   batch.rooms.clear();
   batch.users.clear();
+  // Allow later notifyRoom calls in the same async context to schedule again.
+  batch.flushScheduled = false;
   if (roomIds.length === 0 && userIds.length === 0) return;
   if (!isUpstashConfigured()) return;
 

@@ -196,6 +196,8 @@ async function askDialogueQuestion(
       .update(rooms)
       .set({ mediationTurnDeadlineAt: new Date(Date.now() + REPLY_TIMEOUT_MS) })
       .where(eq(rooms.id, room.id));
+    // Final notify so clients fetch question + deadline together (insert already notified).
+    notifyRoom(room.id);
   } finally {
     if (ownsLock) mediationAgentWork.delete(room.id);
   }

@@ -81,11 +81,15 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
     }
   }, []);
 
+  const isAwaitingAgent = state.room.isAwaitingAgent;
+
   useRoomRealtime(state.room.id, () => {
     void refresh();
   }, {
     enabled: !review && !isSessionComplete,
     watchUsers: false,
+    // Safety net while agent prepares the next question — SSE from after() can be missed.
+    pollIntervalMs: isAwaitingAgent ? 2500 : undefined,
   });
 
   const sessionEndsAt = useMemo(() => {
@@ -109,13 +113,11 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
   const isOtherPartyAnswering =
     state.room.phase === "dialogue" && !!state.room.activeParty && state.room.activeParty !== viewerRole;
 
-  const lastMessage = state.messages.at(-1);
+  // Deadline is set only after the question is inserted — source of truth for composer/toasts.
   const questionReady =
     state.room.phase !== "dialogue" ||
     !isMyTurn ||
-    lastMessage?.messageKind === "mediation_question";
-
-  const isAwaitingAgent = state.room.isAwaitingAgent;
+    !!state.room.turnDeadlineAt;
 
   const [replyRemaining, setReplyRemaining] = useState<string | null>(null);
 
