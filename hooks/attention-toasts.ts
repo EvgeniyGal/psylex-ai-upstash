@@ -52,6 +52,8 @@ export function dismissAttentionToast(id: string, surface: AttentionSurface = "t
   toast.dismiss(id);
 }
 
+const EPHEMERAL_READY_MS = 7000;
+
 export function showAttentionReady(
   id: string,
   message: string,
@@ -59,13 +61,16 @@ export function showAttentionReady(
   surface: AttentionSurface = "toast",
 ) {
   if (surface === "mediator-dock") {
-    upsertMediatorAttention({ id, kind: "ready", message });
+    upsertMediatorAttention(
+      { id, kind: "ready", message },
+      persistent ? undefined : { autoDismissMs: EPHEMERAL_READY_MS },
+    );
     return;
   }
   toast.success(message, {
     id,
     toasterId: ATTENTION_TOASTER,
-    duration: persistent ? Infinity : 7000,
+    duration: persistent ? Infinity : EPHEMERAL_READY_MS,
     className: attentionReadyToastClassName,
   });
 }

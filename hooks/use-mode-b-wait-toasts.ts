@@ -438,17 +438,17 @@ export function useModeBMediatorRoomWaitToasts(params: {
 
     if (prev) {
       if (!prev.partyAVote && partyAVote) {
-        showAttentionReady(IDS.partyAVoted, t.modeBToastPartyAVoted, true, surface);
+        showAttentionReady(IDS.partyAVoted, t.modeBToastPartyAVoted, false, surface);
       }
       if (!prev.partyBVote && partyBVote) {
-        showAttentionReady(IDS.partyBVoted, t.modeBToastPartyBVoted, true, surface);
+        showAttentionReady(IDS.partyBVoted, t.modeBToastPartyBVoted, false, surface);
       }
 
       if (prev.partyACompromiseVote == null && partyACompromiseVote === true) {
         showAttentionReady(
           IDS.partyACompromise,
           t.modeBToastPartyAAcceptedCompromise,
-          true,
+          false,
           surface,
         );
       }
@@ -456,7 +456,7 @@ export function useModeBMediatorRoomWaitToasts(params: {
         showAttentionReady(
           IDS.partyACompromise,
           t.modeBToastPartyARejectedCompromise,
-          true,
+          false,
           surface,
         );
       }
@@ -464,7 +464,7 @@ export function useModeBMediatorRoomWaitToasts(params: {
         showAttentionReady(
           IDS.partyBCompromise,
           t.modeBToastPartyBAcceptedCompromise,
-          true,
+          false,
           surface,
         );
       }
@@ -472,7 +472,7 @@ export function useModeBMediatorRoomWaitToasts(params: {
         showAttentionReady(
           IDS.partyBCompromise,
           t.modeBToastPartyBRejectedCompromise,
-          true,
+          false,
           surface,
         );
       }
@@ -481,7 +481,7 @@ export function useModeBMediatorRoomWaitToasts(params: {
         showAttentionReady(
           IDS.partyAAgreement,
           t.modeBToastPartyAAcceptedAgreement,
-          true,
+          false,
           surface,
         );
       }
@@ -489,16 +489,29 @@ export function useModeBMediatorRoomWaitToasts(params: {
         showAttentionReady(
           IDS.partyBAgreement,
           t.modeBToastPartyBAcceptedAgreement,
-          true,
+          false,
           surface,
         );
       }
 
       if (prev.partyAPendingReply && !partyAPendingReply) {
-        showAttentionReady(IDS.partyAReplied, t.modeBToastPartyAReplied, true, surface);
+        showAttentionReady(IDS.partyAReplied, t.modeBToastPartyAReplied, false, surface);
       }
       if (prev.partyBPendingReply && !partyBPendingReply) {
-        showAttentionReady(IDS.partyBReplied, t.modeBToastPartyBReplied, true, surface);
+        showAttentionReady(IDS.partyBReplied, t.modeBToastPartyBReplied, false, surface);
+      }
+
+      // Aggregate "parties have replied" replaces per-party replied flashes.
+      if (readyNext) {
+        dismissAttentionToast(IDS.partyAReplied, surface);
+        dismissAttentionToast(IDS.partyBReplied, surface);
+      }
+      // New question sent — clear stale replied flashes.
+      if (!prev.partyAPendingReply && partyAPendingReply) {
+        dismissAttentionToast(IDS.partyAReplied, surface);
+      }
+      if (!prev.partyBPendingReply && partyBPendingReply) {
+        dismissAttentionToast(IDS.partyBReplied, surface);
       }
 
       if (prev.phase === "voting" && phase !== "voting") {
@@ -534,6 +547,7 @@ export function useModeBMediatorRoomWaitToasts(params: {
     partyAPendingReply,
     partyBPendingReply,
     dialogueLike,
+    readyNext,
     surface,
     t.modeBToastPartyAVoted,
     t.modeBToastPartyBVoted,
