@@ -1,12 +1,5 @@
 import { randomUUID } from "crypto";
 import type { DraftAgreement, DraftObligation } from "@/lib/mediation/types";
-import {
-  PROTECTIVE_CLAUSES,
-  inferDisputeTags,
-  protectiveClauseText,
-  suggestedProtectiveClauseIds,
-  type ProtectiveClause,
-} from "@/lib/mediation/protective-clauses";
 
 export function obligationsToTerms(obligations: DraftObligation[]): string[] {
   return obligations.map((o) =>
@@ -30,10 +23,7 @@ type RawDraftInput = {
   generatedAt?: string;
 };
 
-export function normalizeDraftAgreement(
-  raw: RawDraftInput,
-  options?: { suggestProtectiveIds?: string[] },
-): DraftAgreement {
+export function normalizeDraftAgreement(raw: RawDraftInput): DraftAgreement {
   const obligations: DraftObligation[] =
     raw.obligations && raw.obligations.length > 0
       ? raw.obligations.map((o) => ({
@@ -49,49 +39,15 @@ export function normalizeDraftAgreement(
           source: "option" as const,
         }));
 
-  const protectiveClauseIds = raw.protectiveClauseIds ?? options?.suggestProtectiveIds ?? [];
-
   return {
     title: raw.title,
     body: raw.body,
     obligations,
     terms: obligationsToTerms(obligations),
-    protectiveClauseIds,
+    // Kept for backward compatibility with existing room JSON; no catalog merge.
+    protectiveClauseIds: raw.protectiveClauseIds ?? [],
     status: raw.status ?? "draft",
     publishedAt: raw.publishedAt,
     generatedAt: raw.generatedAt ?? new Date().toISOString(),
   };
-}
-
-export function mergeProtectiveClausesIntoDraft(
-  draft: DraftAgreement,
-  selectedIds: string[],
-  locale: "en" | "uk" = "en",
-): DraftAgreement {
-  const withoutProtective = draft.obligations.filter((o) => o.source !== "protective");
-  const selected = new Set(selectedIds);
-  const added: DraftObligation[] = PROTECTIVE_CLAUSES.filter((c) => selected.has(c.id)).map(
-    (clause) => ({
-      id: `protective-${clause.id}`,
-      text: protectiveClauseText(clause, locale),
-      deadline: null,
-      source: "protective" as const,
-    }),
-  );
-
-  const obligations = [...withoutProtective, ...added];
-  return {
-    ...draft,
-    protectiveClauseIds: selectedIds,
-    obligations,
-    terms: obligationsToTerms(obligations),
-  };
-}
-
-export function listProtectiveClauses(): ProtectiveClause[] {
-  return PROTECTIVE_CLAUSES;
-}
-
-export function defaultSuggestedProtectiveIds(roomText: string | null | undefined) {
-  return suggestedProtectiveClauseIds(inferDisputeTags(roomText));
 }

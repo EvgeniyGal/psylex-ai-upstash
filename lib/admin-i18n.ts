@@ -333,7 +333,6 @@ export type AdminCopy = {
   mediatorObligationDeadline: string;
   mediatorAddObligation: string;
   mediatorRemoveObligation: string;
-  mediatorProtectiveClauses: string;
   mediatorSaveDraft: string;
   mediatorPublishAgreement: string;
   mediatorDraftSaved: string;
@@ -743,7 +742,6 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     mediatorObligationDeadline: "Deadline",
     mediatorAddObligation: "Add obligation",
     mediatorRemoveObligation: "Remove",
-    mediatorProtectiveClauses: "Protective clauses",
     mediatorSaveDraft: "Save draft",
     mediatorPublishAgreement: "Publish to parties",
     mediatorDraftSaved: "Draft saved.",
@@ -1239,7 +1237,6 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     mediatorObligationDeadline: "Строк",
     mediatorAddObligation: "Додати зобов’язання",
     mediatorRemoveObligation: "Видалити",
-    mediatorProtectiveClauses: "Захисні положення",
     mediatorSaveDraft: "Зберегти чернетку",
     mediatorPublishAgreement: "Опублікувати сторонам",
     mediatorDraftSaved: "Чернетку збережено.",

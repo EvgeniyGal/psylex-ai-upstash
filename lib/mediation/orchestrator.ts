@@ -916,8 +916,7 @@ async function generateDraftAgreement(roomId: string, optionId: string) {
   const room = await loadRoom(roomId);
   if (!room) return;
 
-  const { defaultSuggestedProtectiveIds, mergeProtectiveClausesIntoDraft, normalizeDraftAgreement } =
-    await import("@/lib/mediation/draft-agreement");
+  const { normalizeDraftAgreement } = await import("@/lib/mediation/draft-agreement");
   const { buildAgreementDraftExtraInstruction, findOptionInRoom } = await import(
     "@/lib/mediation/build-agreement-extra"
   );
@@ -925,14 +924,6 @@ async function generateDraftAgreement(roomId: string, optionId: string) {
   const options = (room.mediationOptions as MediationOption[] | null) ?? [];
   const compromise = room.compromiseOption as MediationOption | null;
   const option = findOptionInRoom(options, compromise, optionId);
-  const roomText = [
-    room.title,
-    option?.canonicalDescription,
-    ...(options.map((o) => o.canonicalDescription) ?? []),
-  ]
-    .filter(Boolean)
-    .join("\n");
-  const suggestedProtectiveIds = defaultSuggestedProtectiveIds(roomText);
 
   const { ctx, partyA, partyB } = await buildContext(room);
   const afterLlm = await loadRoom(roomId);
@@ -947,12 +938,9 @@ async function generateDraftAgreement(roomId: string, optionId: string) {
       buildAgreementDraftExtraInstruction({
         optionId,
         option,
-        suggestedProtectiveIds,
         targetLocale: locale,
       }),
     normalize: normalizeDraftAgreement,
-    mergeProtective: mergeProtectiveClausesIntoDraft,
-    suggestedProtectiveIds,
     status: isMediatorFacilitatedRoom(room) ? "draft" : "published",
     publishedAt: isMediatorFacilitatedRoom(room) ? undefined : new Date().toISOString(),
   });

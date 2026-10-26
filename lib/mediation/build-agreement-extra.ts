@@ -6,7 +6,6 @@ import type { MediationOption } from "@/lib/mediation/types";
 export function buildAgreementDraftExtraInstruction(params: {
   optionId: string;
   option: MediationOption | null;
-  suggestedProtectiveIds: string[];
   /** When set, feed locale-matched option fields into the prompt (avoids EN contamination of UK drafts). */
   targetLocale?: Locale;
 }) {
@@ -29,7 +28,7 @@ export function buildAgreementDraftExtraInstruction(params: {
     "",
     "Write the agreement body and obligations in third person referring to the parties by role or name.",
     "If the dialogue confirms different payment or duty terms than the option template, follow the dialogue.",
-    `Suggested protective clause ids to consider incorporating when relevant: ${params.suggestedProtectiveIds.join(", ") || "(none)"}.`,
+    "Include only case-specific safeguards and obligations grounded in this dispute — do not invent generic neighbor, boundary, survey, or vegetation terms unless they are actually at issue.",
   ].join("\n");
 }
 

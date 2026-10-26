@@ -36,8 +36,6 @@ import type {
   MediationOption,
   MediationPhase,
 } from "@/lib/mediation/types";
-import { listProtectiveClauses } from "@/lib/mediation/draft-agreement";
-import { protectiveClauseText } from "@/lib/mediation/protective-clauses";
 import { psychodynamicProfileLabels } from "@/lib/mediation/format-pdf-content";
 import type { PsychodynamicProfile } from "@/lib/pipeline/schemas";
 import { psychodynamicProfileSchema } from "@/lib/pipeline/schemas";
@@ -133,7 +131,6 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
   const isPartyAudience = selectedAudience === "party_a" || selectedAudience === "party_b";
 
   const sessionEnded = isMediatorSessionEnded(state.room.phase);
-  const protectiveCatalog = listProtectiveClauses();
 
   const refresh = useCallback(async () => {
     try {
@@ -360,16 +357,6 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
         ...prev,
         obligations: prev.obligations.map((o) => (o.id === id ? { ...o, ...patch } : o)),
       };
-    });
-  };
-
-  const toggleProtective = (clauseId: string, checked: boolean) => {
-    setDraftEdit((prev) => {
-      if (!prev) return prev;
-      const ids = new Set(prev.protectiveClauseIds);
-      if (checked) ids.add(clauseId);
-      else ids.delete(clauseId);
-      return { ...prev, protectiveClauseIds: [...ids] };
     });
   };
 
@@ -822,7 +809,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
                       onChange={(event) =>
                         updateObligation(obligation.id, {
                           text: event.target.value,
-                          source: obligation.source === "protective" ? "protective" : "mediator",
+                          source: "mediator",
                         })
                       }
                       rows={2}
@@ -846,12 +833,6 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
                             ? {
                                 ...prev,
                                 obligations: prev.obligations.filter((o) => o.id !== obligation.id),
-                                protectiveClauseIds:
-                                  obligation.source === "protective"
-                                    ? prev.protectiveClauseIds.filter(
-                                        (id) => `protective-${id}` !== obligation.id && id !== obligation.id.replace(/^protective-/, ""),
-                                      )
-                                    : prev.protectiveClauseIds,
                               }
                             : prev,
                         )
@@ -886,23 +867,6 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
                 >
                   {admin.mediatorAddObligation}
                 </button>
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-body-sm font-semibold text-on-surface">
-                  {admin.mediatorProtectiveClauses}
-                </p>
-                {protectiveCatalog.map((clause) => (
-                  <label className="flex items-start gap-2 text-body-sm" key={clause.id}>
-                    <input
-                      checked={draftEdit.protectiveClauseIds.includes(clause.id)}
-                      className="mt-1"
-                      onChange={(event) => toggleProtective(clause.id, event.target.checked)}
-                      type="checkbox"
-                    />
-                    <span>{protectiveClauseText(clause, locale === "uk" ? "uk" : "en")}</span>
-                  </label>
-                ))}
               </div>
 
               <button

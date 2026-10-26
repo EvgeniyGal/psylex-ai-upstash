@@ -937,15 +937,16 @@ export async function saveMediatorDraftAgreement(
     throw new Error("Agreement draft can only be edited in the agreement phase.");
   }
 
-  const { mergeProtectiveClausesIntoDraft, normalizeDraftAgreement, obligationsToTerms } =
-    await import("@/lib/mediation/draft-agreement");
+  const { normalizeDraftAgreement, obligationsToTerms } = await import(
+    "@/lib/mediation/draft-agreement"
+  );
 
   let next = normalizeDraftAgreement({
     title: draft.title,
     body: draft.body,
     terms: draft.terms,
     obligations: draft.obligations,
-    protectiveClauseIds: draft.protectiveClauseIds,
+    protectiveClauseIds: draft.protectiveClauseIds ?? [],
     status: draft.status === "published" ? "published" : "draft",
     publishedAt: draft.status === "published" ? draft.publishedAt : undefined,
     generatedAt: draft.generatedAt || new Date().toISOString(),
@@ -957,7 +958,6 @@ export async function saveMediatorDraftAgreement(
     .limit(1);
   const mediatorLocale: Locale = mediatorRow?.preferredLocale === "uk" ? "uk" : "en";
   const otherLocale: Locale = mediatorLocale === "uk" ? "en" : "uk";
-  next = mergeProtectiveClausesIntoDraft(next, next.protectiveClauseIds, mediatorLocale);
 
   const existing = room.draftAgreement as DraftAgreement | null;
   const editedSlot = {
@@ -1083,8 +1083,7 @@ async function ensureDraftAgreement(roomId: string, optionId: string) {
     const fresh = await loadRoom(roomId);
     if (!fresh || fresh.draftAgreement) return;
 
-    const { defaultSuggestedProtectiveIds, mergeProtectiveClausesIntoDraft, normalizeDraftAgreement } =
-      await import("@/lib/mediation/draft-agreement");
+    const { normalizeDraftAgreement } = await import("@/lib/mediation/draft-agreement");
     const { buildAgreementDraftExtraInstruction, findOptionInRoom } = await import(
       "@/lib/mediation/build-agreement-extra"
     );
@@ -1092,14 +1091,6 @@ async function ensureDraftAgreement(roomId: string, optionId: string) {
     const options = (fresh.mediationOptions as MediationOption[] | null) ?? [];
     const compromise = fresh.compromiseOption as MediationOption | null;
     const option = findOptionInRoom(options, compromise, optionId);
-    const roomText = [
-      fresh.title,
-      option?.canonicalDescription,
-      ...options.map((o) => o.canonicalDescription),
-    ]
-      .filter(Boolean)
-      .join("\n");
-    const suggestedProtectiveIds = defaultSuggestedProtectiveIds(roomText);
 
     const { ctx, partyA, partyB } = await buildContext(fresh);
     const { generateLocalizedAgreementDraft } = await import("@/lib/mediation/generate-localized");
@@ -1111,12 +1102,9 @@ async function ensureDraftAgreement(roomId: string, optionId: string) {
         buildAgreementDraftExtraInstruction({
           optionId,
           option,
-          suggestedProtectiveIds,
           targetLocale: locale,
         }),
       normalize: normalizeDraftAgreement,
-      mergeProtective: mergeProtectiveClausesIntoDraft,
-      suggestedProtectiveIds,
       status: "draft",
     });
 

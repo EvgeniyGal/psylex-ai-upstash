@@ -302,10 +302,9 @@ When votes match (or both accept a compromise), AI drafts a **third-person** sha
 
 On your console:
 
-1. Edit **title**, **shared narrative**, and **obligations** (each with an optional **deadline**).
-2. Toggle **protective clauses** (e.g. moratorium until survey) — pre-checked when relevant; uncheck to exclude.
-3. **Save draft**, then **Publish to parties**.
-4. Parties review the same document and click **I accept**. Mutual accept finalizes the session.
+1. Edit **title**, **shared narrative**, and **obligations** (each with an optional **deadline**). Obligations are case-specific from the dialogue — add, edit, or remove as needed.
+2. **Save draft**, then **Publish to parties**.
+3. Parties review the same document and click **I accept**. Mutual accept finalizes the session.
 
 The session normally ends when the parties accept the agreement or reject the compromise (no mutual agreement). You can also click **End without agreement** on the live console (with confirmation) to close early.
 

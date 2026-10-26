@@ -215,9 +215,7 @@ export async function generateLocalizedAgreementDraft(params: {
   partyALocale?: string | null;
   partyBLocale?: string | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  normalize: (raw: any, opts: { suggestProtectiveIds: string[] }) => DraftAgreement;
-  mergeProtective: (draft: DraftAgreement, ids: string[], locale: Locale) => DraftAgreement;
-  suggestedProtectiveIds: string[];
+  normalize: (raw: any) => DraftAgreement;
   status: DraftAgreement["status"];
   publishedAt?: string;
 }): Promise<DraftAgreement> {
@@ -241,16 +239,12 @@ export async function generateLocalizedAgreementDraft(params: {
       extraInstruction: extra,
     });
 
-    let agreement = params.normalize(
-      {
-        ...draft,
-        generatedAt: new Date().toISOString(),
-        status: params.status,
-        publishedAt: params.publishedAt,
-      },
-      { suggestProtectiveIds: params.suggestedProtectiveIds },
-    );
-    agreement = params.mergeProtective(agreement, params.suggestedProtectiveIds, locale);
+    const agreement = params.normalize({
+      ...draft,
+      generatedAt: new Date().toISOString(),
+      status: params.status,
+      publishedAt: params.publishedAt,
+    });
     byLocale[locale] = await repairDraftFieldsLocale(draftFieldsFrom(agreement), locale);
     if (!baseMeta) baseMeta = agreement;
   }
