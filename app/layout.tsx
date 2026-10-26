@@ -74,10 +74,11 @@ export default function RootLayout({
         <Toaster
           closeButton
           duration={3500}
-          offset={72}
+          expand
+          offset={102}
           position="top-left"
           richColors
-          visibleToasts={3}
+          visibleToasts={5}
           toastOptions={{
             classNames: {
               toast: "border shadow-lg",

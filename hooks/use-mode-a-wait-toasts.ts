@@ -19,6 +19,9 @@ const WAIT_IDS = {
   agreement: "mode-a-agreement",
   intake: "mode-a-intake",
   tests: "mode-a-tests",
+  otherAnswering: "mode-a-other-answering",
+  otherReady: "mode-a-other-ready",
+  otherAccept: "mode-a-other-accept",
 } as const;
 
 function showWait(id: string, message: string) {
@@ -72,11 +75,14 @@ export function useModeARoomWaitToasts(params: {
   phase: MediationPhase | null | undefined;
   isAwaitingAgent: boolean;
   isMyTurn: boolean;
+  isOtherPartyAnswering: boolean;
   questionReady: boolean;
   hasOptions: boolean;
   hasCompromise: boolean;
   hasDraftAgreement: boolean;
   isCompromiseGenerating: boolean;
+  waitingOtherReady: boolean;
+  waitingOtherAccept: boolean;
   enabled?: boolean;
 }) {
   const { portal: t } = useLocale();
@@ -84,11 +90,14 @@ export function useModeARoomWaitToasts(params: {
     phase,
     isAwaitingAgent,
     isMyTurn,
+    isOtherPartyAnswering,
     questionReady,
     hasOptions,
     hasCompromise,
     hasDraftAgreement,
     isCompromiseGenerating,
+    waitingOtherReady,
+    waitingOtherAccept,
     enabled = true,
   } = params;
 
@@ -112,6 +121,33 @@ export function useModeARoomWaitToasts(params: {
       dismissWait(WAIT_IDS.question);
     }
   }, [enabled, waitingForQuestion, t.modeAToastGeneratingQuestion]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    if (isOtherPartyAnswering) {
+      showWait(WAIT_IDS.otherAnswering, t.mediationOtherPartyAnsweringHint);
+    } else {
+      dismissWait(WAIT_IDS.otherAnswering);
+    }
+  }, [enabled, isOtherPartyAnswering, t.mediationOtherPartyAnsweringHint]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    if (waitingOtherReady) {
+      showWait(WAIT_IDS.otherReady, t.mediationWaitingOtherReady);
+    } else {
+      dismissWait(WAIT_IDS.otherReady);
+    }
+  }, [enabled, waitingOtherReady, t.mediationWaitingOtherReady]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    if (waitingOtherAccept) {
+      showWait(WAIT_IDS.otherAccept, t.mediationWaitingOtherAccept);
+    } else {
+      dismissWait(WAIT_IDS.otherAccept);
+    }
+  }, [enabled, waitingOtherAccept, t.mediationWaitingOtherAccept]);
 
   useEffect(() => {
     if (!enabled) return;

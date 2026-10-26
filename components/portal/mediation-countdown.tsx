@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useLocale } from "@/components/locale-provider";
+
+const SESSION_TIMER_TOAST_ID = "mode-a-session-timer";
 
 type MediationCountdownProps = {
   startedAt: string;
@@ -18,6 +21,33 @@ function formatRemaining(ms: number) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+function SessionTimerToast({
+  label,
+  time,
+  ended,
+}: {
+  label: string;
+  time: string;
+  ended?: boolean;
+}) {
+  return (
+    <div className="flex min-w-[280px] items-baseline gap-3 rounded-lg border border-law-line bg-law-fill px-4 py-3 shadow-md">
+      <span className="font-display text-label-md uppercase tracking-wide text-on-surface-variant">
+        {label}
+      </span>
+      <span
+        className={
+          ended
+            ? "font-display text-xl font-semibold text-error"
+            : "font-display text-2xl font-semibold tabular-nums text-law"
+        }
+      >
+        {time}
+      </span>
+    </div>
+  );
+}
+
 export function MediationCountdown({
   startedAt,
   durationMinutes,
@@ -31,6 +61,7 @@ export function MediationCountdown({
   );
   // Defer time display until after mount to avoid SSR/client Date.now() hydration mismatch.
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
+  const endedNotified = useRef(false);
 
   useEffect(() => {
     if (sessionComplete) return;
@@ -44,19 +75,56 @@ export function MediationCountdown({
   const ended = sessionComplete || (remainingMs !== null && remainingMs <= 0);
 
   useEffect(() => {
-    if (ended) onEnded?.();
+    if (!ended || endedNotified.current) return;
+    endedNotified.current = true;
+    onEnded?.();
   }, [ended, onEnded]);
 
-  return (
-    <div className="glass-panel rounded-xl p-6 text-center">
-      <p className="mb-2 font-display text-label-md uppercase text-on-surface-variant">{t.mediationCountdownLabel}</p>
-      {ended ? (
-        <p className="font-display text-display-md text-error">{t.mediationSessionEnded}</p>
-      ) : (
-        <p className="font-display text-display-lg tabular-nums text-tertiary" suppressHydrationWarning>
-          {remainingMs === null ? "--:--" : formatRemaining(remainingMs)}
-        </p>
-      )}
-    </div>
-  );
+  useEffect(() => {
+    if (sessionComplete) {
+      toast.dismiss(SESSION_TIMER_TOAST_ID);
+      return;
+    }
+
+    if (remainingMs === null) return;
+
+    const toastChrome =
+      "!bg-transparent !border-0 !shadow-none !p-0 w-auto";
+
+    if (remainingMs <= 0) {
+      toast.custom(
+        () => (
+          <SessionTimerToast ended label={t.mediationCountdownLabel} time={t.mediationSessionEnded} />
+        ),
+        {
+          id: SESSION_TIMER_TOAST_ID,
+          duration: 8000,
+          className: toastChrome,
+        },
+      );
+      return;
+    }
+
+    toast.custom(
+      () => (
+        <SessionTimerToast
+          label={t.mediationCountdownLabel}
+          time={formatRemaining(remainingMs)}
+        />
+      ),
+      {
+        id: SESSION_TIMER_TOAST_ID,
+        duration: Infinity,
+        className: toastChrome,
+      },
+    );
+  }, [remainingMs, sessionComplete, t.mediationCountdownLabel, t.mediationSessionEnded]);
+
+  useEffect(() => {
+    return () => {
+      toast.dismiss(SESSION_TIMER_TOAST_ID);
+    };
+  }, []);
+
+  return null;
 }

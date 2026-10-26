@@ -24,7 +24,6 @@ import {
   MediationChatComposer,
   MediationChatStatusBar,
 } from "@/components/portal/room/mediation-chat";
-import { Spinner } from "@/components/ui/spinner";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { useLocale } from "@/components/locale-provider";
 import { useModeARoomWaitToasts } from "@/hooks/use-mode-a-wait-toasts";
@@ -238,15 +237,29 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
   const showCompromisePanel = votesDiffer && !!state.compromise;
   const isCompromiseGenerating = votesDiffer && !state.compromise && !review;
 
+  const waitingOtherReady = !!(
+    showReadyButton &&
+    state.room.selfReady &&
+    !state.room.otherReady
+  );
+  const waitingOtherAccept = !!(
+    state.room.phase === "agreement" &&
+    state.room.selfAccepted &&
+    !state.room.otherAccepted
+  );
+
   useModeARoomWaitToasts({
     phase: state.room.phase,
     isAwaitingAgent,
     isMyTurn,
+    isOtherPartyAnswering,
     questionReady,
     hasOptions: state.options.length > 0,
     hasCompromise: !!state.compromise,
     hasDraftAgreement: !!draft,
     isCompromiseGenerating,
+    waitingOtherReady,
+    waitingOtherAccept,
     enabled: !review && !isSessionComplete,
   });
 
@@ -312,9 +325,7 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
   };
 
   const chatStatusHeader = (
-    <MediationChatStatusBar
-      tone={isOtherPartyAnswering ? "other" : isMyTurn ? "own" : "neutral"}
-    >
+    <MediationChatStatusBar tone={isMyTurn ? "own" : "neutral"}>
       <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 text-[12px] font-semibold uppercase tracking-wide text-on-surface shadow-sm">
         <span className="material-symbols-outlined text-[16px] text-tertiary">forum</span>
         {t.mediationPhases[state.room.phase ?? "opening"]}
@@ -330,12 +341,6 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
               {t.mediationYourTurn}
             </span>
           ) : null}
-          {isOtherPartyAnswering ? (
-            <span className="inline-flex items-center gap-1 text-body-sm font-semibold text-party-a">
-              <Spinner size="sm" className="text-party-a" />
-              {t.mediationOtherPartyAnswering}
-            </span>
-          ) : null}
           {isMyTurn ? (
             <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-white/80 px-2.5 py-1 font-mono text-[12px] font-semibold text-law shadow-sm">
               <span className="material-symbols-outlined text-[16px]">timer</span>
@@ -347,35 +352,21 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
     </MediationChatStatusBar>
   );
 
-  const chatStatusSubheader =
-    isOtherPartyAnswering && !review ? (
-      <p className="bg-party-a-fill/25 px-4 py-2 text-body-sm font-medium text-on-surface">
-        {t.mediationOtherPartyAnsweringHint}
-      </p>
-    ) : null;
-
   const chatComposer =
-    !review && isMyTurn ? (
-      !questionReady ? (
-        <div className="flex items-center gap-2 px-4 py-3 text-body-sm text-on-surface-variant">
-          <Spinner size="sm" />
-          {t.mediationQuestionIncoming}
-        </div>
-      ) : (
-        <MediationChatComposer
-          disabled={pending}
-          helpFormulateLabel={t.mediationHelpFormulate}
-          helpFormulatePending={formulatePending}
-          helpFormulatePendingLabel={t.mediationHelpFormulatePending}
-          onChange={setReply}
-          onHelpFormulate={onHelpFormulate}
-          onSend={onSendReply}
-          pending={pending}
-          placeholder={t.mediationReplyPlaceholder}
-          sendLabel={t.mediationSendReply}
-          value={reply}
-        />
-      )
+    !review && isMyTurn && questionReady ? (
+      <MediationChatComposer
+        disabled={pending}
+        helpFormulateLabel={t.mediationHelpFormulate}
+        helpFormulatePending={formulatePending}
+        helpFormulatePendingLabel={t.mediationHelpFormulatePending}
+        onChange={setReply}
+        onHelpFormulate={onHelpFormulate}
+        onSend={onSendReply}
+        pending={pending}
+        placeholder={t.mediationReplyPlaceholder}
+        sendLabel={t.mediationSendReply}
+        value={reply}
+      />
     ) : null;
 
   if (review) {
@@ -495,9 +486,7 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
                       <span className="material-symbols-outlined text-base">check_circle</span>
                       {t.mediationOtherReady}
                     </motion.span>
-                  ) : state.room.selfReady ? (
-                    <span className="text-body-sm text-on-surface-variant">{t.mediationWaitingOtherReady}</span>
-                  ) : state.room.otherReady ? (
+                  ) : state.room.selfReady ? null : state.room.otherReady ? (
                     <motion.span
                       className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-party-a"
                       initial={{ opacity: 0, x: -8 }}
@@ -519,7 +508,6 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
               header={chatStatusHeader}
               labels={chatLabels}
               messages={state.messages}
-              subheader={chatStatusSubheader ?? undefined}
             />
 
             <AnimatePresence>
@@ -612,9 +600,6 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
                   >
                     {state.room.selfAccepted ? t.mediationAccepted : t.mediationIAccept}
                   </motion.button>
-                  {!state.room.selfAccepted && state.room.otherAccepted ? (
-                    <p className="text-body-sm text-on-surface-variant">{t.mediationWaitingOtherAccept}</p>
-                  ) : null}
                 </motion.div>
               ) : null}
             </AnimatePresence>

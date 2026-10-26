@@ -16,8 +16,6 @@ import {
 } from "@/lib/mediation/orchestrator";
 import { buildAgreementDownload } from "@/lib/mediation/pdf";
 
-export const maxDuration = 300;
-
 async function requireParticipant() {
   const session = await getServerSession(authOptions);
   let userId = session?.user?.id;
