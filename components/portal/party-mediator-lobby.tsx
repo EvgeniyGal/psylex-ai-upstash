@@ -7,12 +7,10 @@ import {
   clickMediatorPartyStartMediation,
   getMediatorPartyHandshakeAction,
 } from "@/app/mediator/rooms/party-actions";
-import { PartyActionBanner } from "@/components/portal/party-action-banner";
 import { PortalPageShell } from "@/components/portal/portal-page-shell";
 import { Spinner } from "@/components/ui/spinner";
 import { useLocale } from "@/components/locale-provider";
 import { useModeBLobbyWaitToasts } from "@/hooks/use-mode-b-wait-toasts";
-import { usePartyActionNotifications } from "@/hooks/use-party-action-notifications";
 import { useRoomRealtime } from "@/hooks/use-room-realtime";
 import {
   formatCountdownMs,
@@ -21,7 +19,6 @@ import {
 import { formatDateTime } from "@/lib/format-datetime";
 import type { MediatorHandshakeState } from "@/lib/mediator-session/handshake";
 import type { PartyNotification } from "@/lib/mediator-session/types";
-import { waitingForStartMessages } from "@/lib/mediator-session/waiting-for";
 import type { PartyRole } from "@/lib/participant-roles";
 import type { ParticipantFlowStepId } from "@/lib/participant-flow";
 import { cn } from "@/lib/utils";
@@ -62,17 +59,6 @@ export function PartyMediatorLobby({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [handshake, setHandshake] = useState(initialHandshake);
-  const [notification, setNotification] = useState<PartyNotification | null>(null);
-
-  const { banner, clearBanner } = usePartyActionNotifications({
-    notification,
-    viewerRole,
-    startWindowConsumed:
-      handshake.selfClicked ||
-      handshake.status === "waiting" ||
-      handshake.status === "countdown" ||
-      handshake.status === "started",
-  });
 
   useModeBLobbyWaitToasts({
     status: handshake.status,
@@ -87,9 +73,8 @@ export function PartyMediatorLobby({
 
   const applyHandshake = useCallback(
     (next: MediatorHandshakeState & { partyNotification?: PartyNotification | null }) => {
-      const { partyNotification, ...hs } = next;
+      const { partyNotification: _partyNotification, ...hs } = next;
       setHandshake(hs);
-      if (partyNotification !== undefined) setNotification(partyNotification);
       if (hs.status === "started") {
         router.push("/room");
       }
@@ -154,7 +139,6 @@ export function PartyMediatorLobby({
     <PortalPageShell flowStep={flowStep}>
       <div className="mx-auto max-w-2xl space-y-6 px-margin-mobile py-stack-md md:px-margin-desktop">
         <h1 className="font-display text-headline-md text-on-surface">{roomTitle}</h1>
-        <PartyActionBanner message={banner} onDismiss={clearBanner} />
 
         <div className="glass-panel space-y-4 rounded-xl p-6">
           <h2 className="font-display text-headline-md text-on-surface">{t.mediationLobbyTitle}</h2>
@@ -163,9 +147,7 @@ export function PartyMediatorLobby({
             <p className="text-body-sm text-on-surface-variant">
               {t.modeBScheduledAt}: {formatDateTime(new Date(handshake.scheduledStartAt), locale)}
             </p>
-          ) : (
-            <p className="text-body-sm text-on-surface-variant">{t.modeBWaitingSchedule}</p>
-          )}
+          ) : null}
 
           {showStartWindowCountdown ? (
             <p className="font-display text-headline-sm tabular-nums text-tertiary" suppressHydrationWarning>
@@ -190,17 +172,6 @@ export function PartyMediatorLobby({
               <ClickStatusRow clicked={handshake.partyBClicked} label={t.roles.party_b} />
               <ClickStatusRow clicked={handshake.mediatorClicked} label={t.roles.mediator} />
             </ul>
-          ) : null}
-
-          {handshake.selfClicked && handshake.status === "waiting" ? (
-            <div className="space-y-1">
-              <p className="text-body-sm text-success">{t.modeBSelfClicked}</p>
-              {waitingForStartMessages(handshake, t).map((message) => (
-                <p className="text-body-sm text-on-surface-variant" key={message}>
-                  {message}
-                </p>
-              ))}
-            </div>
           ) : null}
 
           <div className="space-y-2">

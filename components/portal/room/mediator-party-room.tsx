@@ -13,23 +13,18 @@ import {
   submitMediatorPartyCompromiseVote,
   submitMediatorPartyVote,
 } from "@/app/mediator/rooms/party-actions";
-import { PartyActionBanner } from "@/components/portal/party-action-banner";
 import { MediationCountdown } from "@/components/portal/mediation-countdown";
 import { PortalPageShell } from "@/components/portal/portal-page-shell";
 import { MediationOptionsPanel } from "@/components/portal/room/mediation-options-panel";
 import { MediationCompromisePanel } from "@/components/portal/room/mediation-compromise-panel";
-import { MediationVotesDiscrepancyNotice } from "@/components/portal/room/mediation-votes-discrepancy-notice";
 import { MediationResultsPanel } from "@/components/portal/room/mediation-results-panel";
 import { MediationChat, MediationChatComposer } from "@/components/portal/room/mediation-chat";
-import { Spinner } from "@/components/ui/spinner";
 import { useLocale } from "@/components/locale-provider";
 import { useModeBPartyRoomWaitToasts } from "@/hooks/use-mode-b-wait-toasts";
-import { usePartyActionNotifications } from "@/hooks/use-party-action-notifications";
 import { useRoomRealtime } from "@/hooks/use-room-realtime";
 import { resolveRoomFlowStep } from "@/lib/participant-flow";
 import { cn } from "@/lib/utils";
 import type { MediatorSessionRoomState } from "@/lib/mediator-session/orchestrator";
-import type { PartyNotification } from "@/lib/mediator-session/types";
 import type { PartyRole } from "@/lib/participant-roles";
 import type { MediationPhase } from "@/lib/mediation/types";
 
@@ -50,15 +45,6 @@ export function MediatorPartyRoom({
   const [email, setEmail] = useState("");
   const [pending, startTransition] = useTransition();
   const [formulatePending, startFormulate] = useTransition();
-
-  const notification = state.room.partyNotification as PartyNotification | null;
-  const { banner, clearBanner } = usePartyActionNotifications({
-    notification,
-    viewerRole,
-    enabled: !review,
-    // Past the lobby — never re-surface the "click Start Mediation" hint.
-    startWindowConsumed: true,
-  });
 
   const refresh = useCallback(async () => {
     try {
@@ -83,8 +69,6 @@ export function MediatorPartyRoom({
 
   const awaitingCompromisePublish = !!state.room.awaitingCompromisePublish;
   const awaitingMediatorPublish = !!state.room.awaitingMediatorPublish;
-  const waitingForPeerVote =
-    phase === "voting" && !!state.room.selfVote && !state.room.peerHasVoted && !review;
 
   const flowStep = resolveRoomFlowStep(phase, review);
 
@@ -110,26 +94,6 @@ export function MediatorPartyRoom({
     waitingForMediatorComplete,
     enabled: !review && !isSessionComplete,
   });
-
-  const actionBanner =
-    banner ||
-    (state.room.pendingQuestion
-      ? t.modeBNotifyQuestion
-      : awaitingCompromisePublish
-        ? t.modeBWaitingCompromisePublish
-        : awaitingMediatorPublish
-          ? t.modeBWaitingAgreementPublish
-          : waitingForMediatorComplete
-            ? t.modeBWaitingMediatorComplete
-            : waitingForPeerVote
-              ? t.mediationVoteRecorded
-              : phase === "voting"
-                ? t.modeBNotifyOptions
-                : phase === "voting_discrepancy" && state.compromise
-                  ? t.modeBNotifyCompromise
-                  : phase === "agreement" && state.room.agreementPublished
-                    ? t.modeBNotifyAgreement
-                    : null);
 
   const onSend = () => {
     if (!reply.trim()) return;
@@ -257,11 +221,6 @@ export function MediatorPartyRoom({
           </div>
         ) : (
           <>
-            <PartyActionBanner
-              message={actionBanner}
-              onDismiss={banner ? clearBanner : undefined}
-            />
-
             <MediationChat
               header={
                 <div className="px-4 py-3">
@@ -351,32 +310,6 @@ export function MediatorPartyRoom({
               />
             ) : null}
 
-            {waitingForPeerVote ? (
-              <div className="glass-panel rounded-xl p-4 text-body-sm text-on-surface-variant">
-                <Spinner className="mb-2" size="sm" />
-                {t.mediationVoteRecorded}
-              </div>
-            ) : null}
-
-            {awaitingCompromisePublish ? (
-              <div className="space-y-3">
-                <MediationVotesDiscrepancyNotice
-                  options={state.options}
-                  partyAVoteOptionId={
-                    viewerRole === "party_a" ? state.room.selfVote : state.room.otherVote
-                  }
-                  partyBVoteOptionId={
-                    viewerRole === "party_b" ? state.room.selfVote : state.room.otherVote
-                  }
-                  pending
-                />
-                <div className="glass-panel rounded-xl p-4 text-body-sm text-on-surface-variant">
-                  <Spinner className="mb-2" size="sm" />
-                  {t.modeBWaitingCompromisePublish}
-                </div>
-              </div>
-            ) : null}
-
             {state.compromise &&
             (phase === "voting_discrepancy" ||
               phase === "agreement" ||
@@ -406,13 +339,6 @@ export function MediatorPartyRoom({
                 selectedOptionId={state.room.selectedOptionId}
                 selfCompromiseVote={state.room.selfCompromiseVote}
               />
-            ) : null}
-
-            {phase === "agreement" && awaitingMediatorPublish ? (
-              <div className="glass-panel rounded-xl p-4 text-body-sm text-on-surface-variant">
-                <Spinner className="mb-2" size="sm" />
-                {t.modeBWaitingAgreementPublish}
-              </div>
             ) : null}
 
             {phase === "agreement" && draft && state.room.agreementPublished ? (
@@ -455,12 +381,6 @@ export function MediatorPartyRoom({
                   >
                     {state.room.agreementAccepted ? t.mediationAccepted : t.mediationIAccept}
                   </button>
-                ) : null}
-                {state.room.agreementAccepted && !state.room.otherAgreementAccepted ? (
-                  <p className="text-body-sm text-on-surface-variant">{t.mediationWaitingOtherAccept}</p>
-                ) : null}
-                {waitingForMediatorComplete ? (
-                  <p className="text-body-sm text-on-surface-variant">{t.modeBWaitingMediatorComplete}</p>
                 ) : null}
               </div>
             ) : null}
