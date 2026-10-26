@@ -290,6 +290,7 @@ export function MediationChatComposer({
   onHelpFormulate,
   helpFormulatePending = false,
 }: MediationChatComposerProps) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const canSend = !disabled && !pending && value.trim().length > 0;
   const canFormulate =
     !!onHelpFormulate &&
@@ -297,6 +298,14 @@ export function MediationChatComposer({
     !pending &&
     !helpFormulatePending &&
     value.trim().length > 0;
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    const next = Math.min(el.scrollHeight, 280);
+    el.style.height = `${Math.max(next, 88)}px`;
+  }, [value]);
 
   return (
     <div className="flex flex-col gap-2 px-3 py-3">
@@ -315,42 +324,43 @@ export function MediationChatComposer({
         </div>
       ) : null}
       <div className="flex items-end gap-2">
-      <textarea
-        className="custom-scrollbar max-h-32 min-h-[44px] flex-1 resize-none rounded-[22px] border border-hair bg-surface-container-high/80 px-4 py-2.5 text-[15px] leading-snug text-on-surface outline-none transition-colors placeholder:text-on-surface-variant focus:border-law/50 focus:bg-white"
-        disabled={disabled || pending}
-        onChange={(event) => onChange(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" && !event.shiftKey) {
-            event.preventDefault();
-            if (canSend) onSend();
-          }
-        }}
-        placeholder={placeholder}
-        rows={1}
-        value={value}
-      />
-      <motion.button
-        aria-busy={pending}
-        aria-label={sendLabel}
-        className={cn(
-          "flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-party-a text-white transition-all hover:bg-party-a/90 disabled:cursor-not-allowed",
-          pending ? "opacity-100" : "disabled:opacity-40",
-        )}
-        disabled={!canSend}
-        onClick={onSend}
-        type="button"
-        whileHover={canSend ? { scale: 1.08 } : undefined}
-        whileTap={canSend ? { scale: 0.92 } : undefined}
-      >
-        {pending ? (
-          <span
-            aria-hidden
-            className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white"
-          />
-        ) : (
-          <span className="material-symbols-outlined text-[22px]">send</span>
-        )}
-      </motion.button>
+        <textarea
+          ref={textareaRef}
+          className="custom-scrollbar max-h-[280px] min-h-[88px] flex-1 resize-y rounded-2xl border border-hair bg-surface-container-high/80 px-4 py-3 text-[15px] leading-relaxed text-on-surface outline-none transition-colors placeholder:text-on-surface-variant focus:border-law/50 focus:bg-white"
+          disabled={disabled || pending}
+          onChange={(event) => onChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              if (canSend) onSend();
+            }
+          }}
+          placeholder={placeholder}
+          rows={3}
+          value={value}
+        />
+        <motion.button
+          aria-busy={pending}
+          aria-label={sendLabel}
+          className={cn(
+            "flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-party-a text-white transition-all hover:bg-party-a/90 disabled:cursor-not-allowed",
+            pending ? "opacity-100" : "disabled:opacity-40",
+          )}
+          disabled={!canSend}
+          onClick={onSend}
+          type="button"
+          whileHover={canSend ? { scale: 1.08 } : undefined}
+          whileTap={canSend ? { scale: 0.92 } : undefined}
+        >
+          {pending ? (
+            <span
+              aria-hidden
+              className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white"
+            />
+          ) : (
+            <span className="material-symbols-outlined text-[22px]">send</span>
+          )}
+        </motion.button>
       </div>
     </div>
   );
