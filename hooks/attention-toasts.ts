@@ -16,11 +16,11 @@ export type AttentionSurface = "toast" | "mediator-dock";
 
 /** Orange — AI working / waiting on other party / saving. */
 export const attentionWaitToastClassName =
-  "mode-a-toast-attention !bg-amber-100 !text-amber-950 !border-2 !border-amber-400 shadow-md [&_[data-icon]]:!text-amber-700 max-w-[220px]";
+  "mode-a-toast-attention !bg-amber-100/75 !text-amber-950 !border-2 !border-amber-400/80 shadow-md backdrop-blur-sm [&_[data-icon]]:!text-amber-700 max-w-[220px]";
 
 /** Green — user must act (new question, vote, start, accept). */
 export const attentionReadyToastClassName =
-  "mode-a-toast-attention mode-a-toast-attention-ready !bg-emerald-100 !text-emerald-950 !border-2 !border-emerald-500 shadow-md [&_[data-icon]]:!text-emerald-700 max-w-[220px]";
+  "mode-a-toast-attention mode-a-toast-attention-ready !bg-emerald-100/75 !text-emerald-950 !border-2 !border-emerald-500/80 shadow-md backdrop-blur-sm [&_[data-icon]]:!text-emerald-700 max-w-[220px]";
 
 function waitIcon() {
   return createElement(ModeAToastSpinner);

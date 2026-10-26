@@ -66,7 +66,7 @@ export function MediatorAttentionDock() {
   if (items.length === 0) return null;
 
   return (
-    <div className="flex max-h-[40vh] w-full flex-col gap-2 overflow-y-auto">
+    <div className="mediator-attention-dock flex max-h-[40vh] w-full flex-col gap-2 overflow-x-clip overflow-y-auto p-0.5">
       {items.map((item) => (
         <DockCard item={item} key={item.id} />
       ))}
