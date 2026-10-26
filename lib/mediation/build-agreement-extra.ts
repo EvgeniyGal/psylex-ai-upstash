@@ -27,8 +27,8 @@ export function buildAgreementDraftExtraInstruction(params: {
     optionBlock,
     "",
     "Write the agreement body and obligations in third person referring to the parties by role or name.",
-    "If the dialogue confirms different payment or duty terms than the option template, follow the dialogue.",
-    "Include only case-specific safeguards and obligations grounded in this dispute — do not invent generic neighbor, boundary, survey, or vegetation terms unless they are actually at issue.",
+    "If the dialogue confirms different material terms than the option template, follow the dialogue.",
+    "Include only obligations and safeguards grounded in this dispute's dialogue and selected option; do not invent terms from unrelated dispute types.",
   ].join("\n");
 }
 

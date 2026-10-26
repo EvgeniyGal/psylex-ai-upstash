@@ -128,5 +128,5 @@ export const mediationModeInstructions: Record<MediationAgentMode, string> = {
   compromise:
     'Run mode "compromise". Generate exactly one compromise option informed by the parties\' votes.',
   agreement_draft:
-    'Run mode "agreement_draft". Produce ONE shared voluntary agreement in third person (not "I agree"). Prefer mutually confirmed terms from the dialogue transcript over option-template wording when they conflict (e.g. who pays). Return title, body (third-person narrative), and obligations: [{text, deadline|null, source:"dialogue"|"option"}]. Include deadlines when discussed. Do not invent payment splits or other material terms that contradict the chat.',
+    'Run mode "agreement_draft". Produce ONE shared voluntary agreement in third person (not "I agree"). Prefer mutually confirmed terms from the dialogue transcript over option-template wording when they conflict. Return title, body (third-person narrative), and obligations: [{text, deadline|null, source:"dialogue"|"option"}]. Include deadlines when discussed. Do not invent material terms that contradict the chat or that were not grounded in this dispute.',
 };
