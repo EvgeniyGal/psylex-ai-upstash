@@ -1,12 +1,12 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { requireSessionUserId } from "@/lib/auth-session";
 import { db } from "@/lib/db";
-import { users } from "@/drizzle/schema";
+import { roomParticipants, rooms, users } from "@/drizzle/schema";
 import { isPartyRole } from "@/lib/participant-roles";
 import {
   assertMediatorOwnsPartyUser,
@@ -100,4 +100,60 @@ export async function redoFullPartyProfileAction(userId: string) {
   await assertCanManageParty(userId);
   await redoFullPartyProfileLocal(userId);
   revalidateSidesPaths();
+}
+
+/**
+ * Deletes the party user and every room where they participate.
+ * Mediators may only do this when every such room is one they own.
+ */
+export async function deletePartyAction(userId: string) {
+  const { role, actorId } = await assertCanManageParty(userId);
+
+  const memberships = await db
+    .select({
+      roomId: roomParticipants.roomId,
+      createdByUserId: rooms.createdByUserId,
+    })
+    .from(roomParticipants)
+    .innerJoin(rooms, eq(rooms.id, roomParticipants.roomId))
+    .where(eq(roomParticipants.userId, userId));
+
+  if (role === "mediator") {
+    const foreign = memberships.filter((row) => row.createdByUserId !== actorId);
+    if (foreign.length > 0) {
+      throw new Error(
+        "This party is also in rooms you do not own. An admin must delete the party.",
+      );
+    }
+  }
+
+  const roomIds = [...new Set(memberships.map((row) => row.roomId))];
+
+  if (roomIds.length > 0) {
+    const members = await db
+      .select({ userId: roomParticipants.userId, roomId: roomParticipants.roomId })
+      .from(roomParticipants)
+      .where(inArray(roomParticipants.roomId, roomIds));
+
+    for (const member of members) {
+      await db
+        .update(users)
+        .set({ roomId: null })
+        .where(and(eq(users.id, member.userId), eq(users.roomId, member.roomId)));
+    }
+
+    await db.delete(rooms).where(inArray(rooms.id, roomIds));
+    for (const roomId of roomIds) {
+      notifyRoom(roomId);
+    }
+  }
+
+  await db.delete(users).where(eq(users.id, userId));
+  notifyUser(userId);
+
+  revalidateSidesPaths();
+  for (const roomId of roomIds) {
+    revalidatePath(`/admin/rooms/${roomId}`);
+    revalidatePath(`/mediator/rooms/${roomId}`);
+  }
 }

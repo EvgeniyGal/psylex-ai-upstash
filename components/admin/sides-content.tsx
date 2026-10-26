@@ -15,6 +15,7 @@ import {
 } from "@tanstack/react-table";
 import { toast } from "sonner";
 import {
+  deletePartyAction,
   redoAllPartyTestsAction,
   redoFullPartyProfileAction,
   redoPartyBotPromptAction,
@@ -94,11 +95,13 @@ function RowActions({
   row,
   pending,
   onAction,
+  onDelete,
   onEdit,
 }: {
   row: SideTableRow;
   pending: boolean;
   onAction: (run: () => Promise<void>, confirm: string) => void;
+  onDelete: (row: SideTableRow) => void;
   onEdit: (row: SideTableRow) => void;
 }) {
   const { admin } = useLocale();
@@ -114,6 +117,15 @@ function RowActions({
         type="button"
       >
         <span className="material-symbols-outlined text-[18px]">edit</span>
+      </button>
+      <button
+        className="rounded-md border border-error/40 p-1.5 text-error transition-colors hover:bg-error/10 disabled:opacity-50"
+        disabled={pending}
+        onClick={() => onDelete(row)}
+        title={admin.sidesDelete}
+        type="button"
+      >
+        <span className="material-symbols-outlined text-[18px]">delete</span>
       </button>
       <button
         className="rounded-md border border-outline-variant/30 p-1.5 text-on-surface transition-colors hover:bg-surface-container-high disabled:opacity-50"
@@ -212,6 +224,19 @@ function RowActions({
             >
               {admin.sidesRedoAll}
             </button>
+            <div className="my-1 border-t border-outline-variant/20" />
+            <button
+              className="block w-full px-3 py-2 text-left text-body-sm text-error hover:bg-error/10 disabled:opacity-50"
+              disabled={pending}
+              onClick={() => {
+                setOpen(false);
+                onDelete(row);
+              }}
+              role="menuitem"
+              type="button"
+            >
+              {admin.sidesDelete}
+            </button>
           </div>
         </>
       ) : null}
@@ -232,6 +257,7 @@ export function SidesContent({
   const [activeTab, setActiveTab] = useState<SideListTab>("admin");
   const [mediatorFilter, setMediatorFilter] = useState("");
   const [editing, setEditing] = useState<SideTableRow | null>(null);
+  const [deleting, setDeleting] = useState<SideTableRow | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -358,6 +384,10 @@ export function SidesContent({
     setEditing(null);
   }, []);
 
+  const closeDelete = useCallback(() => {
+    setDeleting(null);
+  }, []);
+
   const saveEdit = useCallback(() => {
     if (!editing) return;
     startTransition(async () => {
@@ -394,6 +424,25 @@ export function SidesContent({
     },
     [admin.sidesRedoError, admin.sidesRedoSuccess, router],
   );
+
+  const openDelete = useCallback((row: SideTableRow) => {
+    setDeleting(row);
+  }, []);
+
+  const confirmDeleteParty = useCallback(() => {
+    if (!deleting) return;
+    const userId = deleting.userId;
+    startTransition(async () => {
+      try {
+        await deletePartyAction(userId);
+        toast.success(admin.sidesDeleteSuccess);
+        setDeleting(null);
+        router.refresh();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : admin.sidesDeleteError);
+      }
+    });
+  }, [admin.sidesDeleteError, admin.sidesDeleteSuccess, deleting, router]);
 
   const columns = useMemo<ColumnDef<SideTableRow>[]>(() => {
     const defs: ColumnDef<SideTableRow>[] = [];
@@ -525,6 +574,7 @@ export function SidesContent({
         cell: ({ row }) => (
           <RowActions
             onAction={runAction}
+            onDelete={openDelete}
             onEdit={openEdit}
             pending={pending}
             row={row.original}
@@ -534,7 +584,7 @@ export function SidesContent({
     );
 
     return defs;
-  }, [admin, locale, openEdit, pending, runAction, showMediatorColumn]);
+  }, [admin, locale, openDelete, openEdit, pending, runAction, showMediatorColumn]);
 
   const table = useReactTable({
     data: tabRows,
@@ -587,6 +637,60 @@ export function SidesContent({
 
   return (
     <section className="space-y-stack-lg">
+      <ModalOverlay onClose={closeDelete} open={!!deleting} panelClassName="max-w-md">
+        {deleting ? (
+          <div
+            aria-labelledby="sides-delete-title"
+            aria-modal="true"
+            className="space-y-5 rounded-xl border border-error/30 bg-surface-container p-6 shadow-xl"
+            role="dialog"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2
+                  className="font-display text-headline-md text-error"
+                  id="sides-delete-title"
+                >
+                  {admin.sidesDelete}
+                </h2>
+                <p className="mt-2 text-body-sm text-on-surface">
+                  {admin.sidesDeleteConfirm(
+                    deleting.title,
+                    deleting.rooms.map((room) => room.roomTitle),
+                  )}
+                </p>
+              </div>
+              <button
+                className="grid h-8 w-8 place-items-center rounded-full border border-hair text-on-surface-variant hover:text-on-surface"
+                onClick={closeDelete}
+                type="button"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                className="rounded-lg border border-outline-variant/30 px-4 py-2 text-on-surface-variant hover:bg-surface-container-high"
+                disabled={pending}
+                onClick={closeDelete}
+                type="button"
+              >
+                {admin.cancel}
+              </button>
+              <button
+                className="flex items-center gap-1.5 rounded-lg bg-error px-4 py-2 font-semibold text-white disabled:opacity-60"
+                disabled={pending}
+                onClick={confirmDeleteParty}
+                type="button"
+              >
+                {pending ? <Spinner size="sm" className="text-white" /> : null}
+                {admin.sidesDelete}
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </ModalOverlay>
+
       <ModalOverlay onClose={closeEdit} open={!!editing} panelClassName="max-w-md">
         {editing ? (
           <div

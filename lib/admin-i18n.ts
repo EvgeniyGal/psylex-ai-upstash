@@ -37,6 +37,10 @@ export type AdminCopy = {
   sidesEditTitle: string;
   sidesEditSuccess: string;
   sidesEditError: string;
+  sidesDelete: string;
+  sidesDeleteConfirm: (partyTitle: string, roomTitles: string[]) => string;
+  sidesDeleteSuccess: string;
+  sidesDeleteError: string;
   logout: string;
   portalTitle: string;
   searchPlaceholder: string;
@@ -391,6 +395,18 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     sidesEditTitle: "Edit side",
     sidesEditSuccess: "Side updated.",
     sidesEditError: "Could not update side.",
+    sidesDelete: "Delete party",
+    sidesDeleteConfirm: (partyTitle, roomTitles) => {
+      const rooms =
+        roomTitles.length === 0
+          ? "no rooms"
+          : roomTitles.length === 1
+            ? `1 room (${roomTitles[0]})`
+            : `${roomTitles.length} rooms (${roomTitles.join(", ")})`;
+      return `Delete party "${partyTitle}"? This will permanently delete ${rooms} where this party took part, and remove the party account. This cannot be undone.`;
+    },
+    sidesDeleteSuccess: "Party deleted.",
+    sidesDeleteError: "Could not delete party.",
     logout: "Logout",
     portalTitle: "Mediation Portal",
     searchPlaceholder: "Search...",
@@ -848,6 +864,18 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     sidesEditTitle: "Редагувати сторону",
     sidesEditSuccess: "Сторону оновлено.",
     sidesEditError: "Не вдалося оновити сторону.",
+    sidesDelete: "Видалити сторону",
+    sidesDeleteConfirm: (partyTitle, roomTitles) => {
+      const rooms =
+        roomTitles.length === 0
+          ? "жодної кімнати"
+          : roomTitles.length === 1
+            ? `1 кімнату (${roomTitles[0]})`
+            : `${roomTitles.length} кімнат (${roomTitles.join(", ")})`;
+      return `Видалити сторону «${partyTitle}»? Це назавжди видалить ${rooms}, у яких ця сторона брала участь, а також обліковий запис сторони. Цю дію не можна скасувати.`;
+    },
+    sidesDeleteSuccess: "Сторону видалено.",
+    sidesDeleteError: "Не вдалося видалити сторону.",
     logout: "Вийти",
     portalTitle: "Портал медіації",
     searchPlaceholder: "Пошук...",
