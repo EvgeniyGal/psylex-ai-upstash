@@ -19,9 +19,10 @@ import {
 import { formatDateTime } from "@/lib/format-datetime";
 import type { MediatorHandshakeState } from "@/lib/mediator-session/handshake";
 import type { PartyNotification } from "@/lib/mediator-session/types";
-import type { PartyRole } from "@/lib/participant-roles";
+import { partyDisplayLabel, type PartyRole } from "@/lib/participant-roles";
 import type { ParticipantFlowStepId } from "@/lib/participant-flow";
 import { cn } from "@/lib/utils";
+import { useSession } from "next-auth/react";
 
 type PartyMediatorLobbyProps = {
   roomId: string;
@@ -56,6 +57,7 @@ export function PartyMediatorLobby({
   partyUserIds = [],
 }: PartyMediatorLobbyProps) {
   const { portal: t, locale } = useLocale();
+  const { data: session } = useSession();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [handshake, setHandshake] = useState(initialHandshake);
@@ -138,7 +140,12 @@ export function PartyMediatorLobby({
   return (
     <PortalPageShell flowStep={flowStep}>
       <div className="mx-auto max-w-2xl space-y-6 px-margin-mobile py-stack-md md:px-margin-desktop">
-        <h1 className="font-display text-headline-md text-on-surface">{roomTitle}</h1>
+        <div className="space-y-1">
+          <h1 className="font-display text-headline-md text-on-surface">
+            {partyDisplayLabel(viewerRole, t.roles, session?.user?.title)}
+          </h1>
+          <p className="text-body-md text-on-surface-variant">{roomTitle}</p>
+        </div>
 
         <div className="glass-panel space-y-4 rounded-xl p-6">
           <h2 className="font-display text-headline-md text-on-surface">{t.mediationLobbyTitle}</h2>

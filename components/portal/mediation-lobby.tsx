@@ -17,8 +17,9 @@ import { useRoomRealtime } from "@/hooks/use-room-realtime";
 import { scaleIn } from "@/lib/motion";
 import type { HandshakeStatusResponse } from "@/lib/mediation/handshake";
 import type { MediationLobbyStatus } from "@/lib/dispute-intake";
-import type { PartyRole } from "@/lib/participant-roles";
+import { partyDisplayLabel, type PartyRole } from "@/lib/participant-roles";
 import type { ParticipantFlowStepId } from "@/lib/participant-flow";
+import { useSession } from "next-auth/react";
 
 type MediationLobbyProps = {
   roomId: string;
@@ -72,6 +73,7 @@ export function MediationLobby({
   flowStep,
 }: MediationLobbyProps) {
   const { portal: t } = useLocale();
+  const { data: session } = useSession();
   const [isPending, startTransition] = useTransition();
   const [lobby, setLobby] = useState({
     self: initialSelf,
@@ -269,7 +271,9 @@ export function MediationLobby({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         >
-          <h1 className="mb-2 font-display text-display-lg text-on-surface">{t.mediationLobbyTitle}</h1>
+          <h1 className="mb-2 font-display text-display-lg text-on-surface">
+            {partyDisplayLabel(viewerRole, t.roles, session?.user?.title)}
+          </h1>
           <p className="font-sans text-body-lg text-on-surface-variant">{roomTitle}</p>
           <p className="mt-2 font-sans text-body-sm text-on-surface-variant">{t.mediationLobbySubtitle}</p>
         </motion.div>

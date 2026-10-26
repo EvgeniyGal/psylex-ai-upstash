@@ -10,8 +10,10 @@ import { Spinner } from "@/components/ui/spinner";
 import { useLocale } from "@/components/locale-provider";
 import { useRoomRealtime } from "@/hooks/use-room-realtime";
 import { resolveRoomFlowStep } from "@/lib/participant-flow";
+import { partyDisplayLabel } from "@/lib/participant-roles";
 import { cn } from "@/lib/utils";
 import type { MediationPhase } from "@/lib/mediation/types";
+import { useSession } from "next-auth/react";
 
 type MediationRoomState = NonNullable<Awaited<ReturnType<typeof fetchMediationRoomState>>>;
 
@@ -30,6 +32,7 @@ export function RoomExperience({
 }: RoomExperienceProps) {
   const router = useRouter();
   const { portal: t } = useLocale();
+  const { data: session } = useSession();
   const [phase, setPhase] = useState<MediationPhase | null>(mediationState?.room.phase ?? null);
   const refreshingRef = useRef(false);
 
@@ -66,7 +69,11 @@ export function RoomExperience({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
           >
-            <h1 className="mb-2 font-display text-display-lg text-on-surface">{t.roomTitle}</h1>
+            <h1 className="mb-2 font-display text-display-lg text-on-surface">
+              {session?.user?.role === "party_a" || session?.user?.role === "party_b"
+                ? partyDisplayLabel(session.user.role, t.roles, session.user.title)
+                : t.roomTitle}
+            </h1>
             <p className="font-sans text-body-lg text-on-surface-variant">{roomTitle}</p>
             <p className="mt-4 font-sans text-body-sm text-on-surface-variant">{t.mediationPreparing}</p>
           </motion.div>
@@ -91,7 +98,13 @@ export function RoomExperience({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         >
-          <h1 className="font-display text-display-lg text-on-surface">{t.roomTitle}</h1>
+          <h1 className="font-display text-display-lg text-on-surface">
+            {partyDisplayLabel(
+              mediationState.viewerRole,
+              t.roles,
+              session?.user?.title,
+            )}
+          </h1>
           <p className="text-body-md text-on-surface-variant">{mediationState.room.title}</p>
         </motion.div>
 

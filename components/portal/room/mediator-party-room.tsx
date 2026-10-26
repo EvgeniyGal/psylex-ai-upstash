@@ -23,10 +23,11 @@ import { useLocale } from "@/components/locale-provider";
 import { useModeBPartyRoomWaitToasts } from "@/hooks/use-mode-b-wait-toasts";
 import { useRoomRealtime } from "@/hooks/use-room-realtime";
 import { resolveRoomFlowStep } from "@/lib/participant-flow";
+import { partyDisplayLabel, type PartyRole } from "@/lib/participant-roles";
 import { cn } from "@/lib/utils";
 import type { MediatorSessionRoomState } from "@/lib/mediator-session/orchestrator";
-import type { PartyRole } from "@/lib/participant-roles";
 import type { MediationPhase } from "@/lib/mediation/types";
+import { useSession } from "next-auth/react";
 
 type MediatorPartyRoomProps = {
   initialState: MediatorSessionRoomState;
@@ -40,6 +41,7 @@ export function MediatorPartyRoom({
   review = false,
 }: MediatorPartyRoomProps) {
   const { portal: t } = useLocale();
+  const { data: session } = useSession();
   const [state, setState] = useState(initialState);
   const [reply, setReply] = useState("");
   const [email, setEmail] = useState("");
@@ -174,8 +176,11 @@ export function MediatorPartyRoom({
           isTreatyView ? "max-w-container-max" : "max-w-3xl",
         )}
       >
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="font-display text-headline-md text-on-surface">{state.room.title}</h1>
+        <div className="space-y-1">
+          <h1 className="font-display text-headline-md text-on-surface">
+            {partyDisplayLabel(viewerRole, t.roles, session?.user?.title)}
+          </h1>
+          <p className="text-body-md text-on-surface-variant">{state.room.title}</p>
         </div>
         {!isSessionComplete && state.room.mediationStartedAt ? (
           <MediationCountdown

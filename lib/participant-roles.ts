@@ -17,3 +17,17 @@ export function isParticipantRole(role: string): role is ParticipantRole {
 export function getOppositePartyRole(role: PartyRole): PartyRole {
   return role === "party_a" ? "party_b" : "party_a";
 }
+
+/** "Party A" or "Party A · Claimant" when a distinct party title is set. */
+export function partyDisplayLabel(
+  role: PartyRole,
+  roleLabels: Record<PartyRole, string>,
+  title?: string | null,
+) {
+  const roleLabel = roleLabels[role] ?? role;
+  const trimmed = title?.trim();
+  if (trimmed && trimmed !== roleLabel) {
+    return `${roleLabel} · ${trimmed}`;
+  }
+  return roleLabel;
+}

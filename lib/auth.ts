@@ -35,6 +35,7 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           name: user.login,
           role: user.role,
+          title: user.title,
         };
       },
     }),
@@ -47,6 +48,10 @@ export const authOptions: NextAuthOptions = {
           typeof (user as { role?: string }).role === "string"
             ? (user as { role?: string }).role
             : token.role;
+        token.title =
+          typeof (user as { title?: string }).title === "string"
+            ? (user as { title?: string }).title
+            : token.title;
       }
       return token;
     },
@@ -55,6 +60,7 @@ export const authOptions: NextAuthOptions = {
         ...session.user,
         id: token.sub,
         role: token.role as string,
+        title: typeof token.title === "string" ? token.title : undefined,
       };
       return session;
     },

@@ -6,7 +6,7 @@ import { useHelp } from "@/components/help/help-provider";
 import { PortalLocaleSwitcher } from "@/components/portal/portal-locale-switcher";
 import { useLocale } from "@/components/locale-provider";
 import { SiteHeader } from "@/components/site-header";
-import { isPartyRole, type PartyRole } from "@/lib/participant-roles";
+import { isPartyRole, partyDisplayLabel, type PartyRole } from "@/lib/participant-roles";
 
 export function PortalHeader() {
   const { portal: t } = useLocale();
@@ -14,7 +14,9 @@ export function PortalHeader() {
   const { data: session } = useSession();
   const role = session?.user?.role ?? "";
   const showUplBanner = isPartyRole(role);
-  const partyLabel = isPartyRole(role) ? t.roles[role as PartyRole] : null;
+  const partyLabel = isPartyRole(role)
+    ? partyDisplayLabel(role as PartyRole, t.roles, session?.user?.title)
+    : null;
 
   return (
     <SiteHeader

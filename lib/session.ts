@@ -5,6 +5,7 @@ type SessionUser = {
   id: string;
   login: string;
   role: string;
+  title?: string;
 };
 
 export async function establishSession(user: SessionUser) {
@@ -21,6 +22,7 @@ export async function establishSession(user: SessionUser) {
       sub: user.id,
       name: user.login,
       role: user.role,
+      ...(user.title ? { title: user.title } : {}),
     },
     secret,
     maxAge: 30 * 24 * 60 * 60,

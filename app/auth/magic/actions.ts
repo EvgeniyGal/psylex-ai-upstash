@@ -27,6 +27,7 @@ export async function confirmMagicLoginAction(formData: FormData) {
     id: user.id,
     login: user.login,
     role: user.role,
+    title: user.title,
   });
 
   redirect(await getPostLoginRedirect(user.id, user.role));
