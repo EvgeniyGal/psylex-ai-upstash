@@ -282,18 +282,36 @@ html::-webkit-scrollbar-corner {
 .mode-a-toast-attention {
   animation: mode-a-toast-outline 1.5s ease-in-out infinite;
   will-change: box-shadow;
+  /* Beat Sonner’s solid toast backgrounds (success/loading). */
+  background: rgba(254, 243, 199, 0.72) !important; /* amber-100 @ 72% */
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .mode-a-toast-attention-ready {
   --mode-a-toast-ring: rgba(5, 150, 105, 0.55);
   --mode-a-toast-ring-strong: rgba(5, 150, 105, 0.95);
   animation-duration: 1.15s;
+  background: rgba(209, 250, 229, 0.72) !important; /* emerald-100 @ 72% */
 }
 
 .mode-a-toast-attention-timer {
   --mode-a-toast-ring: rgba(183, 132, 43, 0.5);
   --mode-a-toast-ring-strong: rgba(183, 132, 43, 0.9);
   animation-duration: 1.8s;
+  background: color-mix(in srgb, var(--law-fill, #f3ead7) 72%, transparent) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+[data-sonner-toast].mode-a-toast-attention,
+[data-sonner-toast][data-type].mode-a-toast-attention {
+  background: rgba(254, 243, 199, 0.72) !important;
+}
+
+[data-sonner-toast].mode-a-toast-attention-ready,
+[data-sonner-toast][data-type="success"].mode-a-toast-attention-ready {
+  background: rgba(209, 250, 229, 0.72) !important;
 }
 
 /* Sidebar dock — tighter pulse so the ring stays inside the nav column. */

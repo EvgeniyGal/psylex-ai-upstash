@@ -95,7 +95,6 @@ export default function RootLayout({
           }}
           offset={{ top: 174, left: 20 }}
           position="top-left"
-          richColors
           visibleToasts={5}
           toastOptions={{
             classNames: {
