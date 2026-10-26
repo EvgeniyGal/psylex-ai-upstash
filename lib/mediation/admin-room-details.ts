@@ -2,7 +2,6 @@ import { eq } from "drizzle-orm";
 import type { Locale } from "@/lib/i18n";
 import { db } from "@/lib/db";
 import { rooms } from "@/drizzle/schema";
-import { formatPartyPsychodynamicProfiles } from "@/lib/mediation/format-pdf-content";
 import {
   listRoomMessages,
   resolveMessageViewForViewer,
@@ -243,12 +242,8 @@ function enhanceAdminResultsSummary(
   room: typeof rooms.$inferSelect,
   options: MediationOption[],
   compromise: MediationOption | null,
-  partyA: NonNullable<Awaited<ReturnType<typeof getRoomPartiesForPipeline>>["partyA"]>,
-  partyB: NonNullable<Awaited<ReturnType<typeof getRoomPartiesForPipeline>>["partyB"]>,
   locale: Locale,
 ) {
-  summary.psychodynamicProfile = formatPartyPsychodynamicProfiles(partyA, partyB, locale);
-
   const selectedId = room.selectedOptionId;
   const selected =
     options.find((option) => option.id === selectedId) ??
@@ -324,8 +319,6 @@ export async function getAdminMediationDetails(
       room,
       options,
       compromise,
-      partyA,
-      partyB,
       locale,
     );
   }
@@ -363,8 +356,6 @@ export async function buildAdminMediationDownload(roomId: string, locale: Locale
     room,
     options,
     compromise,
-    partyA,
-    partyB,
     locale,
   );
 

@@ -283,7 +283,7 @@ export function RoomMediationDetails({
           <h5 className="font-display text-headline-sm text-on-surface">
             {admin.mediationDetailsAgreementTitle}
           </h5>
-          <MediationResultsPanel includePsychodynamic summary={details.resultsSummary} />
+          <MediationResultsPanel summary={details.resultsSummary} />
         </div>
       ) : (
         <p className="text-body-sm text-on-surface-variant">{admin.mediationDetailsAgreementPending}</p>

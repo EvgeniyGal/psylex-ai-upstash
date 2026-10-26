@@ -45,13 +45,11 @@ function formatDraftAgreementChapterBody(params: {
 export async function buildAgreementDownloadFromSummary(
   summary: MediationResultsSummary,
   locale: Locale = "en",
-  options?: { includePsychodynamic?: boolean },
 ) {
   const copy = portalCopy[locale];
   const termsHeading = locale === "uk" ? "Умови" : "Terms";
-  const includePsychodynamic = options?.includePsychodynamic === true;
 
-  const contentSections = [
+  const sections = [
     {
       heading: copy.mediationPdfLegislation,
       body: formatLegislationChapterBody(summary),
@@ -69,23 +67,10 @@ export async function buildAgreementDownloadFromSummary(
         notAvailable: copy.mediationPdfNotAvailable,
       }),
     },
-  ];
-
-  const sections = includePsychodynamic
-    ? [
-        {
-          heading: copy.mediationPdfPsychodynamicProfile,
-          body: summary.psychodynamicProfile,
-        },
-        ...contentSections,
-      ].map((section, index) => ({
-        heading: `${index + 1}. ${section.heading}`,
-        body: section.body,
-      }))
-    : contentSections.map((section, index) => ({
-        heading: `${index + 1}. ${section.heading}`,
-        body: section.body,
-      }));
+  ].map((section, index) => ({
+    heading: `${index + 1}. ${section.heading}`,
+    body: section.body,
+  }));
 
   const pdfBuffer = await generateMediationPdf({
     title: summary.agreementTitle,
@@ -113,11 +98,10 @@ export async function buildAgreementDownload(
   locale: Locale = "en",
 ) {
   const summary = await buildMediationResultsSummary(state, locale);
-  // Party downloads omit psychodynamic profiles.
-  return buildAgreementDownloadFromSummary(summary, locale, { includePsychodynamic: false });
+  return buildAgreementDownloadFromSummary(summary, locale);
 }
 
 export async function buildAdminAgreementDownload(roomId: string, locale: Locale = "en") {
   const { summary } = await buildAdminMediationDownload(roomId, locale);
-  return buildAgreementDownloadFromSummary(summary, locale, { includePsychodynamic: true });
+  return buildAgreementDownloadFromSummary(summary, locale);
 }
