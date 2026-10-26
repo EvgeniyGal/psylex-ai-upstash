@@ -11,6 +11,26 @@ export function localeInstruction(locale: Locale): string {
   return "Write all human-readable string values in the JSON response in English. Keep JSON property names in English.";
 }
 
+function languageName(locale: Locale): string {
+  return locale === "uk" ? "Ukrainian (українська)" : "English";
+}
+
+/**
+ * Split-locale instruction for Mode A agent outputs that include partyA/partyB adaptations.
+ * Prefer this over {@link localeInstruction} when parties may use different preferred locales.
+ */
+export function partyAdaptationLocaleInstruction(
+  partyALocale: Locale,
+  partyBLocale: Locale,
+): string {
+  return [
+    "Write canonicalContent in English.",
+    `Write partyA in ${languageName(normalizeLocale(partyALocale))}.`,
+    `Write partyB in ${languageName(normalizeLocale(partyBLocale))}.`,
+    "Keep JSON property names in English.",
+  ].join(" ");
+}
+
 export function getUniqueRoomLocales(
   sides: { preferredLocale: string | null }[],
 ): Locale[] {

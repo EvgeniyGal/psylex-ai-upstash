@@ -42,6 +42,7 @@ import { isMediatorFacilitatedRoom } from "@/lib/mediator-session/room-mode";
 import { logPipelineEvent } from "@/lib/pipeline/log-event";
 import { getRoomPartiesForPipeline, isPostIntakePipelineComplete } from "@/lib/pipeline/gate";
 import type { PartyRole } from "@/lib/participant-roles";
+import { partyAdaptationLocalesFromSides } from "@/lib/mediation/party-locales";
 import { scheduleMediationWork } from "@/lib/mediation/schedule-work";
 import { notifyRoom } from "@/lib/realtime/notify";
 
@@ -172,17 +173,15 @@ async function askDialogueQuestion(
       addressee === "party_a" ? partyA?.id ?? null : partyB?.id ?? null;
 
     const { ctx, partyA: sideA, partyB: sideB } = await buildContext(room);
-    const addresseeUser = addressee === "party_a" ? sideA : sideB;
     const result = await runMediationAgent({
       mode: "dialogue_question",
       context: ctx,
       schema: mediationDialogueQuestionSchema,
-      targetLocale: (addresseeUser?.preferredLocale as Locale) ?? "en",
-      extraInstruction: [
-        `Set addressee to "${addressee}". Round ${room.mediationRound}.`,
-        `Write partyA adaptation in ${sideA.preferredLocale === "uk" ? "Ukrainian" : "English"}.`,
-        `Write partyB adaptation in ${sideB.preferredLocale === "uk" ? "Ukrainian" : "English"}.`,
-      ].join(" "),
+      extraInstruction: `Set addressee to "${addressee}". Round ${room.mediationRound}.`,
+      partyAdaptationLocales: partyAdaptationLocalesFromSides({
+        partyA: sideA,
+        partyB: sideB,
+      }),
     });
 
     await insertAgentMessage({
@@ -203,12 +202,13 @@ async function askDialogueQuestion(
 }
 
 async function postRoundSummary(room: RoomRow) {
-  const { ctx } = await buildContext(room);
+  const { ctx, partyA, partyB } = await buildContext(room);
   const result = await runMediationAgent({
     mode: "round_summary",
     context: ctx,
     schema: mediationRoundSummarySchema,
     extraInstruction: `Round ${room.mediationRound} summary.`,
+    partyAdaptationLocales: partyAdaptationLocalesFromSides({ partyA, partyB }),
   });
 
   await insertAgentMessage({
@@ -526,11 +526,12 @@ async function runOpeningPhase(room: RoomRow) {
 
   const hasOpening = await hasMessageKindInRoom(room.id, "mediation_opening");
   if (!hasOpening) {
-    const { ctx } = await buildContext(room);
+    const { ctx, partyA, partyB } = await buildContext(room);
     const opening = await runMediationAgent({
       mode: "opening",
       context: ctx,
       schema: mediationOpeningSchema,
+      partyAdaptationLocales: partyAdaptationLocalesFromSides({ partyA, partyB }),
     });
 
     if (await hasMessageKindInRoom(room.id, "mediation_opening")) return;
@@ -703,12 +704,13 @@ export async function submitDialogueReply(userId: string, content: string) {
   if (!trimmed) throw new Error("Reply cannot be empty.");
 
   if (isAttackHeuristic(trimmed)) {
-    const { ctx } = await buildContext(room);
+    const { ctx, partyA, partyB } = await buildContext(room);
     const redirect = await runMediationAgent({
       mode: "moderation_redirect",
       context: ctx,
       schema: mediationModerationSchema,
       extraInstruction: `Redirect ${role} after a personal attack.`,
+      partyAdaptationLocales: partyAdaptationLocalesFromSides({ partyA, partyB }),
     });
 
     await insertAgentMessage({

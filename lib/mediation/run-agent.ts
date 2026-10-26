@@ -7,7 +7,11 @@ import {
   getOpenAIClient,
   parseJsonFromModelResponse,
 } from "@/lib/pipeline/openai-client";
-import { localeInstruction, normalizeLocale } from "@/lib/pipeline/locale";
+import {
+  localeInstruction,
+  normalizeLocale,
+  partyAdaptationLocaleInstruction,
+} from "@/lib/pipeline/locale";
 import {
   assembleMediationAgentInput,
   type MediationContext,
@@ -16,6 +20,7 @@ import {
   type MediationAgentMode,
   mediationModeInstructions,
 } from "@/lib/mediation/schemas";
+import type { PartyAdaptationLocales } from "@/lib/mediation/party-locales";
 
 type RunMediationAgentParams<T extends z.ZodType> = {
   mode: MediationAgentMode;
@@ -25,6 +30,11 @@ type RunMediationAgentParams<T extends z.ZodType> = {
   extraInstruction?: string;
   /** Participant-facing output language. Defaults to English when omitted. */
   targetLocale?: Locale;
+  /**
+   * When set, instruct per-party adaptation languages and skip blanket targetLocale
+   * (canonicalContent stays English). Use for Mode A opening/questions/summaries.
+   */
+  partyAdaptationLocales?: PartyAdaptationLocales;
 };
 
 export async function runMediationAgent<T extends z.ZodType>(params: RunMediationAgentParams<T>) {
@@ -32,13 +42,19 @@ export async function runMediationAgent<T extends z.ZodType>(params: RunMediatio
   const systemPrompt = await loadAgentPrompt("mediation", params.draftPrompt);
   const client = await getOpenAIClient();
   const model = await getOpenAIChatModel();
+  const languageInstruction = params.partyAdaptationLocales
+    ? partyAdaptationLocaleInstruction(
+        params.partyAdaptationLocales.partyA,
+        params.partyAdaptationLocales.partyB,
+      )
+    : localeInstruction(targetLocale);
   const userMessage = [
     assembleMediationAgentInput(params.context, params.extraInstruction),
     "",
     mediationModeInstructions[params.mode],
     params.extraInstruction ? `\nContext: ${params.extraInstruction}` : "",
     "",
-    localeInstruction(targetLocale),
+    languageInstruction,
   ]
     .filter(Boolean)
     .join("\n");
@@ -83,11 +99,17 @@ export async function runMediationSimulation(params: {
   const { mediationOpeningSchema, mediationDialogueQuestionSchema, mediationOptionsSchema } =
     await import("@/lib/mediation/schemas");
 
+  const partyAdaptationLocales = {
+    partyA: normalizeLocale(params.context.partyA.preferredLocale),
+    partyB: normalizeLocale(params.context.partyB.preferredLocale),
+  };
+
   const opening = await runMediationAgent({
     mode: "opening",
     context: params.context,
     schema: mediationOpeningSchema,
     draftPrompt: params.draftPrompt,
+    partyAdaptationLocales,
   });
 
   const dialogue = await runMediationAgent({
@@ -96,6 +118,7 @@ export async function runMediationSimulation(params: {
     schema: mediationDialogueQuestionSchema,
     draftPrompt: params.draftPrompt,
     extraInstruction: 'Set addressee to "party_a" for a sample first question.',
+    partyAdaptationLocales,
   });
 
   const options = await runMediationAgent({

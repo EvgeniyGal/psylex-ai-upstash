@@ -14,6 +14,7 @@ import {
   mediationDialogueQuestionSchema,
   mediationOpeningSchema,
 } from "@/lib/mediation/schemas";
+import { getPartyAdaptationLocales } from "@/lib/mediation/party-locales";
 import { scheduleMediationWork } from "@/lib/mediation/schedule-work";
 import { isMediatorFacilitatedRoom } from "@/lib/mediator-session/room-mode";
 import { logPipelineEvent } from "@/lib/pipeline/log-event";
@@ -76,10 +77,12 @@ async function buildPreparationContext(roomId: string) {
 
 async function generateOpeningMessage(roomId: string) {
   const { ctx } = await buildPreparationContext(roomId);
+  const partyAdaptationLocales = await getPartyAdaptationLocales(roomId);
   const opening = await runMediationAgent({
     mode: "opening",
     context: ctx,
     schema: mediationOpeningSchema,
+    partyAdaptationLocales,
   });
 
   if (await hasMessageKind(roomId, "mediation_opening")) return;
@@ -95,11 +98,13 @@ async function generateOpeningMessage(roomId: string) {
 async function generateFirstQuestion(roomId: string) {
   const { partyA } = await getRoomPartiesForPipeline(roomId);
   const { ctx } = await buildPreparationContext(roomId);
+  const partyAdaptationLocales = await getPartyAdaptationLocales(roomId);
   const result = await runMediationAgent({
     mode: "dialogue_question",
     context: ctx,
     schema: mediationDialogueQuestionSchema,
     extraInstruction: 'Set addressee to "party_a". Round 1.',
+    partyAdaptationLocales,
   });
 
   if (await hasMessageKind(roomId, "mediation_question")) return;
