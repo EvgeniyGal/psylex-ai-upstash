@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { toastActionError } from "@/lib/toast-action-error";
 import {
   deleteDocument,
   reprocessDocument,
@@ -171,7 +172,7 @@ export function RagSettingsContent({ documents }: RagSettingsContentProps) {
         await action();
         toast.success(successMessage);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Request failed");
+        toastActionError(error, admin.requestFailed);
       }
     });
   };
@@ -228,7 +229,7 @@ export function RagSettingsContent({ documents }: RagSettingsContentProps) {
         const result = await testInquiry(formData);
         setTestResult(result);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Inquiry failed");
+        toastActionError(error, admin.inquiryFailed);
       }
     });
   };

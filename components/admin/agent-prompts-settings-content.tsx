@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { toastActionError } from "@/lib/toast-action-error";
 import {
   loadAgentTestOptions,
   loadAgentTestPreview,
@@ -127,7 +128,7 @@ export function AgentPromptsSettingsContent({ prompts }: AgentPromptsSettingsCon
         await saveAgentPromptAction(formData);
         toast.success(admin.agentPromptSaved);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Save failed");
+        toastActionError(error, admin.saveFailed);
       }
     });
   };
@@ -151,7 +152,7 @@ export function AgentPromptsSettingsContent({ prompts }: AgentPromptsSettingsCon
         const result = await testAgentPromptAction(formData);
         setTestResult(result);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Test failed");
+        toastActionError(error, admin.testFailed);
       }
     });
   };

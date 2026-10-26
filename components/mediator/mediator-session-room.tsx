@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { toastActionError } from "@/lib/toast-action-error";
 import {
   endMediatorSessionAction,
   fetchMediatorSessionState,
@@ -235,7 +236,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
         else await refresh();
         toast.success(admin.mediatorGenerateQuestions);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
+        toastActionError(error, t.mediationActionFailed);
       }
     });
   };
@@ -257,7 +258,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
         setEditText("");
         toast.success(admin.mediatorSendQuestion);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
+        toastActionError(error, t.mediationActionFailed);
       }
     });
   };
@@ -277,7 +278,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
         setCustomText("");
         toast.success(admin.mediatorSendQuestion);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
+        toastActionError(error, t.mediationActionFailed);
       }
     });
   };
@@ -289,7 +290,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
         if (next) setState(next);
         toast.success(admin.mediatorGenerateOptions);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
+        toastActionError(error, t.mediationActionFailed);
       }
     });
   };
@@ -306,7 +307,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
         if (next) setState(next);
         toast.success(admin.mediatorPublishCompromise);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
+        toastActionError(error, t.mediationActionFailed);
       }
     });
   };
@@ -318,7 +319,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
         const next = await returnMediatorSessionToDialogueAction(roomId, locale);
         if (next) setState(next);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
+        toastActionError(error, t.mediationActionFailed);
       }
     });
   };
@@ -331,7 +332,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
         if (next) setState(next);
         toast.success(admin.mediatorDraftSaved);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
+        toastActionError(error, t.mediationActionFailed);
       }
     });
   };
@@ -345,7 +346,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
         if (next) setState(next);
         toast.success(admin.mediatorDraftPublished);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
+        toastActionError(error, t.mediationActionFailed);
       }
     });
   };

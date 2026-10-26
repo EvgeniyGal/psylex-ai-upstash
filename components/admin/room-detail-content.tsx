@@ -11,6 +11,7 @@ import {
   updateParticipantMeta,
   updateRoomMeta,
 } from "@/app/admin/rooms/actions";
+import { isNextNavigationError, toastActionError } from "@/lib/toast-action-error";
 import type { PartyProfileStatus } from "@/lib/room/party-profile-status";
 import { CredentialActions, CredentialField } from "@/components/credential-actions";
 import { RoomMediationDetailsModal } from "@/components/admin/room-mediation-details-modal";
@@ -287,9 +288,14 @@ export function RoomDetailContent({
     startDeleteTransition(async () => {
       try {
         await deleteRoom(formData);
+        toast.success(admin.roomDeleted);
       } catch (error) {
+        if (isNextNavigationError(error)) {
+          toast.success(admin.roomDeleted);
+          throw error;
+        }
         setConfirmDeleteMode(null);
-        toast.error(error instanceof Error ? error.message : admin.deleteRoom);
+        toastActionError(error, admin.roomDeleteFailed);
       }
     });
   };
@@ -300,9 +306,14 @@ export function RoomDetailContent({
     startDeleteTransition(async () => {
       try {
         await deleteRoomWithParties(formData);
+        toast.success(admin.roomDeleted);
       } catch (error) {
+        if (isNextNavigationError(error)) {
+          toast.success(admin.roomDeleted);
+          throw error;
+        }
         setConfirmDeleteMode(null);
-        toast.error(error instanceof Error ? error.message : admin.deleteRoom);
+        toastActionError(error, admin.roomDeleteFailed);
       }
     });
   };

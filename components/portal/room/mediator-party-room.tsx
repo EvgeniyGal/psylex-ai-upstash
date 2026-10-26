@@ -2,6 +2,7 @@
 
 import { useCallback, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { toastActionError } from "@/lib/toast-action-error";
 
 import {
   downloadMediatorPartyResults,
@@ -120,7 +121,7 @@ export function MediatorPartyRoom({
         setReply("");
         await refresh();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
+        toastActionError(error, t.mediationActionFailed);
       }
     });
   };
@@ -131,7 +132,7 @@ export function MediatorPartyRoom({
         const next = await submitMediatorPartyVote(optionId);
         if (next) setState(next);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
+        toastActionError(error, t.mediationActionFailed);
       }
     });
   };
@@ -142,7 +143,7 @@ export function MediatorPartyRoom({
         const next = await submitMediatorPartyCompromiseVote(accepted);
         if (next) setState(next);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
+        toastActionError(error, t.mediationActionFailed);
       }
     });
   };
@@ -153,7 +154,7 @@ export function MediatorPartyRoom({
         const next = await submitMediatorPartyAgreement();
         if (next) setState(next);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
+        toastActionError(error, t.mediationActionFailed);
       }
     });
   };
@@ -171,7 +172,7 @@ export function MediatorPartyRoom({
         anchor.click();
         URL.revokeObjectURL(url);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
+        toastActionError(error, t.mediationActionFailed);
       }
     });
   };

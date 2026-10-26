@@ -62,6 +62,13 @@ export type AdminCopy = {
   deleteRoomOnlyConfirm: string;
   deleteRoomWithParties: string;
   deleteRoomWithPartiesConfirm: string;
+  roomDeleted: string;
+  roomDeleteFailed: string;
+  requestFailed: string;
+  saveFailed: string;
+  testFailed: string;
+  inquiryFailed: string;
+  copied: string;
   returnToRooms: string;
   createRoomSubtitle: string;
   roomDetails: string;
@@ -454,6 +461,13 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     deleteRoomWithParties: "Delete room and parties",
     deleteRoomWithPartiesConfirm:
       "Delete this room and its party accounts? Every other room those parties participate in will also be deleted. Other parties only in those related rooms stay as free accounts. This cannot be undone.",
+    roomDeleted: "Room deleted.",
+    roomDeleteFailed: "Could not delete the room.",
+    requestFailed: "Request failed. Please try again.",
+    saveFailed: "Could not save. Please try again.",
+    testFailed: "Test failed. Please try again.",
+    inquiryFailed: "Inquiry failed. Please try again.",
+    copied: "Copied",
     returnToRooms: "Return to rooms",
     createRoomSubtitle: "Set up the room and both sides. Credentials will be generated when you create the room.",
     roomDetails: "Room details",
@@ -948,6 +962,13 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     deleteRoomWithParties: "Видалити кімнату зі сторонами",
     deleteRoomWithPartiesConfirm:
       "Видалити цю кімнату та облікові записи її сторін? Також будуть видалені всі інші кімнати, у яких ці сторони беруть участь. Інші сторони лише з пов’язаних кімнат залишаться вільними обліковими записами. Цю дію не можна скасувати.",
+    roomDeleted: "Кімнату видалено.",
+    roomDeleteFailed: "Не вдалося видалити кімнату.",
+    requestFailed: "Запит не виконано. Спробуйте ще раз.",
+    saveFailed: "Не вдалося зберегти. Спробуйте ще раз.",
+    testFailed: "Тест не вдався. Спробуйте ще раз.",
+    inquiryFailed: "Запит не вдався. Спробуйте ще раз.",
+    copied: "Скопійовано",
     returnToRooms: "Повернутися до кімнат",
     createRoomSubtitle: "Налаштуйте кімнату та обидві сторони. Облікові дані буде згенеровано після створення.",
     roomDetails: "Деталі кімнати",

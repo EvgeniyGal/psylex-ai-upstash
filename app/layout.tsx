@@ -72,14 +72,16 @@ export default function RootLayout({
             <ConditionalSiteFooter />
           </div>
         </AppProviders>
-        {/* Session timer stays above all other toasts. */}
+        {/* Mode A session timer — top-left, above wait/status stack. */}
         <Toaster
           id="session-timer"
           offset={{ top: 102, left: 20 }}
           position="top-left"
           visibleToasts={1}
         />
+        {/* Mode A wait / handshake / action toasts. */}
         <Toaster
+          id="mode-a"
           closeButton
           duration={3500}
           expand
@@ -90,6 +92,18 @@ export default function RootLayout({
           position="top-left"
           richColors
           visibleToasts={5}
+          toastOptions={{
+            classNames: {
+              toast: "border shadow-lg",
+            },
+          }}
+        />
+        {/* Default: admin, Mode B, schedule, and other app feedback. */}
+        <Toaster
+          closeButton
+          duration={3500}
+          position="bottom-right"
+          richColors
           toastOptions={{
             classNames: {
               toast: "border shadow-lg",

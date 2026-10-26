@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { toastActionError } from "@/lib/toast-action-error";
 import {
   clickReadyForOptions,
   downloadMediationResults,
@@ -152,9 +153,7 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
         await refresh();
       } catch (error) {
         setReply(text);
-        toast.error(
-          error instanceof Error ? error.message : t.modeAToastSendFailedRetry,
-        );
+        toastActionError(error, t.modeAToastSendFailedRetry);
       }
     });
   };
@@ -165,7 +164,7 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
         const next = await clickReadyForOptions();
         if (next) setState(next);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
+        toastActionError(error, t.mediationActionFailed);
       }
     });
   };
@@ -176,7 +175,7 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
         const next = await submitVote(optionId);
         if (next) setState(next);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
+        toastActionError(error, t.mediationActionFailed);
       }
     });
   };
@@ -187,7 +186,7 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
         const next = await submitCompromiseVote(accepted);
         if (next) setState(next);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
+        toastActionError(error, t.mediationActionFailed);
       }
     });
   };
@@ -198,7 +197,7 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
         const next = await submitAgreementAcceptance();
         if (next) setState(next);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
+        toastActionError(error, t.mediationActionFailed);
       }
     });
   };
@@ -216,7 +215,7 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
         anchor.click();
         URL.revokeObjectURL(url);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
+        toastActionError(error, t.mediationActionFailed);
       }
     });
   };

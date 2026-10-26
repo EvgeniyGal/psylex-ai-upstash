@@ -45,9 +45,12 @@ function waitIcon() {
   return createElement(ModeAToastSpinner);
 }
 
+const MODE_A_TOASTER = "mode-a";
+
 function showWait(id: string, message: string) {
   toast.loading(message, {
     id,
+    toasterId: MODE_A_TOASTER,
     duration: Infinity,
     className: WAIT_CLASS,
     icon: waitIcon(),
@@ -61,6 +64,7 @@ function dismissWait(id: string) {
 function showReady(id: string, message: string, persistent = false) {
   toast.success(message, {
     id,
+    toasterId: MODE_A_TOASTER,
     duration: persistent ? Infinity : 7000,
     className: READY_CLASS,
   });

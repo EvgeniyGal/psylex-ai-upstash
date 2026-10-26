@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { toastActionError } from "@/lib/toast-action-error";
 import { downloadRoomMediationResults } from "@/app/admin/rooms/actions";
 import { MediationResultsPanel } from "@/components/portal/room/mediation-results-panel";
 import { useLocale } from "@/components/locale-provider";
@@ -102,7 +103,7 @@ export function RoomMediationDetails({
         anchor.click();
         URL.revokeObjectURL(url);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : admin.mediationDetailsActionFailed);
+        toastActionError(error, admin.mediationDetailsActionFailed);
       }
     });
   };

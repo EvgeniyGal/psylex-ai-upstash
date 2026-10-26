@@ -14,6 +14,7 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 import { toast } from "sonner";
+import { toastActionError } from "@/lib/toast-action-error";
 import {
   deletePartyAction,
   redoAllPartyTestsAction,
@@ -410,7 +411,7 @@ export function SidesContent({
         setEditing(null);
         router.refresh();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : admin.sidesEditError);
+        toastActionError(error, admin.sidesEditError);
       }
     });
   }, [
@@ -431,7 +432,7 @@ export function SidesContent({
           toast.success(admin.sidesRedoSuccess);
           router.refresh();
         } catch (error) {
-          toast.error(error instanceof Error ? error.message : admin.sidesRedoError);
+          toastActionError(error, admin.sidesRedoError);
         }
       });
     },
@@ -452,7 +453,7 @@ export function SidesContent({
         setDeleting(null);
         router.refresh();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : admin.sidesDeleteError);
+        toastActionError(error, admin.sidesDeleteError);
       }
     });
   }, [admin.sidesDeleteError, admin.sidesDeleteSuccess, deleting, router]);

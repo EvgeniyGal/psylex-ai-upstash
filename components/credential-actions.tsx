@@ -88,9 +88,10 @@ export function CredentialField({
   label: string;
   value: string;
 }) {
+  const { admin } = useLocale();
   const onCopy = async () => {
     await navigator.clipboard.writeText(value);
-    toast.success("Copied");
+    toast.success(admin.copied);
   };
 
   return (
