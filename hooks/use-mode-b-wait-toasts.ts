@@ -463,10 +463,10 @@ export function useModeBMediatorRoomWaitToasts(params: {
       enabled,
       compromiseGen,
       IDS.genCompromise,
-      t.modeAToastGeneratingCompromise,
+      t.modeBToastGeneratingCompromise,
       surface,
     );
-  }, [enabled, compromiseGen, t.modeAToastGeneratingCompromise, surface]);
+  }, [enabled, compromiseGen, t.modeBToastGeneratingCompromise, surface]);
 
   useEffect(() => {
     syncAttentionReadyPersistent(

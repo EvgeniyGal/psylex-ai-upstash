@@ -102,6 +102,7 @@ type PortalCopy = {
   modeBToastMediatorReadyNext: string;
   modeBToastGeneratingCandidates: string;
   modeBToastCandidatesReady: string;
+  modeBToastGeneratingCompromise: string;
   modeBToastCompromiseDraftReady: string;
   modeBToastAgreementDraftReady: string;
   modeBToastWaitingVotes: string;
@@ -397,6 +398,7 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     modeBToastMediatorReadyNext: "Parties have replied — send the next question or generate options.",
     modeBToastGeneratingCandidates: "Generating question suggestions…",
     modeBToastCandidatesReady: "Question suggestions are ready to send.",
+    modeBToastGeneratingCompromise: "Generating a compromise option for the parties…",
     modeBToastCompromiseDraftReady: "Compromise draft is ready to review and publish.",
     modeBToastAgreementDraftReady: "Agreement draft is ready to review and publish.",
     modeBToastWaitingVotes: "Waiting for parties to vote on options.",
@@ -720,6 +722,7 @@ export const portalCopy: Record<Locale, PortalCopy> = {
       "Сторони відповіли — надішліть наступне запитання або згенеруйте варіанти.",
     modeBToastGeneratingCandidates: "Генеруємо пропозиції запитань…",
     modeBToastCandidatesReady: "Пропозиції запитань готові до надсилання.",
+    modeBToastGeneratingCompromise: "Генеруємо компромісний варіант для сторін…",
     modeBToastCompromiseDraftReady: "Чернетка компромісу готова до перегляду та публікації.",
     modeBToastAgreementDraftReady: "Чернетка угоди готова до перегляду та публікації.",
     modeBToastWaitingVotes: "Очікуємо голосування сторін за варіанти.",

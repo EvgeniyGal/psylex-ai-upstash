@@ -713,14 +713,29 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
             </div>
           ) : null}
 
-          <button
-            className="flex w-full items-center justify-center gap-2 rounded-md border border-law px-3 py-2 text-body-sm font-semibold text-law disabled:opacity-60"
-            disabled={pending || state.room.phase === "completed" || state.room.phase === "agreement"}
-            onClick={onGenerateOptions}
-            type="button"
-          >
-            {admin.mediatorGenerateOptions}
-          </button>
+          {state.room.phase === "opening" ||
+          state.room.phase === "dialogue" ||
+          state.room.phase === "generating_options" ? (
+            <button
+              className="flex w-full items-center justify-center gap-2 rounded-md border border-law px-3 py-2 text-body-sm font-semibold text-law disabled:opacity-60"
+              disabled={
+                pending ||
+                generatingOptions ||
+                state.room.phase === "generating_options"
+              }
+              onClick={onGenerateOptions}
+              type="button"
+            >
+              {generatingOptions || state.room.phase === "generating_options" ? (
+                <>
+                  <Spinner size="sm" />
+                  {t.modeAToastGeneratingOptions}
+                </>
+              ) : (
+                admin.mediatorGenerateOptions
+              )}
+            </button>
+          ) : null}
 
           {state.room.phase === "voting_discrepancy" ? (
             <div className="space-y-3 border-t border-hair pt-3">

@@ -39,6 +39,7 @@ import type {
   MediationPhase,
   PartyAdaptations,
 } from "@/lib/mediation/types";
+import { scheduleMediationWork } from "@/lib/mediation/schedule-work";
 import { setPartyNotification } from "@/lib/mediator-session/notifications";
 import {
   isMediatorFacilitatedRoom,
@@ -556,6 +557,8 @@ async function generateCompromiseDraft(room: RoomRow) {
   if (agentWork.has(room.id)) return;
 
   agentWork.add(room.id);
+  // Let clients show “generating compromise” before the LLM runs.
+  notifyRoom(room.id);
   try {
     const fresh = await loadRoom(room.id);
     if (!fresh || fresh.mediatorCompromiseDraft || fresh.compromiseOption) return;
@@ -577,6 +580,14 @@ async function generateCompromiseDraft(room: RoomRow) {
   } finally {
     agentWork.delete(room.id);
   }
+}
+
+/** Kick off compromise generation without blocking the caller (vote / state load). */
+function scheduleCompromiseDraft(roomId: string) {
+  scheduleMediationWork(`generateCompromiseDraft:${roomId}`, async () => {
+    const room = await loadRoom(roomId);
+    if (room) await generateCompromiseDraft(room);
+  });
 }
 
 export async function publishMediatorCompromise(params: {
@@ -735,8 +746,7 @@ export async function castMediatorPartyVote(userId: string, optionId: string) {
     targetRole: "all",
   });
 
-  const discrepancyRoom = await loadRoom(room.id);
-  if (discrepancyRoom) await generateCompromiseDraft(discrepancyRoom);
+  scheduleCompromiseDraft(room.id);
   return loadRoom(room.id);
 }
 
@@ -1143,8 +1153,7 @@ export async function getMediatorSessionRoomState(userId: string) {
 
   let fresh = (await loadRoom(room.id)) ?? room;
   if (fresh.mediationPhase === "voting_discrepancy" && !fresh.mediatorCompromiseDraft && !fresh.compromiseOption) {
-    await generateCompromiseDraft(fresh);
-    fresh = (await loadRoom(room.id)) ?? fresh;
+    scheduleCompromiseDraft(room.id);
   }
   if (fresh.mediationPhase === "agreement" && !fresh.draftAgreement && fresh.selectedOptionId) {
     await ensureDraftAgreement(room.id, fresh.selectedOptionId);
@@ -1170,8 +1179,7 @@ export async function getMediatorConsoleSessionState(
 
   let fresh = (await loadRoom(room.id)) ?? room;
   if (fresh.mediationPhase === "voting_discrepancy" && !fresh.mediatorCompromiseDraft && !fresh.compromiseOption) {
-    await generateCompromiseDraft(fresh);
-    fresh = (await loadRoom(room.id)) ?? fresh;
+    scheduleCompromiseDraft(room.id);
   }
   if (fresh.mediationPhase === "agreement" && !fresh.draftAgreement && fresh.selectedOptionId) {
     await ensureDraftAgreement(room.id, fresh.selectedOptionId);
