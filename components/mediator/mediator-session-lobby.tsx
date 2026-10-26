@@ -10,6 +10,7 @@ import {
 } from "@/app/mediator/rooms/actions";
 import { Spinner } from "@/components/ui/spinner";
 import { useLocale } from "@/components/locale-provider";
+import { useModeBLobbyWaitToasts } from "@/hooks/use-mode-b-wait-toasts";
 import { useRoomRealtime } from "@/hooks/use-room-realtime";
 import {
   formatCountdownMs,
@@ -48,6 +49,16 @@ export function MediatorSessionLobby({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [handshake, setHandshake] = useState(initialHandshake);
+
+  useModeBLobbyWaitToasts({
+    status: handshake.status,
+    selfClicked: handshake.selfClicked,
+    partyAClicked: handshake.partyAClicked,
+    partyBClicked: handshake.partyBClicked,
+    mediatorClicked: handshake.mediatorClicked,
+    canClickStart: handshake.canClickStart,
+    enabled: handshake.status !== "started",
+  });
 
   const applyHandshake = useCallback(
     (next: MediatorHandshakeState) => {

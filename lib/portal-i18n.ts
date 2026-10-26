@@ -94,6 +94,20 @@ type PortalCopy = {
   modeBWaitingCompromisePublish: string;
   modeBWaitingAgreementPublish: string;
   modeBWaitingMediatorComplete: string;
+  modeBToastWaitingSchedule: string;
+  modeBToastWaitingMediatorQuestion: string;
+  modeBToastWaitingOtherVote: string;
+  modeBToastMediatorWaitingPartyA: string;
+  modeBToastMediatorWaitingPartyB: string;
+  modeBToastMediatorReadyNext: string;
+  modeBToastGeneratingCandidates: string;
+  modeBToastCandidatesReady: string;
+  modeBToastCompromiseDraftReady: string;
+  modeBToastAgreementDraftReady: string;
+  modeBToastWaitingVotes: string;
+  modeBToastWaitingCompromiseVotes: string;
+  modeBToastBothAcceptedEnd: string;
+  modeBToastSessionStarting: string;
   myRoomsTitle: string;
   myRoomsSubtitle: string;
   myRoomsEmpty: string;
@@ -375,6 +389,20 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     modeBWaitingAgreementPublish: "Waiting for the mediator to finalize the agreement.",
     modeBWaitingMediatorComplete:
       "Both parties have accepted. Waiting for the mediator to complete the session.",
+    modeBToastWaitingSchedule: "Waiting for the mediator to schedule the session.",
+    modeBToastWaitingMediatorQuestion: "Waiting for the mediator’s next question.",
+    modeBToastWaitingOtherVote: "Waiting for the other party to vote.",
+    modeBToastMediatorWaitingPartyA: "Waiting for Party A to answer.",
+    modeBToastMediatorWaitingPartyB: "Waiting for Party B to answer.",
+    modeBToastMediatorReadyNext: "Parties have replied — send the next question or generate options.",
+    modeBToastGeneratingCandidates: "Generating question suggestions…",
+    modeBToastCandidatesReady: "Question suggestions are ready to send.",
+    modeBToastCompromiseDraftReady: "Compromise draft is ready to review and publish.",
+    modeBToastAgreementDraftReady: "Agreement draft is ready to review and publish.",
+    modeBToastWaitingVotes: "Waiting for parties to vote on options.",
+    modeBToastWaitingCompromiseVotes: "Waiting for parties to vote on the compromise.",
+    modeBToastBothAcceptedEnd: "Both parties accepted — you can complete the session.",
+    modeBToastSessionStarting: "Everyone is ready — session is starting…",
     myRoomsTitle: "My rooms",
     myRoomsSubtitle: "Select a mediation room to continue.",
     myRoomsEmpty: "You are not assigned to any rooms yet.",
@@ -683,6 +711,21 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     modeBWaitingAgreementPublish: "Очікуємо, поки медіатор фіналізує угоду.",
     modeBWaitingMediatorComplete:
       "Обидві сторони прийняли угоду. Очікуємо, поки медіатор завершить сесію.",
+    modeBToastWaitingSchedule: "Очікуємо, поки медіатор призначить сесію.",
+    modeBToastWaitingMediatorQuestion: "Очікуємо наступне запитання від медіатора.",
+    modeBToastWaitingOtherVote: "Очікуємо голосування іншої сторони.",
+    modeBToastMediatorWaitingPartyA: "Очікуємо відповідь сторони A.",
+    modeBToastMediatorWaitingPartyB: "Очікуємо відповідь сторони B.",
+    modeBToastMediatorReadyNext:
+      "Сторони відповіли — надішліть наступне запитання або згенеруйте варіанти.",
+    modeBToastGeneratingCandidates: "Генеруємо пропозиції запитань…",
+    modeBToastCandidatesReady: "Пропозиції запитань готові до надсилання.",
+    modeBToastCompromiseDraftReady: "Чернетка компромісу готова до перегляду та публікації.",
+    modeBToastAgreementDraftReady: "Чернетка угоди готова до перегляду та публікації.",
+    modeBToastWaitingVotes: "Очікуємо голосування сторін за варіанти.",
+    modeBToastWaitingCompromiseVotes: "Очікуємо голосування сторін за компроміс.",
+    modeBToastBothAcceptedEnd: "Обидві сторони прийняли угоду — можна завершити сесію.",
+    modeBToastSessionStarting: "Усі готові — сесія починається…",
     myRoomsTitle: "Мої кімнати",
     myRoomsSubtitle: "Оберіть кімнату медіації, щоб продовжити.",
     myRoomsEmpty: "Вас ще не додано до жодної кімнати.",

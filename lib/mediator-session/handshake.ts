@@ -354,6 +354,15 @@ export async function recordMediatorStartClick(
     return evaluateHandshake(room, viewer, prerequisitesMet);
   }
 
+  if (!existing && !allThreeClicked(updated)) {
+    await setPartyNotification({
+      roomId,
+      type: "peer_ready",
+      targetRole: "all",
+      payload: { clickedBy: viewer },
+    });
+  }
+
   if (shouldStartSession(updated)) {
     await finalizeMediatorSessionStart(roomId);
     const fresh = await loadRoomHandshake(roomId);

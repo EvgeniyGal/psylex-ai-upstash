@@ -1,21 +1,18 @@
 "use client";
 
-import { createElement, useEffect } from "react";
-import { toast } from "sonner";
-import { ModeAToastSpinner } from "@/components/ui/mode-a-toast-spinner";
+import { useEffect } from "react";
 import { useLocale } from "@/components/locale-provider";
 import type { MediationPhase } from "@/lib/mediation/types";
+import {
+  dismissAttentionToast,
+  modeAReadyToastClassName,
+  modeAWaitToastClassName,
+  showAttentionWait,
+  syncAttentionReadyPersistent,
+  syncAttentionWait,
+} from "@/hooks/attention-toasts";
 
-/** Orange — AI working / waiting on other party / saving. */
-export const modeAWaitToastClassName =
-  "mode-a-toast-attention !bg-amber-100 !text-amber-950 !border-2 !border-amber-400 shadow-md [&_[data-icon]]:!text-amber-700";
-
-/** Green — user must act (new question, vote, start, accept). */
-export const modeAReadyToastClassName =
-  "mode-a-toast-attention mode-a-toast-attention-ready !bg-emerald-100 !text-emerald-950 !border-2 !border-emerald-500 shadow-md [&_[data-icon]]:!text-emerald-700";
-
-const WAIT_CLASS = modeAWaitToastClassName;
-const READY_CLASS = modeAReadyToastClassName;
+export { modeAWaitToastClassName, modeAReadyToastClassName };
 
 const WAIT_IDS = {
   pipeline: "mode-a-pipeline",
@@ -41,58 +38,6 @@ const WAIT_IDS = {
   agreementReady: "mode-a-agreement-ready",
 } as const;
 
-function waitIcon() {
-  return createElement(ModeAToastSpinner);
-}
-
-const MODE_A_TOASTER = "mode-a";
-
-function showWait(id: string, message: string) {
-  toast.loading(message, {
-    id,
-    toasterId: MODE_A_TOASTER,
-    duration: Infinity,
-    className: WAIT_CLASS,
-    icon: waitIcon(),
-  });
-}
-
-function dismissWait(id: string) {
-  toast.dismiss(id);
-}
-
-function showReady(id: string, message: string, persistent = false) {
-  toast.success(message, {
-    id,
-    toasterId: MODE_A_TOASTER,
-    duration: persistent ? Infinity : 7000,
-    className: READY_CLASS,
-  });
-}
-
-function syncWait(enabled: boolean, active: boolean, id: string, message: string) {
-  if (!enabled) {
-    dismissWait(id);
-    return;
-  }
-  if (active) showWait(id, message);
-  else dismissWait(id);
-}
-
-function syncReadyPersistent(
-  enabled: boolean,
-  active: boolean,
-  id: string,
-  message: string,
-) {
-  if (!enabled) {
-    dismissWait(id);
-    return;
-  }
-  if (active) showReady(id, message, true);
-  else dismissWait(id);
-}
-
 export function useModeALobbyWaitToasts(params: {
   pipelineRunning: boolean;
   preparingRoom: boolean;
@@ -114,15 +59,15 @@ export function useModeALobbyWaitToasts(params: {
   } = params;
 
   useEffect(() => {
-    syncWait(enabled, pipelineRunning, WAIT_IDS.pipeline, t.modeAToastPipelineWorking);
+    syncAttentionWait(enabled, pipelineRunning, WAIT_IDS.pipeline, t.modeAToastPipelineWorking);
   }, [enabled, pipelineRunning, t.modeAToastPipelineWorking]);
 
   useEffect(() => {
-    syncWait(enabled, preparingRoom, WAIT_IDS.opening, t.modeAToastOpeningPreparing);
+    syncAttentionWait(enabled, preparingRoom, WAIT_IDS.opening, t.modeAToastOpeningPreparing);
   }, [enabled, preparingRoom, t.modeAToastOpeningPreparing]);
 
   useEffect(() => {
-    syncWait(
+    syncAttentionWait(
       enabled,
       !bothReady && !pipelineRunning && !preparingRoom,
       WAIT_IDS.oppositeNotReady,
@@ -137,7 +82,7 @@ export function useModeALobbyWaitToasts(params: {
   ]);
 
   useEffect(() => {
-    syncWait(
+    syncAttentionWait(
       enabled,
       waitingForOpposite,
       WAIT_IDS.handshakeWaiting,
@@ -146,7 +91,7 @@ export function useModeALobbyWaitToasts(params: {
   }, [enabled, waitingForOpposite, t.mediationHandshakeWaiting]);
 
   useEffect(() => {
-    syncReadyPersistent(
+    syncAttentionReadyPersistent(
       enabled,
       oppositeReadyToStart,
       WAIT_IDS.handshakeOppositeReady,
@@ -155,7 +100,7 @@ export function useModeALobbyWaitToasts(params: {
   }, [enabled, oppositeReadyToStart, t.mediationHandshakeOppositeReady]);
 
   useEffect(() => {
-    syncWait(
+    syncAttentionWait(
       enabled,
       handshakeStarting,
       WAIT_IDS.handshakeStarting,
@@ -221,7 +166,7 @@ export function useModeARoomWaitToasts(params: {
     needsAgreementAccept && hasDraftAgreement && phase === "agreement";
 
   useEffect(() => {
-    syncWait(
+    syncAttentionWait(
       enabled,
       waitingForQuestion,
       WAIT_IDS.question,
@@ -230,7 +175,7 @@ export function useModeARoomWaitToasts(params: {
   }, [enabled, waitingForQuestion, t.modeAToastGeneratingQuestion]);
 
   useEffect(() => {
-    syncWait(
+    syncAttentionWait(
       enabled,
       awaitingAgentWork && !waitingForQuestion && !optionsWait && !compromiseWait && !agreementWait,
       WAIT_IDS.awaitingAgent,
@@ -247,7 +192,7 @@ export function useModeARoomWaitToasts(params: {
   ]);
 
   useEffect(() => {
-    syncWait(
+    syncAttentionWait(
       enabled,
       isOtherPartyAnswering,
       WAIT_IDS.otherAnswering,
@@ -256,7 +201,7 @@ export function useModeARoomWaitToasts(params: {
   }, [enabled, isOtherPartyAnswering, t.mediationOtherPartyAnsweringHint]);
 
   useEffect(() => {
-    syncWait(
+    syncAttentionWait(
       enabled,
       waitingOtherReady,
       WAIT_IDS.otherReady,
@@ -265,7 +210,7 @@ export function useModeARoomWaitToasts(params: {
   }, [enabled, waitingOtherReady, t.mediationWaitingOtherReady]);
 
   useEffect(() => {
-    syncReadyPersistent(
+    syncAttentionReadyPersistent(
       enabled,
       otherReadyForOptions && !waitingOtherReady,
       WAIT_IDS.otherPartyReadyForOptions,
@@ -274,7 +219,7 @@ export function useModeARoomWaitToasts(params: {
   }, [enabled, otherReadyForOptions, waitingOtherReady, t.mediationOtherReady]);
 
   useEffect(() => {
-    syncWait(
+    syncAttentionWait(
       enabled,
       waitingOtherAccept,
       WAIT_IDS.otherAccept,
@@ -283,11 +228,11 @@ export function useModeARoomWaitToasts(params: {
   }, [enabled, waitingOtherAccept, t.mediationWaitingOtherAccept]);
 
   useEffect(() => {
-    syncWait(enabled, optionsWait, WAIT_IDS.options, t.modeAToastGeneratingOptions);
+    syncAttentionWait(enabled, optionsWait, WAIT_IDS.options, t.modeAToastGeneratingOptions);
   }, [enabled, optionsWait, t.modeAToastGeneratingOptions]);
 
   useEffect(() => {
-    syncWait(
+    syncAttentionWait(
       enabled,
       compromiseWait,
       WAIT_IDS.compromise,
@@ -296,7 +241,7 @@ export function useModeARoomWaitToasts(params: {
   }, [enabled, compromiseWait, t.modeAToastGeneratingCompromise]);
 
   useEffect(() => {
-    syncWait(
+    syncAttentionWait(
       enabled,
       agreementWait,
       WAIT_IDS.agreement,
@@ -304,9 +249,8 @@ export function useModeARoomWaitToasts(params: {
     );
   }, [enabled, agreementWait, t.modeAToastGeneratingAgreement]);
 
-  // Persist until the user acts — do not auto-dismiss action toasts.
   useEffect(() => {
-    syncReadyPersistent(
+    syncAttentionReadyPersistent(
       enabled,
       actionNewQuestion,
       WAIT_IDS.newQuestion,
@@ -315,7 +259,7 @@ export function useModeARoomWaitToasts(params: {
   }, [enabled, actionNewQuestion, t.modeAToastNewQuestion]);
 
   useEffect(() => {
-    syncReadyPersistent(
+    syncAttentionReadyPersistent(
       enabled,
       actionOptionsReady,
       WAIT_IDS.optionsReady,
@@ -324,7 +268,7 @@ export function useModeARoomWaitToasts(params: {
   }, [enabled, actionOptionsReady, t.modeAToastOptionsReady]);
 
   useEffect(() => {
-    syncReadyPersistent(
+    syncAttentionReadyPersistent(
       enabled,
       actionCompromiseReady,
       WAIT_IDS.compromiseReady,
@@ -333,7 +277,7 @@ export function useModeARoomWaitToasts(params: {
   }, [enabled, actionCompromiseReady, t.modeAToastCompromiseReady]);
 
   useEffect(() => {
-    syncReadyPersistent(
+    syncAttentionReadyPersistent(
       enabled,
       actionAgreementReady,
       WAIT_IDS.agreementReady,
@@ -343,17 +287,17 @@ export function useModeARoomWaitToasts(params: {
 }
 
 export function showModeAIntakeToast(message: string) {
-  showWait(WAIT_IDS.intake, message);
+  showAttentionWait(WAIT_IDS.intake, message);
 }
 
 export function dismissModeAIntakeToast() {
-  dismissWait(WAIT_IDS.intake);
+  dismissAttentionToast(WAIT_IDS.intake);
 }
 
 export function showModeATestsToast(message: string) {
-  showWait(WAIT_IDS.tests, message);
+  showAttentionWait(WAIT_IDS.tests, message);
 }
 
 export function dismissModeATestsToast() {
-  dismissWait(WAIT_IDS.tests);
+  dismissAttentionToast(WAIT_IDS.tests);
 }

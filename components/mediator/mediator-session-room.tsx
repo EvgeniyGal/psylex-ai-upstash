@@ -18,11 +18,12 @@ import {
   sendCustomMediatorQuestionAction,
   sendMediatorQuestionAction,
 } from "@/app/mediator/rooms/actions";
-import { SessionElapsedTimer } from "@/components/mediator/session-elapsed-timer";
+import { MediationCountdown } from "@/components/portal/mediation-countdown";
 import { MediationCompromisePanel } from "@/components/portal/room/mediation-compromise-panel";
 import { MediationOptionsPanel } from "@/components/portal/room/mediation-options-panel";
 import { Spinner } from "@/components/ui/spinner";
 import { useLocale } from "@/components/locale-provider";
+import { useModeBMediatorRoomWaitToasts } from "@/hooks/use-mode-b-wait-toasts";
 import { useRoomRealtime } from "@/hooks/use-room-realtime";
 import { SESSION_END_REDIRECT_MS } from "@/lib/mediator-session/constants";
 import { isMediatorSessionEnded } from "@/lib/mediator-session/room-mode";
@@ -121,6 +122,8 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
   const [state, setState] = useState(initialState);
   const [pending, startTransition] = useTransition();
   const [formulatePending, startFormulate] = useTransition();
+  const [generatingCandidates, setGeneratingCandidates] = useState(false);
+  const [generatingOptions, setGeneratingOptions] = useState(false);
   const [selectedAudience, setSelectedAudience] = useState<MediatorAudience>("both");
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
@@ -132,6 +135,41 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
   const isPartyAudience = selectedAudience === "party_a" || selectedAudience === "party_b";
 
   const sessionEnded = isMediatorSessionEnded(state.room.phase);
+
+  const hasQuestionCandidates =
+    (state.questionCandidates.party_a?.length ?? 0) > 0 ||
+    (state.questionCandidates.party_b?.length ?? 0) > 0;
+  const draftStatus = state.draftAgreement?.status ?? null;
+  const agreementPublished = draftStatus === "published" || draftStatus === "accepted";
+  const generatingCompromise =
+    state.room.phase === "voting_discrepancy" &&
+    !state.compromiseDraft &&
+    !state.compromisePublished;
+  const generatingAgreement =
+    state.room.phase === "agreement" && !state.draftAgreement && !agreementPublished;
+
+  useModeBMediatorRoomWaitToasts({
+    phase: state.room.phase as MediationPhase | null,
+    partyAPendingReply: !!state.room.partyAPendingReply,
+    partyBPendingReply: !!state.room.partyBPendingReply,
+    generatingCandidates,
+    hasQuestionCandidates,
+    generatingOptions,
+    hasOptions: (state.options?.length ?? 0) > 0,
+    partyAVote: state.room.partyAVote,
+    partyBVote: state.room.partyBVote,
+    generatingCompromise,
+    hasCompromiseDraft: !!state.compromiseDraft,
+    compromisePublished: !!state.compromisePublished,
+    partyACompromiseVote: state.room.partyACompromiseVote,
+    partyBCompromiseVote: state.room.partyBCompromiseVote,
+    generatingAgreement,
+    hasAgreementDraft: !!state.draftAgreement,
+    agreementPublished,
+    partyAAccepted: !!state.room.partyAAgreementAccepted,
+    partyBAccepted: !!state.room.partyBAgreementAccepted,
+    enabled: !sessionEnded,
+  });
 
   const refresh = useCallback(async () => {
     try {
@@ -152,10 +190,6 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
   useEffect(() => {
     void refresh();
   }, [locale, refresh]);
-
-  const onSessionTimeUp = useCallback(() => {
-    toast.message(t.modeBSessionTimeUp, { id: "session-time-up", duration: 8000 });
-  }, [t.modeBSessionTimeUp]);
 
   useEffect(() => {
     if (!state.compromiseDraft || state.compromisePublished) {
@@ -229,6 +263,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
   };
 
   const onGenerateQuestions = () => {
+    setGeneratingCandidates(true);
     startTransition(async () => {
       try {
         const next = await generateMediatorQuestionCandidatesAction(roomId, locale);
@@ -237,6 +272,8 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
         toast.success(admin.mediatorGenerateQuestions);
       } catch (error) {
         toastActionError(error, t.mediationActionFailed);
+      } finally {
+        setGeneratingCandidates(false);
       }
     });
   };
@@ -284,6 +321,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
   };
 
   const onGenerateOptions = () => {
+    setGeneratingOptions(true);
     startTransition(async () => {
       try {
         const next = await generateMediatorOptionsAction(roomId, locale);
@@ -291,6 +329,8 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
         toast.success(admin.mediatorGenerateOptions);
       } catch (error) {
         toastActionError(error, t.mediationActionFailed);
+      } finally {
+        setGeneratingOptions(false);
       }
     });
   };
@@ -395,14 +435,18 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
               {admin.mediatorEndSession}
             </button>
           ) : null}
-          <SessionElapsedTimer
-            durationMinutes={state.room.mediationDurationMinutes}
-            onTimeUp={onSessionTimeUp}
-            sessionComplete={sessionEnded}
-            startedAt={state.room.mediationStartedAt}
-          />
         </div>
       </div>
+      {!sessionEnded && state.room.mediationStartedAt ? (
+        <MediationCountdown
+          durationMinutes={state.room.mediationDurationMinutes}
+          sessionComplete={sessionEnded}
+          startedAt={state.room.mediationStartedAt}
+          onEnded={() => {
+            void refresh();
+          }}
+        />
+      ) : null}
 
       {sessionEnded ? (
         <p className="rounded-xl border border-law/30 bg-law/10 px-4 py-3 text-body-sm font-semibold text-on-surface">

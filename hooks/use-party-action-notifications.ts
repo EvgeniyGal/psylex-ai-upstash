@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import { useLocale } from "@/components/locale-provider";
 import type { PartyNotification, PartyNotificationType } from "@/lib/mediator-session/types";
 import type { PartyRole } from "@/lib/participant-roles";
@@ -27,7 +26,7 @@ function messageForType(
     case "start_window_open":
       return t.modeBNotifyStartWindow;
     case "peer_ready":
-      return null;
+      return t.modeBNotifyPeerReady;
     case "session_started":
       return t.modeBNotifySessionStarted;
     case "question_received":
@@ -51,6 +50,10 @@ function messageForType(
   }
 }
 
+/**
+ * Optional dismissible banner from partyNotification.
+ * Status attention toasts live in use-mode-b-wait-toasts (top-left stack).
+ */
 export function usePartyActionNotifications({
   notification,
   viewerRole,
@@ -85,7 +88,6 @@ export function usePartyActionNotifications({
     const message = messageForType(notification.type, t);
     if (!message) return;
 
-    toast.message(message, { id: `party-notify-${notification.type}`, duration: 3500 });
     setBannerType(notification.type);
     setBanner(message);
   }, [enabled, notification, startWindowConsumed, t, viewerRole]);

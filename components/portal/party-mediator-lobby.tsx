@@ -11,6 +11,7 @@ import { PartyActionBanner } from "@/components/portal/party-action-banner";
 import { PortalPageShell } from "@/components/portal/portal-page-shell";
 import { Spinner } from "@/components/ui/spinner";
 import { useLocale } from "@/components/locale-provider";
+import { useModeBLobbyWaitToasts } from "@/hooks/use-mode-b-wait-toasts";
 import { usePartyActionNotifications } from "@/hooks/use-party-action-notifications";
 import { useRoomRealtime } from "@/hooks/use-room-realtime";
 import {
@@ -71,6 +72,17 @@ export function PartyMediatorLobby({
       handshake.status === "waiting" ||
       handshake.status === "countdown" ||
       handshake.status === "started",
+  });
+
+  useModeBLobbyWaitToasts({
+    status: handshake.status,
+    selfClicked: handshake.selfClicked,
+    partyAClicked: handshake.partyAClicked,
+    partyBClicked: handshake.partyBClicked,
+    mediatorClicked: handshake.mediatorClicked,
+    canClickStart: handshake.canClickStart,
+    pipelineRunning,
+    enabled: handshake.status !== "started",
   });
 
   const applyHandshake = useCallback(

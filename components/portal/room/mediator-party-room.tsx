@@ -13,8 +13,8 @@ import {
   submitMediatorPartyCompromiseVote,
   submitMediatorPartyVote,
 } from "@/app/mediator/rooms/party-actions";
-import { SessionElapsedTimer } from "@/components/mediator/session-elapsed-timer";
 import { PartyActionBanner } from "@/components/portal/party-action-banner";
+import { MediationCountdown } from "@/components/portal/mediation-countdown";
 import { PortalPageShell } from "@/components/portal/portal-page-shell";
 import { MediationOptionsPanel } from "@/components/portal/room/mediation-options-panel";
 import { MediationCompromisePanel } from "@/components/portal/room/mediation-compromise-panel";
@@ -23,6 +23,7 @@ import { MediationResultsPanel } from "@/components/portal/room/mediation-result
 import { MediationChat, MediationChatComposer } from "@/components/portal/room/mediation-chat";
 import { Spinner } from "@/components/ui/spinner";
 import { useLocale } from "@/components/locale-provider";
+import { useModeBPartyRoomWaitToasts } from "@/hooks/use-mode-b-wait-toasts";
 import { usePartyActionNotifications } from "@/hooks/use-party-action-notifications";
 import { useRoomRealtime } from "@/hooks/use-room-realtime";
 import { resolveRoomFlowStep } from "@/lib/participant-flow";
@@ -91,6 +92,24 @@ export function MediatorPartyRoom({
     !!state.room.agreementAccepted && !!state.room.otherAgreementAccepted;
   const waitingForMediatorComplete =
     phase === "agreement" && bothAccepted && !isSessionComplete;
+
+  useModeBPartyRoomWaitToasts({
+    phase,
+    pendingQuestion: !!state.room.pendingQuestion,
+    peerHasPendingQuestion: !!state.room.peerHasPendingQuestion,
+    hasOptions: (state.options?.length ?? 0) > 0,
+    hasCompromise: !!state.compromise,
+    agreementPublished: !!state.room.agreementPublished,
+    awaitingCompromisePublish,
+    awaitingMediatorPublish,
+    selfVote: state.room.selfVote,
+    peerHasVoted: !!state.room.peerHasVoted,
+    selfCompromiseVote: state.room.selfCompromiseVote,
+    agreementAccepted: !!state.room.agreementAccepted,
+    otherAgreementAccepted: !!state.room.otherAgreementAccepted,
+    waitingForMediatorComplete,
+    enabled: !review && !isSessionComplete,
+  });
 
   const actionBanner =
     banner ||
@@ -193,19 +212,17 @@ export function MediatorPartyRoom({
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="font-display text-headline-md text-on-surface">{state.room.title}</h1>
-          {!isSessionComplete ? (
-            <SessionElapsedTimer
-              durationMinutes={state.room.mediationDurationMinutes}
-              onTimeUp={() => {
-                toast.message(t.modeBSessionTimeUp, {
-                  id: "session-time-up",
-                  duration: 8000,
-                });
-              }}
-              startedAt={state.room.mediationStartedAt}
-            />
-          ) : null}
         </div>
+        {!isSessionComplete && state.room.mediationStartedAt ? (
+          <MediationCountdown
+            durationMinutes={state.room.mediationDurationMinutes}
+            sessionComplete={isSessionComplete}
+            startedAt={state.room.mediationStartedAt}
+            onEnded={() => {
+              void refresh();
+            }}
+          />
+        ) : null}
 
         {isTreatyView && resultsSummary ? (
           <div className="space-y-6">

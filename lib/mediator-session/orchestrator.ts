@@ -194,6 +194,7 @@ export async function generateQuestionCandidates(roomId: string, mediatorUserId:
       .update(rooms)
       .set({ mediatorQuestionCandidates: candidates })
       .where(eq(rooms.id, roomId));
+    notifyRoom(roomId);
 
     await logPipelineEvent({
       roomId,
@@ -572,6 +573,7 @@ async function generateCompromiseDraft(room: RoomRow) {
       .update(rooms)
       .set({ mediatorCompromiseDraft: draft })
       .where(eq(rooms.id, room.id));
+    notifyRoom(room.id);
   } finally {
     agentWork.delete(room.id);
   }
@@ -1357,6 +1359,20 @@ async function buildSessionState(
     sessionAllowsReply &&
     partyHasUnansweredQuestion(messages, viewerUserId, partyA.id, partyB.id);
 
+  const partyAPendingReply =
+    !!partyA?.id &&
+    !!partyB?.id &&
+    sessionAllowsReply &&
+    partyHasUnansweredQuestion(messages, partyA.id, partyA.id, partyB.id);
+  const partyBPendingReply =
+    !!partyA?.id &&
+    !!partyB?.id &&
+    sessionAllowsReply &&
+    partyHasUnansweredQuestion(messages, partyB.id, partyA.id, partyB.id);
+  const peerHasPendingQuestion =
+    viewerKind === "party" &&
+    (role === "party_a" ? partyBPendingReply : role === "party_b" ? partyAPendingReply : false);
+
   const canReply = pendingQuestion;
   const peerHasVoted =
     viewerKind === "party" &&
@@ -1406,6 +1422,10 @@ async function buildSessionState(
       partyBVote: viewerKind === "mediator" ? room.partyBVoteOptionId : undefined,
       partyACompromiseVote: viewerKind === "mediator" ? room.partyACompromiseVote : undefined,
       partyBCompromiseVote: viewerKind === "mediator" ? room.partyBCompromiseVote : undefined,
+      partyAAgreementAccepted:
+        viewerKind === "mediator" ? !!room.partyAAgreementAcceptedAt : undefined,
+      partyBAgreementAccepted:
+        viewerKind === "mediator" ? !!room.partyBAgreementAcceptedAt : undefined,
       selfCompromiseVote:
         role === "party_a"
           ? room.partyACompromiseVote
@@ -1435,6 +1455,9 @@ async function buildSessionState(
         : false,
       canReply,
       pendingQuestion,
+      peerHasPendingQuestion,
+      partyAPendingReply: viewerKind === "mediator" ? partyAPendingReply : undefined,
+      partyBPendingReply: viewerKind === "mediator" ? partyBPendingReply : undefined,
       partyNotification: room.partyNotification,
     },
     messages: viewerMessages,
