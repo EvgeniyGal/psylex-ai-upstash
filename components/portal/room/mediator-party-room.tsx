@@ -330,7 +330,11 @@ export function MediatorPartyRoom({
               }
             />
 
-            {phase === "voting" || phase === "agreement" || phase === "completed" ? (
+            {(phase === "voting" ||
+              phase === "voting_discrepancy" ||
+              phase === "agreement" ||
+              phase === "completed") &&
+            state.options.length > 0 ? (
               <MediationOptionsPanel
                 canVote={phase === "voting" && !state.room.selfVote && !review}
                 onVote={onVote}
@@ -339,8 +343,10 @@ export function MediatorPartyRoom({
                 partyBVoteOptionId={viewerRole === "party_b" ? state.room.selfVote : state.room.otherVote}
                 pending={pending}
                 phase={phase}
+                review={review || phase !== "voting"}
                 selectedOptionId={state.room.selectedOptionId}
                 selfVote={state.room.selfVote}
+                showHeading
                 viewerRole={viewerRole}
               />
             ) : null}
@@ -371,7 +377,10 @@ export function MediatorPartyRoom({
               </div>
             ) : null}
 
-            {phase === "voting_discrepancy" && state.compromise ? (
+            {state.compromise &&
+            (phase === "voting_discrepancy" ||
+              phase === "agreement" ||
+              phase === "completed") ? (
               <MediationCompromisePanel
                 compromise={{
                   id: state.compromise.id,
@@ -393,7 +402,7 @@ export function MediatorPartyRoom({
                 partyBVoteOptionId={viewerRole === "party_b" ? state.room.selfVote : state.room.otherVote}
                 pending={pending}
                 phase={phase}
-                review={review}
+                review={review || phase !== "voting_discrepancy"}
                 selectedOptionId={state.room.selectedOptionId}
                 selfCompromiseVote={state.room.selfCompromiseVote}
               />
