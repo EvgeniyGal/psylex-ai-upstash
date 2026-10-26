@@ -14,7 +14,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { useLocale } from "@/components/locale-provider";
 import { useModeALobbyWaitToasts } from "@/hooks/use-mode-a-wait-toasts";
 import { useRoomRealtime } from "@/hooks/use-room-realtime";
-import { fadeInUp, scaleIn } from "@/lib/motion";
+import { scaleIn } from "@/lib/motion";
 import type { HandshakeStatusResponse } from "@/lib/mediation/handshake";
 import type { MediationLobbyStatus } from "@/lib/dispute-intake";
 import type { PartyRole } from "@/lib/participant-roles";
@@ -53,28 +53,6 @@ function StatusBadge({ ready, readyLabel, notReadyLabel }: { ready: boolean; rea
   );
 }
 
-function HandshakeIndicator() {
-  return (
-    <div className="flex items-center justify-center gap-3 py-2">
-      <motion.div
-        className="h-3 w-3 rounded-full bg-party-a"
-        animate={{ x: [0, 12, 0] }}
-        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="h-px w-8 bg-hair"
-        animate={{ scaleX: [1, 0.3, 1] }}
-        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="h-3 w-3 rounded-full bg-party-b"
-        animate={{ x: [0, -12, 0] }}
-        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-      />
-    </div>
-  );
-}
-
 const stagger = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.1, delayChildren: 0.1 } },
@@ -106,9 +84,20 @@ export function MediationLobby({
   const [handshake, setHandshake] = useState<HandshakeStatusResponse | null>(null);
   const redirectingRef = useRef(false);
 
+  const oppositeReady = !!lobby.opposite?.mediationReady;
+  const waitingForOpposite =
+    handshake?.status === "waiting" && handshake.selfClicked && !handshake.oppositeClicked;
+  const handshakeStarting =
+    handshake?.status === "waiting" && handshake.selfClicked && handshake.oppositeClicked;
+  const oppositeReadyToStart = !!handshake?.oppositeClicked && !handshake?.selfClicked;
+
   useModeALobbyWaitToasts({
     pipelineRunning: lobby.pipelineRunning,
     preparingRoom: lobby.preparingMediationRoom,
+    bothReady: lobby.bothReady,
+    waitingForOpposite,
+    oppositeReadyToStart,
+    handshakeStarting,
   });
 
   const redirectToRoom = useCallback(() => {
@@ -264,12 +253,6 @@ export function MediationLobby({
     });
   };
 
-  const oppositeReady = !!lobby.opposite?.mediationReady;
-  const waitingForOpposite =
-    handshake?.status === "waiting" && handshake.selfClicked && !handshake.oppositeClicked;
-  const handshakeStarting =
-    handshake?.status === "waiting" && handshake.selfClicked && handshake.oppositeClicked;
-  const oppositeReadyToStart = !!handshake?.oppositeClicked && !handshake?.selfClicked;
   const startDisabled =
     !lobby.canStartMediation ||
     isPending ||
@@ -338,88 +321,6 @@ export function MediationLobby({
           animate={{ opacity: 1 }}
           transition={{ delay: 0.35, duration: 0.4 }}
         >
-          <AnimatePresence mode="popLayout">
-            {!lobby.bothReady ? (
-              <motion.div
-                key="not-ready-hint"
-                className="flex w-full items-start gap-3 rounded-lg border border-outline-variant/20 bg-surface-container p-4"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <span className="material-symbols-outlined mt-1 text-tertiary">info</span>
-                <p className="font-sans text-body-sm text-on-surface-variant">{t.mediationOppositeNotReady}</p>
-              </motion.div>
-            ) : null}
-
-            {lobby.pipelineRunning ? (
-              <motion.div
-                key="pipeline"
-                className="flex w-full items-start gap-3 rounded border border-law-line bg-law-fill p-4"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-              >
-                <Spinner size="sm" className="mt-1" />
-                <p className="font-sans text-body-sm text-on-surface-variant">{t.mediationAgentsWorking}</p>
-              </motion.div>
-            ) : null}
-
-            {lobby.preparingMediationRoom ? (
-              <motion.div
-                key="preparing"
-                className="flex w-full items-start gap-3 rounded border border-law-line bg-law-fill p-4"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-              >
-                <Spinner size="sm" className="mt-1" />
-                <p className="font-sans text-body-sm text-on-surface-variant">{t.mediationRoomPreparing}</p>
-              </motion.div>
-            ) : null}
-
-            {waitingForOpposite ? (
-              <motion.div
-                key="waiting"
-                className="flex w-full flex-col items-center gap-3 rounded border border-law-line bg-law-fill p-4"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-              >
-                <HandshakeIndicator />
-                <p className="font-sans text-body-sm text-on-surface-variant">{t.mediationHandshakeWaiting}</p>
-              </motion.div>
-            ) : null}
-
-            {oppositeReadyToStart ? (
-              <motion.div
-                key="opposite-ready"
-                className="flex w-full items-start gap-3 rounded-lg border border-success/30 bg-success/10 p-4"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              >
-                <span className="material-symbols-outlined mt-1 text-success">person_check</span>
-                <p className="font-sans text-body-sm text-on-surface-variant">{t.mediationHandshakeOppositeReady}</p>
-              </motion.div>
-            ) : null}
-
-            {handshakeStarting ? (
-              <motion.div
-                key="starting"
-                className="flex w-full items-start gap-3 rounded border border-law-line bg-law-fill p-4"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-              >
-                <Spinner size="sm" className="mt-1" />
-                <p className="font-sans text-body-sm text-on-surface-variant">{t.mediationHandshakeStarting}</p>
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
-
           <motion.button
             className={`btn-primary flex w-full items-center justify-center gap-2 px-8 py-4 font-display text-label-md disabled:cursor-not-allowed disabled:opacity-50 md:w-auto ${
               lobby.canStartMediation && !startDisabled ? "glow-ring" : ""

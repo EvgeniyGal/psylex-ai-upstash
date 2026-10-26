@@ -5,6 +5,7 @@ import { ConditionalSiteFooter } from "@/components/conditional-site-footer";
 import { NavigationProgress } from "@/components/navigation-progress";
 import { buildPageMetadata, getSiteUrl, siteConfig } from "@/lib/seo";
 import "./globals.css";
+import { ModeAToastSpinner } from "@/components/ui/mode-a-toast-spinner";
 import { Toaster } from "sonner";
 
 const ibmPlexSans = IBM_Plex_Sans({
@@ -82,6 +83,9 @@ export default function RootLayout({
           closeButton
           duration={3500}
           expand
+          icons={{
+            loading: <ModeAToastSpinner />,
+          }}
           offset={{ top: 174, left: 20 }}
           position="top-left"
           richColors

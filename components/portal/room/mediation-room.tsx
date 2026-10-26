@@ -24,7 +24,6 @@ import {
   MediationChatComposer,
   MediationChatStatusBar,
 } from "@/components/portal/room/mediation-chat";
-import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { useLocale } from "@/components/locale-provider";
 import { useModeARoomWaitToasts } from "@/hooks/use-mode-a-wait-toasts";
 import { useDeadlineRefresh, useRoomRealtime } from "@/hooks/use-room-realtime";
@@ -247,6 +246,7 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
     state.room.selfAccepted &&
     !state.room.otherAccepted
   );
+  const otherReadyForOptions = !!(showReadyButton && state.room.otherReady);
 
   useModeARoomWaitToasts({
     phase: state.room.phase,
@@ -260,6 +260,7 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
     isCompromiseGenerating,
     waitingOtherReady,
     waitingOtherAccept,
+    otherReadyForOptions,
     enabled: !review && !isSessionComplete,
   });
 
@@ -381,7 +382,6 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
           header={chatStatusHeader}
           labels={chatLabels}
           messages={state.messages}
-          subheader={chatStatusSubheader}
         />
         {reviewOptionsPanel}
         {reviewCompromisePanel}
@@ -441,22 +441,6 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
             ) : null}
 
             <AnimatePresence>
-              {isAwaitingAgent ? (
-                <motion.div
-                  key="awaiting-agent"
-                  className="flex items-start gap-3 rounded-xl border border-law-line bg-law-fill/40 p-4"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <TypingIndicator />
-                  <p className="text-body-sm text-on-surface-variant">{t.mediationAwaitingAgent}</p>
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
-
-            <AnimatePresence>
               {showReadyButton ? (
                 <motion.div
                   key="ready-button"
@@ -476,29 +460,6 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
                   >
                     {state.room.selfReady ? t.mediationReadyConfirmed : t.mediationReadyForOptions}
                   </motion.button>
-                  {state.room.selfReady && state.room.otherReady ? (
-                    <motion.span
-                      className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-3 py-1.5 text-body-sm font-semibold text-success"
-                      initial={{ opacity: 0, scale: 0.85 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ type: "spring", stiffness: 350, damping: 18 }}
-                    >
-                      <span className="material-symbols-outlined text-base">check_circle</span>
-                      {t.mediationOtherReady}
-                    </motion.span>
-                  ) : state.room.selfReady ? null : state.room.otherReady ? (
-                    <motion.span
-                      className="inline-flex items-center gap-1.5 text-body-sm font-semibold text-party-a"
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                    >
-                      <span className="material-symbols-outlined text-base">check_circle</span>
-                      {t.mediationOtherReady}
-                    </motion.span>
-                  ) : (
-                    <span className="text-body-sm text-on-surface-variant">{t.mediationReadyForOptionsHint}</span>
-                  )}
                 </motion.div>
               ) : null}
             </AnimatePresence>
@@ -540,12 +501,6 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
                     partyBVoteOptionId={state.room.partyBVoteOptionId ?? null}
                     pending
                   />
-                  <div className="flex items-center gap-3 rounded-xl border border-med-line bg-med-fill/25 p-4">
-                    <TypingIndicator />
-                    <p className="text-body-sm font-medium text-on-surface-variant">
-                      {t.mediationCompromiseGenerating}
-                    </p>
-                  </div>
                 </motion.div>
               ) : null}
             </AnimatePresence>
