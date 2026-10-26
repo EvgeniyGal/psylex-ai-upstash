@@ -184,6 +184,11 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
     void refresh();
   }, {
     watchUsers: false,
+    // Vercel SSE can stall while still "connected"; polls also resume after() LLM work.
+    pollIntervalMs:
+      generatingCandidates || generatingOptions || generatingCompromise || generatingAgreement
+        ? 2_500
+        : 4_000,
   });
 
   // Re-resolve bilingual fields when UI locale changes.

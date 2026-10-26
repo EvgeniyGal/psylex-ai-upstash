@@ -131,6 +131,8 @@ export async function startMediatorSessionNow(roomId: string) {
 }
 
 export async function fetchMediatorSessionState(roomId: string, viewerLocale?: Locale) {
+  const { connection } = await import("next/server");
+  await connection();
   const userId = await requireMediator();
   return getMediatorConsoleSessionState(userId, roomId, viewerLocale);
 }

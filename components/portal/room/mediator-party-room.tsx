@@ -61,16 +61,17 @@ export function MediatorPartyRoom({
   const isSessionComplete = phase === "completed";
   const isTreatyView = isSessionComplete && !review;
   const resultsSummary = state.resultsSummary;
+  const awaitingCompromisePublish = !!state.room.awaitingCompromisePublish;
+  const awaitingMediatorPublish = !!state.room.awaitingMediatorPublish;
 
   useRoomRealtime(state.room.id, () => {
     if (!review && !isSessionComplete) void refresh();
   }, {
     enabled: !review && !isSessionComplete,
     watchUsers: false,
+    // Safety net: Vercel SSE often misses after()-emitted room.change events.
+    pollIntervalMs: awaitingCompromisePublish || awaitingMediatorPublish ? 2_500 : 4_000,
   });
-
-  const awaitingCompromisePublish = !!state.room.awaitingCompromisePublish;
-  const awaitingMediatorPublish = !!state.room.awaitingMediatorPublish;
 
   const flowStep = resolveRoomFlowStep(phase, review);
 

@@ -85,6 +85,7 @@ export function MediatorSessionLobby({
   }, {
     watchUsers: true,
     partyUserIds,
+    pollIntervalMs: 5_000,
   });
 
   const { msUntilStart, msUntilStartWindow } = useScheduledSessionClock(

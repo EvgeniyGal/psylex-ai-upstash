@@ -72,6 +72,8 @@ export async function clickMediatorPartyStartMediation() {
 }
 
 export async function fetchMediatorPartyRoomState() {
+  const { connection } = await import("next/server");
+  await connection();
   const userId = await requirePartyUserId();
   return getMediatorSessionRoomState(userId);
 }

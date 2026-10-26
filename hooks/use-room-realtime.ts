@@ -5,7 +5,10 @@ import { useRealtime } from "@/lib/realtime-client";
 import { roomChannel, userChannel } from "@/lib/realtime/keys";
 
 const DEBOUNCE_MS = 150;
-const DEFAULT_FALLBACK_POLL_MS = 15_000;
+/** When SSE reports connected but events stall (common on Vercel), still refresh. */
+const CONNECTED_SAFETY_POLL_MS = 8_000;
+/** Faster poll while SSE is down / reconnecting. */
+const DISCONNECTED_POLL_MS = 4_000;
 
 export type RoomRealtimeOptions = {
   /** Kept for call-site compatibility; party readiness uses room.change (notifyRoom). */
@@ -14,8 +17,9 @@ export type RoomRealtimeOptions = {
   partyUserIds?: string[];
   enabled?: boolean;
   /**
-   * Always poll in addition to realtime (useful for readiness checklists when SSE is quiet).
-   * Pass `false` to disable all polling; omit for fallback-only when disconnected/connecting.
+   * Always poll in addition to realtime.
+   * Pass a number for a custom interval; omit for connected safety / disconnected fallback;
+   * pass `false` to disable all polling.
    */
   pollIntervalMs?: number | false;
 };
@@ -66,17 +70,17 @@ export function useRoomRealtime(
       status === "disconnected" ||
       status === "error" ||
       status === "connecting";
-    const alwaysPoll =
-      typeof pollIntervalMs === "number" && pollIntervalMs > 0;
     const interval =
-      alwaysPoll
-        ? pollIntervalMs
-        : needsFallback
-          ? DEFAULT_FALLBACK_POLL_MS
-          : null;
+      pollIntervalMs === false
+        ? null
+        : typeof pollIntervalMs === "number" && pollIntervalMs > 0
+          ? pollIntervalMs
+          : needsFallback
+            ? DISCONNECTED_POLL_MS
+            : CONNECTED_SAFETY_POLL_MS;
 
     let pollCleanup: (() => void) | null = null;
-    if (interval !== null && pollIntervalMs !== false) {
+    if (interval !== null) {
       pollCleanup = openPolling(schedule, interval);
     }
 
@@ -160,17 +164,17 @@ export function useUserRealtime(
       status === "disconnected" ||
       status === "error" ||
       status === "connecting";
-    const alwaysPoll =
-      typeof pollIntervalMs === "number" && pollIntervalMs > 0;
     const interval =
-      alwaysPoll
-        ? pollIntervalMs
-        : needsFallback
-          ? DEFAULT_FALLBACK_POLL_MS
-          : null;
+      pollIntervalMs === false
+        ? null
+        : typeof pollIntervalMs === "number" && pollIntervalMs > 0
+          ? pollIntervalMs
+          : needsFallback
+            ? DISCONNECTED_POLL_MS
+            : CONNECTED_SAFETY_POLL_MS;
 
     let pollCleanup: (() => void) | null = null;
-    if (interval !== null && pollIntervalMs !== false) {
+    if (interval !== null) {
       pollCleanup = openPolling(schedule, interval);
     }
 

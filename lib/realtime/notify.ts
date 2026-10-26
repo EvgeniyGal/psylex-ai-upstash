@@ -98,13 +98,17 @@ async function flush(batch: NotifyBatch) {
     pipeline.del(roomRowCacheKey(roomId), roomMessagesCacheKey(roomId));
   }
 
-  await Promise.all([
-    ...roomIds.map((roomId) =>
-      realtime.channel(roomChannel(roomId)).emit("room.change", { t }),
-    ),
-    ...userIds.map((userId) =>
-      realtime.channel(userChannel(userId)).emit("user.change", { t }),
-    ),
-    roomIds.length > 0 ? pipeline.exec() : Promise.resolve(),
-  ]);
+  try {
+    await Promise.all([
+      ...roomIds.map((roomId) =>
+        realtime.channel(roomChannel(roomId)).emit("room.change", { t }),
+      ),
+      ...userIds.map((userId) =>
+        realtime.channel(userChannel(userId)).emit("user.change", { t }),
+      ),
+      roomIds.length > 0 ? pipeline.exec() : Promise.resolve(),
+    ]);
+  } catch (error) {
+    console.warn("[realtime] flush failed", { roomIds, userIds }, error);
+  }
 }
