@@ -72,14 +72,19 @@ export default function RootLayout({
             <ConditionalSiteFooter />
           </div>
         </AppProviders>
-        {/* Mode A session timer — top-left, above wait/status stack. */}
+        {/* Party attention session timer — top-left, above wait/status stack. */}
         <Toaster
           id="session-timer"
           offset={{ top: 102, left: 20 }}
           position="top-left"
           visibleToasts={1}
+          toastOptions={{
+            classNames: {
+              toast: "!w-auto max-w-[200px]",
+            },
+          }}
         />
-        {/* Mode A wait / handshake / action toasts. */}
+        {/* Party attention wait / ready toasts (Mode A + Mode B parties). */}
         <Toaster
           id="mode-a"
           closeButton
@@ -94,7 +99,8 @@ export default function RootLayout({
           visibleToasts={5}
           toastOptions={{
             classNames: {
-              toast: "border shadow-lg",
+              toast: "border shadow-lg !w-[220px] max-w-[220px]",
+              title: "text-[12px] leading-snug",
             },
           }}
         />

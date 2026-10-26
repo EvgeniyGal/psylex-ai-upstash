@@ -442,6 +442,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
           durationMinutes={state.room.mediationDurationMinutes}
           sessionComplete={sessionEnded}
           startedAt={state.room.mediationStartedAt}
+          surface="mediator-dock"
           onEnded={() => {
             void refresh();
           }}

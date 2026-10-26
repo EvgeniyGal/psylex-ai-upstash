@@ -58,6 +58,7 @@ export function MediatorSessionLobby({
     mediatorClicked: handshake.mediatorClicked,
     canClickStart: handshake.canClickStart,
     enabled: handshake.status !== "started",
+    surface: "mediator-dock",
   });
 
   const applyHandshake = useCallback(

@@ -3,9 +3,11 @@
 import { useEffect } from "react";
 import { useLocale } from "@/components/locale-provider";
 import {
+  type AttentionSurface,
   syncAttentionReadyPersistent,
   syncAttentionWait,
 } from "@/hooks/attention-toasts";
+import { clearMediatorAttention } from "@/lib/mediator-attention-dock";
 import type { MediationPhase } from "@/lib/mediation/types";
 import type { MediatorHandshakeStatus } from "@/lib/mediator-session/handshake";
 
@@ -28,7 +30,6 @@ const IDS = {
   agreementReady: "mode-b-agreement-ready",
   otherAccept: "mode-b-other-accept",
   mediatorComplete: "mode-b-mediator-complete",
-  // Mediator console
   waitPartyA: "mode-b-med-wait-a",
   waitPartyB: "mode-b-med-wait-b",
   readyNext: "mode-b-med-ready-next",
@@ -55,6 +56,7 @@ export function useModeBLobbyWaitToasts(params: {
   canClickStart: boolean;
   pipelineRunning?: boolean;
   enabled?: boolean;
+  surface?: AttentionSurface;
 }) {
   const { portal: t } = useLocale();
   const {
@@ -66,6 +68,7 @@ export function useModeBLobbyWaitToasts(params: {
     canClickStart,
     pipelineRunning = false,
     enabled = true,
+    surface = "toast",
   } = params;
 
   const waitingSchedule = status === "not_scheduled";
@@ -85,13 +88,8 @@ export function useModeBLobbyWaitToasts(params: {
     (status === "waiting" && partyAClicked && partyBClicked && mediatorClicked);
 
   useEffect(() => {
-    syncAttentionWait(
-      enabled,
-      pipelineRunning,
-      IDS.pipeline,
-      t.modeAToastPipelineWorking,
-    );
-  }, [enabled, pipelineRunning, t.modeAToastPipelineWorking]);
+    syncAttentionWait(enabled, pipelineRunning, IDS.pipeline, t.modeAToastPipelineWorking, surface);
+  }, [enabled, pipelineRunning, t.modeAToastPipelineWorking, surface]);
 
   useEffect(() => {
     syncAttentionWait(
@@ -99,8 +97,9 @@ export function useModeBLobbyWaitToasts(params: {
       waitingSchedule && !pipelineRunning,
       IDS.waitingSchedule,
       t.modeBToastWaitingSchedule,
+      surface,
     );
-  }, [enabled, waitingSchedule, pipelineRunning, t.modeBToastWaitingSchedule]);
+  }, [enabled, waitingSchedule, pipelineRunning, t.modeBToastWaitingSchedule, surface]);
 
   useEffect(() => {
     syncAttentionReadyPersistent(
@@ -108,6 +107,7 @@ export function useModeBLobbyWaitToasts(params: {
       startWindowOpen && !pipelineRunning && !waitingSchedule,
       IDS.startWindow,
       t.modeBNotifyStartWindow,
+      surface,
     );
   }, [
     enabled,
@@ -115,6 +115,7 @@ export function useModeBLobbyWaitToasts(params: {
     pipelineRunning,
     waitingSchedule,
     t.modeBNotifyStartWindow,
+    surface,
   ]);
 
   useEffect(() => {
@@ -123,8 +124,9 @@ export function useModeBLobbyWaitToasts(params: {
       waitingOthers && !sessionStarting,
       IDS.handshakeWaiting,
       t.mediationHandshakeWaiting,
+      surface,
     );
-  }, [enabled, waitingOthers, sessionStarting, t.mediationHandshakeWaiting]);
+  }, [enabled, waitingOthers, sessionStarting, t.mediationHandshakeWaiting, surface]);
 
   useEffect(() => {
     syncAttentionReadyPersistent(
@@ -132,8 +134,9 @@ export function useModeBLobbyWaitToasts(params: {
       peerReadyNudge && !waitingOthers,
       IDS.peerReady,
       t.modeBNotifyPeerReady,
+      surface,
     );
-  }, [enabled, peerReadyNudge, waitingOthers, t.modeBNotifyPeerReady]);
+  }, [enabled, peerReadyNudge, waitingOthers, t.modeBNotifyPeerReady, surface]);
 
   useEffect(() => {
     syncAttentionWait(
@@ -141,8 +144,14 @@ export function useModeBLobbyWaitToasts(params: {
       sessionStarting,
       IDS.sessionStarting,
       t.modeBToastSessionStarting,
+      surface,
     );
-  }, [enabled, sessionStarting, t.modeBToastSessionStarting]);
+  }, [enabled, sessionStarting, t.modeBToastSessionStarting, surface]);
+
+  useEffect(() => {
+    if (surface !== "mediator-dock") return;
+    return () => clearMediatorAttention();
+  }, [surface]);
 }
 
 export function useModeBPartyRoomWaitToasts(params: {
@@ -347,6 +356,8 @@ export function useModeBMediatorRoomWaitToasts(params: {
     enabled = true,
   } = params;
 
+  const surface: AttentionSurface = "mediator-dock";
+
   const dialogueLike = phase === "dialogue" || phase === "opening";
   const waitingVotes =
     phase === "voting" && hasOptions && (!partyAVote || !partyBVote);
@@ -382,8 +393,9 @@ export function useModeBMediatorRoomWaitToasts(params: {
       partyAPendingReply,
       IDS.waitPartyA,
       t.modeBToastMediatorWaitingPartyA,
+      surface,
     );
-  }, [enabled, partyAPendingReply, t.modeBToastMediatorWaitingPartyA]);
+  }, [enabled, partyAPendingReply, t.modeBToastMediatorWaitingPartyA, surface]);
 
   useEffect(() => {
     syncAttentionWait(
@@ -391,8 +403,9 @@ export function useModeBMediatorRoomWaitToasts(params: {
       partyBPendingReply,
       IDS.waitPartyB,
       t.modeBToastMediatorWaitingPartyB,
+      surface,
     );
-  }, [enabled, partyBPendingReply, t.modeBToastMediatorWaitingPartyB]);
+  }, [enabled, partyBPendingReply, t.modeBToastMediatorWaitingPartyB, surface]);
 
   useEffect(() => {
     syncAttentionReadyPersistent(
@@ -400,8 +413,9 @@ export function useModeBMediatorRoomWaitToasts(params: {
       readyNext && !hasQuestionCandidates,
       IDS.readyNext,
       t.modeBToastMediatorReadyNext,
+      surface,
     );
-  }, [enabled, readyNext, hasQuestionCandidates, t.modeBToastMediatorReadyNext]);
+  }, [enabled, readyNext, hasQuestionCandidates, t.modeBToastMediatorReadyNext, surface]);
 
   useEffect(() => {
     syncAttentionWait(
@@ -409,8 +423,9 @@ export function useModeBMediatorRoomWaitToasts(params: {
       generatingCandidates,
       IDS.genCandidates,
       t.modeBToastGeneratingCandidates,
+      surface,
     );
-  }, [enabled, generatingCandidates, t.modeBToastGeneratingCandidates]);
+  }, [enabled, generatingCandidates, t.modeBToastGeneratingCandidates, surface]);
 
   useEffect(() => {
     syncAttentionReadyPersistent(
@@ -418,6 +433,7 @@ export function useModeBMediatorRoomWaitToasts(params: {
       !generatingCandidates && hasQuestionCandidates && dialogueLike,
       IDS.candidatesReady,
       t.modeBToastCandidatesReady,
+      surface,
     );
   }, [
     enabled,
@@ -425,6 +441,7 @@ export function useModeBMediatorRoomWaitToasts(params: {
     hasQuestionCandidates,
     dialogueLike,
     t.modeBToastCandidatesReady,
+    surface,
   ]);
 
   useEffect(() => {
@@ -433,17 +450,13 @@ export function useModeBMediatorRoomWaitToasts(params: {
       generatingOptions || phase === "generating_options",
       IDS.genOptions,
       t.modeAToastGeneratingOptions,
+      surface,
     );
-  }, [enabled, generatingOptions, phase, t.modeAToastGeneratingOptions]);
+  }, [enabled, generatingOptions, phase, t.modeAToastGeneratingOptions, surface]);
 
   useEffect(() => {
-    syncAttentionWait(
-      enabled,
-      waitingVotes,
-      IDS.waitVotes,
-      t.modeBToastWaitingVotes,
-    );
-  }, [enabled, waitingVotes, t.modeBToastWaitingVotes]);
+    syncAttentionWait(enabled, waitingVotes, IDS.waitVotes, t.modeBToastWaitingVotes, surface);
+  }, [enabled, waitingVotes, t.modeBToastWaitingVotes, surface]);
 
   useEffect(() => {
     syncAttentionWait(
@@ -451,8 +464,9 @@ export function useModeBMediatorRoomWaitToasts(params: {
       compromiseGen,
       IDS.genCompromise,
       t.modeAToastGeneratingCompromise,
+      surface,
     );
-  }, [enabled, compromiseGen, t.modeAToastGeneratingCompromise]);
+  }, [enabled, compromiseGen, t.modeAToastGeneratingCompromise, surface]);
 
   useEffect(() => {
     syncAttentionReadyPersistent(
@@ -460,8 +474,9 @@ export function useModeBMediatorRoomWaitToasts(params: {
       compromiseDraftReady,
       IDS.compromiseDraftReady,
       t.modeBToastCompromiseDraftReady,
+      surface,
     );
-  }, [enabled, compromiseDraftReady, t.modeBToastCompromiseDraftReady]);
+  }, [enabled, compromiseDraftReady, t.modeBToastCompromiseDraftReady, surface]);
 
   useEffect(() => {
     syncAttentionWait(
@@ -469,8 +484,9 @@ export function useModeBMediatorRoomWaitToasts(params: {
       waitingCompromiseVotes,
       IDS.waitCompromiseVotes,
       t.modeBToastWaitingCompromiseVotes,
+      surface,
     );
-  }, [enabled, waitingCompromiseVotes, t.modeBToastWaitingCompromiseVotes]);
+  }, [enabled, waitingCompromiseVotes, t.modeBToastWaitingCompromiseVotes, surface]);
 
   useEffect(() => {
     syncAttentionWait(
@@ -478,8 +494,9 @@ export function useModeBMediatorRoomWaitToasts(params: {
       agreementGen,
       IDS.genAgreement,
       t.modeAToastGeneratingAgreement,
+      surface,
     );
-  }, [enabled, agreementGen, t.modeAToastGeneratingAgreement]);
+  }, [enabled, agreementGen, t.modeAToastGeneratingAgreement, surface]);
 
   useEffect(() => {
     syncAttentionReadyPersistent(
@@ -487,8 +504,9 @@ export function useModeBMediatorRoomWaitToasts(params: {
       agreementDraftReady,
       IDS.agreementDraftReady,
       t.modeBToastAgreementDraftReady,
+      surface,
     );
-  }, [enabled, agreementDraftReady, t.modeBToastAgreementDraftReady]);
+  }, [enabled, agreementDraftReady, t.modeBToastAgreementDraftReady, surface]);
 
   useEffect(() => {
     syncAttentionWait(
@@ -496,8 +514,9 @@ export function useModeBMediatorRoomWaitToasts(params: {
       waitingAccepts,
       IDS.waitAccepts,
       t.mediationWaitingOtherAccept,
+      surface,
     );
-  }, [enabled, waitingAccepts, t.mediationWaitingOtherAccept]);
+  }, [enabled, waitingAccepts, t.mediationWaitingOtherAccept, surface]);
 
   useEffect(() => {
     syncAttentionReadyPersistent(
@@ -505,6 +524,11 @@ export function useModeBMediatorRoomWaitToasts(params: {
       bothAcceptedEnd,
       IDS.bothAcceptedEnd,
       t.modeBToastBothAcceptedEnd,
+      surface,
     );
-  }, [enabled, bothAcceptedEnd, t.modeBToastBothAcceptedEnd]);
+  }, [enabled, bothAcceptedEnd, t.modeBToastBothAcceptedEnd, surface]);
+
+  useEffect(() => {
+    return () => clearMediatorAttention();
+  }, []);
 }

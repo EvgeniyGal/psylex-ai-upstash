@@ -3,24 +3,38 @@
 import { createElement } from "react";
 import { toast } from "sonner";
 import { ModeAToastSpinner } from "@/components/ui/mode-a-toast-spinner";
+import {
+  removeMediatorAttention,
+  upsertMediatorAttention,
+} from "@/lib/mediator-attention-dock";
 
-/** Shared attention toaster (Mode A + Mode B) — top-left amber/green stack. */
+/** Shared attention toaster (Mode A + Mode B parties) — top-left amber/green stack. */
 export const ATTENTION_TOASTER = "mode-a";
 export const SESSION_TIMER_TOASTER = "session-timer";
 
+export type AttentionSurface = "toast" | "mediator-dock";
+
 /** Orange — AI working / waiting on other party / saving. */
 export const attentionWaitToastClassName =
-  "mode-a-toast-attention !bg-amber-100 !text-amber-950 !border-2 !border-amber-400 shadow-md [&_[data-icon]]:!text-amber-700";
+  "mode-a-toast-attention !bg-amber-100 !text-amber-950 !border-2 !border-amber-400 shadow-md [&_[data-icon]]:!text-amber-700 max-w-[220px]";
 
 /** Green — user must act (new question, vote, start, accept). */
 export const attentionReadyToastClassName =
-  "mode-a-toast-attention mode-a-toast-attention-ready !bg-emerald-100 !text-emerald-950 !border-2 !border-emerald-500 shadow-md [&_[data-icon]]:!text-emerald-700";
+  "mode-a-toast-attention mode-a-toast-attention-ready !bg-emerald-100 !text-emerald-950 !border-2 !border-emerald-500 shadow-md [&_[data-icon]]:!text-emerald-700 max-w-[220px]";
 
 function waitIcon() {
   return createElement(ModeAToastSpinner);
 }
 
-export function showAttentionWait(id: string, message: string) {
+export function showAttentionWait(
+  id: string,
+  message: string,
+  surface: AttentionSurface = "toast",
+) {
+  if (surface === "mediator-dock") {
+    upsertMediatorAttention({ id, kind: "wait", message });
+    return;
+  }
   toast.loading(message, {
     id,
     toasterId: ATTENTION_TOASTER,
@@ -30,11 +44,24 @@ export function showAttentionWait(id: string, message: string) {
   });
 }
 
-export function dismissAttentionToast(id: string) {
+export function dismissAttentionToast(id: string, surface: AttentionSurface = "toast") {
+  if (surface === "mediator-dock") {
+    removeMediatorAttention(id);
+    return;
+  }
   toast.dismiss(id);
 }
 
-export function showAttentionReady(id: string, message: string, persistent = false) {
+export function showAttentionReady(
+  id: string,
+  message: string,
+  persistent = false,
+  surface: AttentionSurface = "toast",
+) {
+  if (surface === "mediator-dock") {
+    upsertMediatorAttention({ id, kind: "ready", message });
+    return;
+  }
   toast.success(message, {
     id,
     toasterId: ATTENTION_TOASTER,
@@ -48,13 +75,14 @@ export function syncAttentionWait(
   active: boolean,
   id: string,
   message: string,
+  surface: AttentionSurface = "toast",
 ) {
   if (!enabled) {
-    dismissAttentionToast(id);
+    dismissAttentionToast(id, surface);
     return;
   }
-  if (active) showAttentionWait(id, message);
-  else dismissAttentionToast(id);
+  if (active) showAttentionWait(id, message, surface);
+  else dismissAttentionToast(id, surface);
 }
 
 export function syncAttentionReadyPersistent(
@@ -62,13 +90,14 @@ export function syncAttentionReadyPersistent(
   active: boolean,
   id: string,
   message: string,
+  surface: AttentionSurface = "toast",
 ) {
   if (!enabled) {
-    dismissAttentionToast(id);
+    dismissAttentionToast(id, surface);
     return;
   }
-  if (active) showAttentionReady(id, message, true);
-  else dismissAttentionToast(id);
+  if (active) showAttentionReady(id, message, true, surface);
+  else dismissAttentionToast(id, surface);
 }
 
 /** @deprecated Prefer attention* names; kept for Mode A imports. */

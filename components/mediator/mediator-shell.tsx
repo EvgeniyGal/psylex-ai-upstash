@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useHelp } from "@/components/help/help-provider";
+import { MediatorAttentionDock } from "@/components/mediator/mediator-attention-dock";
 import { useLocale } from "@/components/locale-provider";
 import { StaffLocaleSwitcher } from "@/components/staff-locale-switcher";
 import { cn } from "@/lib/utils";
@@ -54,6 +55,7 @@ export function MediatorSidebar() {
       </nav>
 
       <div className="mt-auto space-y-3 px-4">
+        <MediatorAttentionDock />
         <button
           className="flex w-full items-center justify-center gap-2 rounded-full border border-hair px-4 py-3 text-ink-soft transition-colors hover:bg-paper hover:text-ink"
           onClick={openHelp}

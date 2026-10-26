@@ -3,8 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocale } from "@/components/locale-provider";
+import type { AttentionSurface } from "@/hooks/attention-toasts";
+import {
+  removeMediatorAttention,
+  upsertMediatorAttention,
+} from "@/lib/mediator-attention-dock";
 
 const SESSION_TIMER_TOAST_ID = "mode-a-session-timer";
+const MEDIATOR_TIMER_ID = "mode-b-session-timer";
 
 type MediationCountdownProps = {
   startedAt: string;
@@ -12,6 +18,8 @@ type MediationCountdownProps = {
   onEnded?: () => void;
   /** When true, stop ticking and show session-ended (mediation finished before timer). */
   sessionComplete?: boolean;
+  /** toast = party top-left; mediator-dock = sidebar above Help. */
+  surface?: AttentionSurface;
 };
 
 function formatRemaining(ms: number) {
@@ -31,15 +39,15 @@ function SessionTimerToast({
   ended?: boolean;
 }) {
   return (
-    <div className="mode-a-toast-attention mode-a-toast-attention-timer flex min-w-[280px] items-baseline gap-3 rounded-lg border-2 border-law-line bg-law-fill px-4 py-3 shadow-md">
-      <span className="font-display text-label-md uppercase tracking-wide text-on-surface-variant">
+    <div className="mode-a-toast-attention mode-a-toast-attention-timer flex w-[200px] max-w-[200px] flex-col gap-0.5 rounded-lg border-2 border-law-line bg-law-fill px-3 py-2 shadow-md">
+      <span className="font-display text-[10px] uppercase tracking-wide text-on-surface-variant">
         {label}
       </span>
       <span
         className={
           ended
-            ? "font-display text-xl font-semibold text-error"
-            : "font-display text-2xl font-semibold tabular-nums text-law"
+            ? "font-display text-lg font-semibold leading-tight text-error"
+            : "font-display text-xl font-semibold tabular-nums leading-tight text-law"
         }
       >
         {time}
@@ -53,13 +61,13 @@ export function MediationCountdown({
   durationMinutes,
   onEnded,
   sessionComplete = false,
+  surface = "toast",
 }: MediationCountdownProps) {
   const { portal: t } = useLocale();
   const endsAt = useMemo(
     () => new Date(startedAt).getTime() + durationMinutes * 60_000,
     [durationMinutes, startedAt],
   );
-  // Defer time display until after mount to avoid SSR/client Date.now() hydration mismatch.
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
   const endedNotified = useRef(false);
 
@@ -82,27 +90,38 @@ export function MediationCountdown({
 
   useEffect(() => {
     if (sessionComplete) {
-      toast.dismiss(SESSION_TIMER_TOAST_ID);
+      if (surface === "mediator-dock") removeMediatorAttention(MEDIATOR_TIMER_ID);
+      else toast.dismiss(SESSION_TIMER_TOAST_ID);
       return;
     }
 
     if (remainingMs === null) return;
 
+    const label = t.mediationCountdownLabel;
+    const time =
+      remainingMs <= 0 ? t.mediationSessionEnded : formatRemaining(remainingMs);
+
+    if (surface === "mediator-dock") {
+      upsertMediatorAttention({
+        id: MEDIATOR_TIMER_ID,
+        kind: "timer",
+        message: label,
+        detail: time,
+        ended: remainingMs <= 0,
+      });
+      return;
+    }
+
     const toastChrome =
-      "!bg-transparent !border-0 !shadow-none !p-0 w-auto [&>[data-icon]]:!hidden [&_[data-icon]]:!hidden [&_.sonner-loading-wrapper]:!hidden";
+      "!bg-transparent !border-0 !shadow-none !p-0 w-auto max-w-[200px] [&>[data-icon]]:!hidden [&_[data-icon]]:!hidden [&_.sonner-loading-wrapper]:!hidden";
 
     const body =
       remainingMs <= 0 ? (
-        <SessionTimerToast ended label={t.mediationCountdownLabel} time={t.mediationSessionEnded} />
+        <SessionTimerToast ended label={label} time={t.mediationSessionEnded} />
       ) : (
-        <SessionTimerToast
-          label={t.mediationCountdownLabel}
-          time={formatRemaining(remainingMs)}
-        />
+        <SessionTimerToast label={label} time={formatRemaining(remainingMs)} />
       );
 
-    // Prefer default toast + null icon so Sonner never attaches the loading spinner.
-    // Dedicated toaster keeps the session clock above wait/status toasts.
     toast(body, {
       id: SESSION_TIMER_TOAST_ID,
       toasterId: "session-timer",
@@ -111,13 +130,20 @@ export function MediationCountdown({
       className: toastChrome,
       unstyled: true,
     });
-  }, [remainingMs, sessionComplete, t.mediationCountdownLabel, t.mediationSessionEnded]);
+  }, [
+    remainingMs,
+    sessionComplete,
+    surface,
+    t.mediationCountdownLabel,
+    t.mediationSessionEnded,
+  ]);
 
   useEffect(() => {
     return () => {
-      toast.dismiss(SESSION_TIMER_TOAST_ID);
+      if (surface === "mediator-dock") removeMediatorAttention(MEDIATOR_TIMER_ID);
+      else toast.dismiss(SESSION_TIMER_TOAST_ID);
     };
-  }, []);
+  }, [surface]);
 
   return null;
 }
