@@ -234,8 +234,10 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
     state.room.partyAVoteOptionId !== state.room.partyBVoteOptionId;
 
   const showOptionsPanel = state.options.length > 0 && (review || votesDiffer || state.room.phase === "voting");
-  const showCompromisePanel = votesDiffer && !!state.compromise;
-  const isCompromiseGenerating = votesDiffer && !state.compromise && !review;
+  const showCompromisePanel =
+    (votesDiffer || state.room.phase === "voting_discrepancy") && !!state.compromise;
+  const isCompromiseGenerating =
+    state.room.phase === "voting_discrepancy" && !state.compromise && !review;
 
   const waitingOtherReady = !!(
     showReadyButton &&

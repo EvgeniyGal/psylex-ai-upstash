@@ -591,6 +591,7 @@ async function ensureCompromiseOption(room: RoomRow) {
       .update(rooms)
       .set({ compromiseOption })
       .where(eq(rooms.id, room.id));
+    notifyRoom(room.id);
   } finally {
     mediationAgentWork.delete(room.id);
   }
@@ -616,6 +617,7 @@ export async function tickMediationTimers(roomId: string) {
   if (!room?.mediationStartedAt || room.mediationPhase === "completed") return room;
   if (isMediatorFacilitatedRoom(room)) return room;
 
+  // Never await LLM on this read path — schedule only so both parties see preparing UX.
   if (
     isSessionExpired(room) &&
     room.mediationPhase &&
@@ -624,23 +626,35 @@ export async function tickMediationTimers(roomId: string) {
     if (room.mediationPhase !== "generating_options") {
       await transitionToGeneratingOptions(roomId, "timer_expired");
     } else {
-      await ensureOptionsPublished(roomId);
+      scheduleMediationWork(`ensureOptionsPublished:${roomId}`, () =>
+        ensureOptionsPublished(roomId),
+      );
     }
     return loadRoom(roomId);
   }
 
   if (room.mediationPhase === "generating_options") {
-    await ensureOptionsPublished(roomId);
+    scheduleMediationWork(`ensureOptionsPublished:${roomId}`, () =>
+      ensureOptionsPublished(roomId),
+    );
     return loadRoom(roomId);
   }
 
   if (room.mediationPhase === "voting_discrepancy") {
-    await ensureCompromiseOption(room);
+    if (!room.compromiseOption) {
+      scheduleMediationWork(`ensureCompromiseOption:${roomId}`, () =>
+        ensureCompromiseOption(room),
+      );
+    }
     return loadRoom(roomId);
   }
 
   if (room.mediationPhase === "agreement") {
-    await ensureDraftAgreement(room);
+    if (!room.draftAgreement && room.selectedOptionId) {
+      scheduleMediationWork(`ensureDraftAgreement:${roomId}`, () =>
+        ensureDraftAgreement(room),
+      );
+    }
     return loadRoom(roomId);
   }
 
@@ -650,13 +664,18 @@ export async function tickMediationTimers(roomId: string) {
     room.mediationActiveParty &&
     !room.mediationTurnDeadlineAt
   ) {
-    await askDialogueQuestion(room, room.mediationActiveParty as PartyRole);
+    const addressee = room.mediationActiveParty as PartyRole;
+    scheduleMediationWork(`askDialogueQuestion:${roomId}:${addressee}`, () =>
+      askDialogueQuestion(room, addressee),
+    );
     return loadRoom(roomId);
   }
 
   // Reply saved and turn cleared, but continuation never claimed (after() died before askDialogueQuestion).
   if (room.mediationPhase === "dialogue" && !room.mediationActiveParty) {
-    await resumeStuckDialogueContinuation(room);
+    scheduleMediationWork(`resumeStuckDialogueContinuation:${roomId}`, () =>
+      resumeStuckDialogueContinuation(room),
+    );
     return loadRoom(roomId);
   }
 
