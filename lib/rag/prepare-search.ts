@@ -1,9 +1,8 @@
 import { z } from "zod";
 import type { Locale } from "@/lib/i18n";
 import {
-  chatTemperature,
+  createChatCompletion,
   getOpenAIChatModel,
-  getOpenAIClient,
   parseJsonFromModelResponse,
 } from "@/lib/pipeline/openai-client";
 import { isLegalDocumentCategory, LEGAL_DOCUMENT_CATEGORIES } from "@/lib/rag/categories";
@@ -99,12 +98,11 @@ export async function prepareLegalSearch(params: PrepareLegalSearchParams): Prom
   if (!situation) return fallbackPlan(situation);
 
   try {
-    const client = await getOpenAIClient();
-    const model = await getOpenAIChatModel();
-    const completion = await client.chat.completions.create({
+    const model = await getOpenAIChatModel("ragChat");
+    const completion = await createChatCompletion({
       model,
-      ...chatTemperature(model, 0),
-      response_format: { type: "json_object" },
+      temperature: 0,
+      responseFormat: { type: "json_object" },
       messages: [
         { role: "system", content: PLANNER_SYSTEM_PROMPT },
         {

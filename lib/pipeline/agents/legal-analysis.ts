@@ -23,9 +23,8 @@ import {
   normalizeLocale,
 } from "@/lib/pipeline/locale";
 import {
-  chatTemperature,
+  createChatCompletion,
   getOpenAIChatModel,
-  getOpenAIClient,
   parseJsonFromModelResponse,
 } from "@/lib/pipeline/openai-client";
 import { notifyRoom } from "@/lib/realtime/notify";
@@ -71,13 +70,12 @@ async function generateLegalAnalysisForLocale(params: {
 
   const basePrompt = await loadAgentPrompt("legal_analysis", params.draftPrompt);
   const systemPrompt = `${basePrompt}\n\n${LEGAL_ANALYSIS_STRICT_RULES}`;
-  const client = await getOpenAIClient();
-  const model = await getOpenAIChatModel();
+  const model = await getOpenAIChatModel("pipeline");
 
-  const completion = await client.chat.completions.create({
+  const completion = await createChatCompletion({
     model,
-    ...chatTemperature(model, 0),
-    response_format: { type: "json_object" },
+    temperature: 0,
+    responseFormat: { type: "json_object" },
     messages: [
       { role: "system", content: systemPrompt },
       {

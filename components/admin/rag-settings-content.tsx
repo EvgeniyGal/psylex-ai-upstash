@@ -808,6 +808,7 @@ export function RagSettingsContent({ documents }: RagSettingsContentProps) {
           </div>
         ) : null}
       </ModalOverlay>
+
     </div>
   );
 }

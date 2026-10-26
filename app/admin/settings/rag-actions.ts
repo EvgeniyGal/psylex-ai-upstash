@@ -7,7 +7,9 @@ import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import { requireSessionUserId } from "@/lib/auth-session";
 import { db } from "@/lib/db";
-import { legalDocuments } from "@/drizzle/schema";
+import { legalDocuments, platformSettings } from "@/drizzle/schema";
+import { isOpenAIEmbeddingModel } from "@/lib/pipeline/openai-models";
+import { getPlatformSettings } from "@/lib/platform-settings";
 import { isLegalDocumentCategory } from "@/lib/rag/categories";
 import { getAllLegalDocuments } from "@/lib/rag/documents";
 import { validateUploadFile } from "@/lib/rag/extract";
@@ -170,6 +172,36 @@ export async function deleteDocument(documentId: string) {
 
   await db.delete(legalDocuments).where(eq(legalDocuments.id, documentId));
   revalidatePath("/admin/settings");
+}
+
+/**
+ * Switch embedding model and delete all RAG documents (chunks cascade).
+ * Required because stored vectors are incompatible across embedding models.
+ */
+export async function changeEmbeddingModel(modelId: string) {
+  await requireAdmin();
+
+  const nextModel = modelId.trim();
+  if (!isOpenAIEmbeddingModel(nextModel)) {
+    throw new Error("Unsupported embedding model.");
+  }
+
+  const settings = await getPlatformSettings();
+  if (settings.openaiEmbeddingModel === nextModel) {
+    return { changed: false as const };
+  }
+
+  await db.delete(legalDocuments);
+  await db
+    .update(platformSettings)
+    .set({
+      openaiEmbeddingModel: nextModel,
+      updatedAt: new Date(),
+    })
+    .where(eq(platformSettings.id, "default"));
+
+  revalidatePath("/admin/settings");
+  return { changed: true as const };
 }
 
 export async function reprocessDocument(documentId: string) {

@@ -5,11 +5,7 @@ import {
   SUPPORTED_MESSAGE_LOCALES,
 } from "@/lib/mediation/detect-locale";
 import { normalizeLocale } from "@/lib/pipeline/locale";
-import {
-  chatTemperature,
-  getOpenAIChatModel,
-  getOpenAIClient,
-} from "@/lib/pipeline/openai-client";
+import { createChatCompletion, getOpenAIChatModel } from "@/lib/pipeline/openai-client";
 
 export type MessageTranslations = Partial<Record<Locale, string>>;
 
@@ -29,11 +25,10 @@ export async function translateText(params: {
   const trimmed = params.text.trim();
   if (!trimmed) return params.text;
 
-  const client = await getOpenAIClient();
-  const model = await getOpenAIChatModel();
-  const completion = await client.chat.completions.create({
+  const model = await getOpenAIChatModel("fast");
+  const completion = await createChatCompletion({
     model,
-    ...chatTemperature(model, 0),
+    temperature: 0,
     messages: [
       {
         role: "system",

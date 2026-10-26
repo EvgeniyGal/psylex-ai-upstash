@@ -263,7 +263,15 @@ export const magicTokensRelations = relations(magicTokens, ({ one }) => ({
 export const platformSettings = pgTable("platform_settings", {
   id: text("id").primaryKey().default("default"),
   openaiApiKey: text("openai_api_key").notNull().default(""),
+  /** Fallback when a per-slot model is empty. */
   openaiModel: text("openai_model").notNull().default("gpt-4o-mini"),
+  openaiModelDialogue: text("openai_model_dialogue").notNull().default(""),
+  openaiModelArtifacts: text("openai_model_artifacts").notNull().default(""),
+  openaiModelFast: text("openai_model_fast").notNull().default(""),
+  openaiModelPipeline: text("openai_model_pipeline").notNull().default(""),
+  openaiModelRagChat: text("openai_model_rag_chat").notNull().default(""),
+  openaiModelHelp: text("openai_model_help").notNull().default(""),
+  openaiEmbeddingModel: text("openai_embedding_model").notNull().default("text-embedding-3-small"),
   airtableApiKey: text("airtable_api_key").notNull().default(""),
   testPersonalityTypeUrl: text("test_personality_type_url").notNull().default(""),
   testFaceFearUrl: text("test_face_fear_url").notNull().default(""),

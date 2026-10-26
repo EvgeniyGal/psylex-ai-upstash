@@ -17,13 +17,22 @@ import type { AgentKey } from "@/lib/pipeline/agent-keys";
 import type { HelpDocument } from "@/lib/help/types";
 import {
   FALLBACK_OPENAI_CHAT_MODEL,
+  OPENAI_CHAT_MODEL_SLOTS,
   RECOMMENDED_OPENAI_CHAT_MODEL,
+  type OpenAIModelSlot,
 } from "@/lib/pipeline/openai-models";
 
 export type PlatformSettingsRow = {
   id: string;
   openaiApiKey: string;
   openaiModel: string;
+  openaiModelDialogue: string;
+  openaiModelArtifacts: string;
+  openaiModelFast: string;
+  openaiModelPipeline: string;
+  openaiModelRagChat: string;
+  openaiModelHelp: string;
+  openaiEmbeddingModel: string;
   airtableApiKey: string;
   testPersonalityTypeUrl: string;
   testFaceFearUrl: string;
@@ -40,6 +49,20 @@ const secretInputClass = `${inputClass} pr-12`;
 const tabs = ["credentials", "tests", "prompts", "rag", "help"] as const;
 type SettingsTab = (typeof tabs)[number];
 
+const SLOT_FORM_NAMES: Record<OpenAIModelSlot, keyof PlatformSettingsRow> = {
+  dialogue: "openaiModelDialogue",
+  artifacts: "openaiModelArtifacts",
+  fast: "openaiModelFast",
+  pipeline: "openaiModelPipeline",
+  ragChat: "openaiModelRagChat",
+  help: "openaiModelHelp",
+};
+
+function resolveSlotInitial(settings: PlatformSettingsRow, slot: OpenAIModelSlot) {
+  const slotValue = String(settings[SLOT_FORM_NAMES[slot]] ?? "").trim();
+  return slotValue || settings.openaiModel || FALLBACK_OPENAI_CHAT_MODEL;
+}
+
 type SettingsContentProps = {
   settings: PlatformSettingsRow;
   documents: LegalDocumentRow[];
@@ -52,27 +75,82 @@ export function SettingsContent({ settings, documents, prompts, helpDocuments }:
   const [activeTab, setActiveTab] = useState<SettingsTab>("credentials");
   const [showOpenaiKey, setShowOpenaiKey] = useState(false);
   const [showAirtableKey, setShowAirtableKey] = useState(false);
-  const [openaiModel, setOpenaiModel] = useState(
-    settings.openaiModel || FALLBACK_OPENAI_CHAT_MODEL,
+  const [slotModels, setSlotModels] = useState<Record<OpenAIModelSlot, string>>(() =>
+    Object.fromEntries(
+      OPENAI_CHAT_MODEL_SLOTS.map((slot) => [slot, resolveSlotInitial(settings, slot)]),
+    ) as Record<OpenAIModelSlot, string>,
   );
-  const [modelOptions, setModelOptions] = useState<string[]>(() =>
-    settings.openaiModel ? [settings.openaiModel] : [FALLBACK_OPENAI_CHAT_MODEL],
-  );
+  const [modelOptions, setModelOptions] = useState<string[]>(() => {
+    const seeded = new Set<string>();
+    for (const slot of OPENAI_CHAT_MODEL_SLOTS) {
+      seeded.add(resolveSlotInitial(settings, slot));
+    }
+    if (settings.openaiModel) seeded.add(settings.openaiModel);
+    return [...seeded];
+  });
   const [modelsLoading, setModelsLoading] = useState(false);
   const [modelsError, setModelsError] = useState(false);
   const [credentialsPending, startCredentialsTransition] = useTransition();
   const [testsPending, startTestsTransition] = useTransition();
+
+  const slotCopy: Record<
+    OpenAIModelSlot,
+    { label: string; hint: string; name: string; id: string }
+  > = {
+    dialogue: {
+      label: admin.openaiModelDialogueLabel,
+      hint: admin.openaiModelDialogueHint,
+      name: "openaiModelDialogue",
+      id: "openai-model-dialogue",
+    },
+    artifacts: {
+      label: admin.openaiModelArtifactsLabel,
+      hint: admin.openaiModelArtifactsHint,
+      name: "openaiModelArtifacts",
+      id: "openai-model-artifacts",
+    },
+    fast: {
+      label: admin.openaiModelFastLabel,
+      hint: admin.openaiModelFastHint,
+      name: "openaiModelFast",
+      id: "openai-model-fast",
+    },
+    pipeline: {
+      label: admin.openaiModelPipelineLabel,
+      hint: admin.openaiModelPipelineHint,
+      name: "openaiModelPipeline",
+      id: "openai-model-pipeline",
+    },
+    ragChat: {
+      label: admin.openaiModelRagChatLabel,
+      hint: admin.openaiModelRagChatHint,
+      name: "openaiModelRagChat",
+      id: "openai-model-rag-chat",
+    },
+    help: {
+      label: admin.openaiModelHelpLabel,
+      hint: admin.openaiModelHelpHint,
+      name: "openaiModelHelp",
+      id: "openai-model-help",
+    },
+  };
 
   const refreshModels = (apiKeyOverride?: string) => {
     setModelsLoading(true);
     setModelsError(false);
     void loadOpenAIChatModels(apiKeyOverride)
       .then((ids) => {
-        setOpenaiModel((current) => {
-          const selected = current.trim();
-          const merged = selected && !ids.includes(selected) ? [selected, ...ids] : ids;
-          setModelOptions(merged.length > 0 ? merged : selected ? [selected] : [FALLBACK_OPENAI_CHAT_MODEL]);
-          return selected || merged[0] || FALLBACK_OPENAI_CHAT_MODEL;
+        setSlotModels((current) => {
+          const selected = Object.values(current).filter(Boolean);
+          const merged = [...selected.filter((id) => !ids.includes(id)), ...ids];
+          setModelOptions(merged.length > 0 ? merged : [FALLBACK_OPENAI_CHAT_MODEL]);
+          const next = { ...current };
+          for (const slot of OPENAI_CHAT_MODEL_SLOTS) {
+            if (!next[slot] || (ids.length > 0 && !merged.includes(next[slot]))) {
+              next[slot] = next[slot] && merged.includes(next[slot]) ? next[slot] : merged[0];
+            }
+          }
+          return next;
         });
       })
       .catch(() => {
@@ -199,43 +277,64 @@ export function SettingsContent({ settings, documents, prompts, helpDocuments }:
                   </button>
                 </div>
               </div>
-              <div className="md:col-span-2">
-                <label className="mb-1 block text-body-sm text-on-surface-variant" htmlFor="openai-model">
-                  {admin.openaiModelLabel}
-                </label>
-                <div className="flex flex-wrap items-center gap-3">
-                  <select
-                    className={`${inputClass} max-w-md`}
-                    disabled={modelsLoading || modelOptions.length === 0}
-                    id="openai-model"
-                    name="openaiModel"
-                    onChange={(event) => setOpenaiModel(event.target.value)}
-                    value={openaiModel}
-                  >
-                    {modelOptions.map((id) => (
-                      <option key={id} value={id}>
-                        {id === RECOMMENDED_OPENAI_CHAT_MODEL ? `${id} ★` : id}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    className="rounded-md border border-hair bg-paper px-3 py-2 text-body-sm text-ink transition-colors hover:border-law disabled:opacity-60"
-                    disabled={modelsLoading}
-                    onClick={() => {
-                      const keyInput = document.getElementById("openai-api-key") as HTMLInputElement | null;
-                      refreshModels(keyInput?.value);
-                    }}
-                    type="button"
-                  >
-                    {modelsLoading ? admin.openaiModelLoading : admin.openaiModelRefresh}
-                  </button>
+            </div>
+
+            <div className="space-y-4 border-t border-outline-variant/20 pt-6">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h4 className="font-display text-headline-md text-on-surface">
+                    {admin.openaiModelsSectionLabel}
+                  </h4>
+                  <p className="mt-1 max-w-2xl text-body-sm text-on-surface-variant">
+                    {admin.openaiModelsSectionHint}
+                  </p>
                 </div>
-                <p className="mt-1 text-body-sm text-on-surface-variant">{admin.openaiModelHint}</p>
-                {modelsError ? (
-                  <p className="mt-1 text-body-sm text-error">{admin.openaiModelLoadError}</p>
-                ) : null}
+                <button
+                  className="rounded-md border border-hair bg-paper px-3 py-2 text-body-sm text-ink transition-colors hover:border-law disabled:opacity-60"
+                  disabled={modelsLoading}
+                  onClick={() => {
+                    const keyInput = document.getElementById("openai-api-key") as HTMLInputElement | null;
+                    refreshModels(keyInput?.value);
+                  }}
+                  type="button"
+                >
+                  {modelsLoading ? admin.openaiModelLoading : admin.openaiModelRefresh}
+                </button>
+              </div>
+              {modelsError ? (
+                <p className="text-body-sm text-error">{admin.openaiModelLoadError}</p>
+              ) : null}
+              <div className="grid gap-5 md:grid-cols-2">
+                {OPENAI_CHAT_MODEL_SLOTS.map((slot) => {
+                  const copy = slotCopy[slot];
+                  return (
+                    <div key={slot}>
+                      <label className="mb-1 block text-body-sm text-on-surface-variant" htmlFor={copy.id}>
+                        {copy.label}
+                      </label>
+                      <select
+                        className={inputClass}
+                        disabled={modelsLoading || modelOptions.length === 0}
+                        id={copy.id}
+                        name={copy.name}
+                        onChange={(event) =>
+                          setSlotModels((prev) => ({ ...prev, [slot]: event.target.value }))
+                        }
+                        value={slotModels[slot]}
+                      >
+                        {modelOptions.map((id) => (
+                          <option key={id} value={id}>
+                            {id === RECOMMENDED_OPENAI_CHAT_MODEL ? `${id} ★` : id}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="mt-1 text-body-sm text-on-surface-variant">{copy.hint}</p>
+                    </div>
+                  );
+                })}
               </div>
             </div>
+
             <button
               className="btn-primary flex items-center gap-1.5 px-6 py-2.5 text-body-sm disabled:opacity-60"
               disabled={credentialsPending}

@@ -1,13 +1,12 @@
-import OpenAI from "openai";
-import { getPlatformSettings } from "@/lib/platform-settings";
+import {
+  embeddingRequestDimensions,
+  getOpenAIClient,
+  getOpenAIEmbeddingModel,
+} from "@/lib/pipeline/openai-client";
 import { RAG_DEFAULTS } from "@/lib/rag/config";
 
 async function getClient() {
-  const settings = await getPlatformSettings();
-  if (!settings.openaiApiKey) {
-    throw new Error("OpenAI API key is not configured in Settings → Credentials.");
-  }
-  return new OpenAI({ apiKey: settings.openaiApiKey });
+  return getOpenAIClient();
 }
 
 function estimateEmbeddingInputTokens(text: string) {
@@ -47,8 +46,9 @@ function batchTextsByTokenBudget(
   return batches;
 }
 
-export async function embedTexts(texts: string[], model = RAG_DEFAULTS.embeddingModel): Promise<number[][]> {
+export async function embedTexts(texts: string[], model?: string): Promise<number[][]> {
   if (texts.length === 0) return [];
+  const resolvedModel = model ?? (await getOpenAIEmbeddingModel());
   const client = await getClient();
   const batches = batchTextsByTokenBudget(
     texts,
@@ -56,9 +56,14 @@ export async function embedTexts(texts: string[], model = RAG_DEFAULTS.embedding
     RAG_DEFAULTS.maxEmbeddingInputsPerRequest,
   );
   const embeddings: number[][] = [];
+  const dimensions = embeddingRequestDimensions(resolvedModel);
 
   for (const batch of batches) {
-    const response = await client.embeddings.create({ model, input: batch });
+    const response = await client.embeddings.create({
+      model: resolvedModel,
+      input: batch,
+      ...(dimensions ? { dimensions } : {}),
+    });
     embeddings.push(
       ...response.data
         .sort((left, right) => left.index - right.index)
@@ -69,7 +74,7 @@ export async function embedTexts(texts: string[], model = RAG_DEFAULTS.embedding
   return embeddings;
 }
 
-export async function embedQuery(query: string, model = RAG_DEFAULTS.embeddingModel): Promise<number[]> {
+export async function embedQuery(query: string, model?: string): Promise<number[]> {
   const [embedding] = await embedTexts([query], model);
   return embedding;
 }

@@ -1,10 +1,6 @@
 import type { Locale } from "@/lib/i18n";
 import { normalizeLocale } from "@/lib/pipeline/locale";
-import {
-  chatTemperature,
-  getOpenAIChatModel,
-  getOpenAIClient,
-} from "@/lib/pipeline/openai-client";
+import { createChatCompletion, getOpenAIChatModel } from "@/lib/pipeline/openai-client";
 
 /**
  * Rewrite a participant draft more clearly and without insults,
@@ -23,11 +19,10 @@ export async function helpFormulateText(params: {
       ? "Write the rewritten text entirely in Ukrainian (українська)."
       : "Write the rewritten text entirely in English.";
 
-  const client = await getOpenAIClient();
-  const model = await getOpenAIChatModel();
-  const completion = await client.chat.completions.create({
+  const model = await getOpenAIChatModel("dialogue");
+  const completion = await createChatCompletion({
     model,
-    ...chatTemperature(model, 0.2),
+    temperature: 0.2,
     messages: [
       {
         role: "system",

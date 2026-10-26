@@ -1,10 +1,6 @@
 import type { Locale } from "@/lib/i18n";
 import { normalizeLocale } from "@/lib/pipeline/locale";
-import {
-  chatTemperature,
-  getOpenAIChatModel,
-  getOpenAIClient,
-} from "@/lib/pipeline/openai-client";
+import { createChatCompletion, getOpenAIChatModel } from "@/lib/pipeline/openai-client";
 
 const CYRILLIC_RE = /[\u0400-\u04FF]/g;
 const LATIN_RE = /[A-Za-z]/g;
@@ -30,11 +26,10 @@ export function detectMessageLocaleHeuristic(text: string): Locale | null {
 
 async function detectMessageLocaleWithLlm(text: string): Promise<Locale> {
   try {
-    const client = await getOpenAIClient();
-    const model = await getOpenAIChatModel();
-    const completion = await client.chat.completions.create({
+    const model = await getOpenAIChatModel("fast");
+    const completion = await createChatCompletion({
       model,
-      ...chatTemperature(model, 0),
+      temperature: 0,
       messages: [
         {
           role: "system",

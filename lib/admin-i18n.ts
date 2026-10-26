@@ -123,11 +123,29 @@ export type AdminCopy = {
   credentialsSubtitle: string;
   testsSubtitle: string;
   openaiApiKeyLabel: string;
-  openaiModelLabel: string;
-  openaiModelHint: string;
+  openaiModelsSectionLabel: string;
+  openaiModelsSectionHint: string;
+  openaiModelDialogueLabel: string;
+  openaiModelDialogueHint: string;
+  openaiModelArtifactsLabel: string;
+  openaiModelArtifactsHint: string;
+  openaiModelFastLabel: string;
+  openaiModelFastHint: string;
+  openaiModelPipelineLabel: string;
+  openaiModelPipelineHint: string;
+  openaiModelRagChatLabel: string;
+  openaiModelRagChatHint: string;
+  openaiModelHelpLabel: string;
+  openaiModelHelpHint: string;
   openaiModelLoading: string;
   openaiModelLoadError: string;
   openaiModelRefresh: string;
+  ragEmbeddingModelLabel: string;
+  ragEmbeddingModelHint: string;
+  ragEmbeddingChangeTitle: string;
+  ragEmbeddingChangeConfirm: string;
+  ragEmbeddingChangeConfirmButton: string;
+  ragEmbeddingChanged: string;
   airtableApiKeyLabel: string;
   showApiKey: string;
   hideApiKey: string;
@@ -498,12 +516,32 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     credentialsSubtitle: "Add API keys for external integrations used by the platform.",
     testsSubtitle: "Configure links to personality and conflict assessment tests.",
     openaiApiKeyLabel: "OpenAI API key",
-    openaiModelLabel: "OpenAI chat model",
-    openaiModelHint:
-      "Used for agents, translation, RAG answers, and help chat. Recommended: gpt-6.1-sol (quality/cost). gpt-6-luna is cheaper for high volume. Embeddings stay separate.",
+    openaiModelsSectionLabel: "Chat models by workload",
+    openaiModelsSectionHint:
+      "Assign a model per use case. Empty slots fall back to the previous single model setting. Recommended: gpt-6.1-sol for quality; gpt-6-luna for high volume. Embeddings are configured on the RAG tab.",
+    openaiModelDialogueLabel: "Dialogue",
+    openaiModelDialogueHint: "Opening, live questions, summaries, moderation, and phrase helper.",
+    openaiModelArtifactsLabel: "Artifacts",
+    openaiModelArtifactsHint: "Options, compromise, and draft agreement (use a stronger model).",
+    openaiModelFastLabel: "Fast",
+    openaiModelFastHint: "Translation and language detection (prefer a cheaper, quicker model).",
+    openaiModelPipelineLabel: "Pipeline",
+    openaiModelPipelineHint: "Post-intake agents and legal analysis.",
+    openaiModelRagChatLabel: "RAG chat",
+    openaiModelRagChatHint: "Legal search query planning and inquiry answers.",
+    openaiModelHelpLabel: "Help",
+    openaiModelHelpHint: "In-product help chat widget.",
     openaiModelLoading: "Loading models…",
     openaiModelLoadError: "Could not load models. Check the API key, then refresh.",
     openaiModelRefresh: "Refresh models",
+    ragEmbeddingModelLabel: "Embedding model",
+    ragEmbeddingModelHint:
+      "Used to index and search RAG documents. Changing it deletes all documents — vectors from another model are incompatible.",
+    ragEmbeddingChangeTitle: "Change embedding model?",
+    ragEmbeddingChangeConfirm:
+      "This will permanently delete all RAG documents and indexed chunks. Old embeddings will not work with the new model. You must re-upload documents afterward.",
+    ragEmbeddingChangeConfirmButton: "Delete all documents and change model",
+    ragEmbeddingChanged: "Embedding model updated. Re-upload documents to rebuild the index.",
     airtableApiKeyLabel: "Airtable API key",
     showApiKey: "Show key",
     hideApiKey: "Hide key",
@@ -973,12 +1011,32 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     credentialsSubtitle: "Додайте API-ключі для зовнішніх інтеграцій платформи.",
     testsSubtitle: "Налаштуйте посилання на тести особистості та конфліктів.",
     openaiApiKeyLabel: "OpenAI API ключ",
-    openaiModelLabel: "Модель OpenAI (чат)",
-    openaiModelHint:
-      "Використовується для агентів, перекладу, RAG і довідки. Рекомендовано: gpt-6.1-sol (якість/ціна). gpt-6-luna дешевша для великого обсягу. Ембедінги окремо.",
+    openaiModelsSectionLabel: "Моделі чату за призначенням",
+    openaiModelsSectionHint:
+      "Призначте модель для кожного сценарію. Порожні слоти використовують попередню єдину модель. Рекомендовано: gpt-6.1-sol для якості; gpt-6-luna для великого обсягу. Ембедінги — на вкладці RAG.",
+    openaiModelDialogueLabel: "Діалог",
+    openaiModelDialogueHint: "Відкриття, живі питання, підсумки, модерація та формулювання відповіді.",
+    openaiModelArtifactsLabel: "Артефакти",
+    openaiModelArtifactsHint: "Варіанти, компроміс і проєкт угоди (краще потужніша модель).",
+    openaiModelFastLabel: "Швидка",
+    openaiModelFastHint: "Переклад і визначення мови (краще дешевша й швидша модель).",
+    openaiModelPipelineLabel: "Пайплайн",
+    openaiModelPipelineHint: "Агенти після інтейку та правовий аналіз.",
+    openaiModelRagChatLabel: "RAG-чат",
+    openaiModelRagChatHint: "Планування пошуку та відповіді на запити до бази.",
+    openaiModelHelpLabel: "Довідка",
+    openaiModelHelpHint: "Віджет довідки в продукті.",
     openaiModelLoading: "Завантаження моделей…",
     openaiModelLoadError: "Не вдалося завантажити моделі. Перевірте API-ключ і оновіть список.",
     openaiModelRefresh: "Оновити моделі",
+    ragEmbeddingModelLabel: "Модель ембедінгів",
+    ragEmbeddingModelHint:
+      "Використовується для індексації та пошуку RAG-документів. Зміна видаляє всі документи — вектори іншої моделі несумісні.",
+    ragEmbeddingChangeTitle: "Змінити модель ембедінгів?",
+    ragEmbeddingChangeConfirm:
+      "Це остаточно видалить усі RAG-документи та проіндексовані фрагменти. Старі ембедінги не працюватимуть з новою моделлю. Після зміни потрібно знову завантажити документи.",
+    ragEmbeddingChangeConfirmButton: "Видалити всі документи і змінити модель",
+    ragEmbeddingChanged: "Модель ембедінгів оновлено. Завантажте документи знову, щоб відновити індекс.",
     airtableApiKeyLabel: "Airtable API ключ",
     showApiKey: "Показати ключ",
     hideApiKey: "Приховати ключ",

@@ -2,9 +2,9 @@ import type { z } from "zod";
 import type { Locale } from "@/lib/i18n";
 import { loadAgentPrompt } from "@/lib/pipeline/load-prompt";
 import {
-  chatTemperature,
+  createChatCompletion,
   getOpenAIChatModel,
-  getOpenAIClient,
+  mediationModeToModelSlot,
   parseJsonFromModelResponse,
 } from "@/lib/pipeline/openai-client";
 import {
@@ -40,8 +40,7 @@ type RunMediationAgentParams<T extends z.ZodType> = {
 export async function runMediationAgent<T extends z.ZodType>(params: RunMediationAgentParams<T>) {
   const targetLocale = normalizeLocale(params.targetLocale ?? "en");
   const systemPrompt = await loadAgentPrompt("mediation", params.draftPrompt);
-  const client = await getOpenAIClient();
-  const model = await getOpenAIChatModel();
+  const model = await getOpenAIChatModel(mediationModeToModelSlot(params.mode));
   const languageInstruction = params.partyAdaptationLocales
     ? partyAdaptationLocaleInstruction(
         params.partyAdaptationLocales.partyA,
@@ -60,10 +59,10 @@ export async function runMediationAgent<T extends z.ZodType>(params: RunMediatio
     .join("\n");
 
   const callModel = async (retryHint?: string) => {
-    const completion = await client.chat.completions.create({
+    const completion = await createChatCompletion({
       model,
-      ...chatTemperature(model, 0),
-      response_format: { type: "json_object" },
+      temperature: 0,
+      responseFormat: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt },
         {

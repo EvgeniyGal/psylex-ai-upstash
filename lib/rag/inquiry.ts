@@ -1,9 +1,5 @@
 import type { Locale } from "@/lib/i18n";
-import {
-  chatTemperature,
-  getOpenAIChatModel,
-  getOpenAIClient,
-} from "@/lib/pipeline/openai-client";
+import { createChatCompletion, getOpenAIChatModel } from "@/lib/pipeline/openai-client";
 import { RAG_DEFAULTS, RAG_INQUIRY_NOT_FOUND } from "@/lib/rag/config";
 import { prepareLegalSearch } from "@/lib/rag/prepare-search";
 import { searchLegalCorpusWithFallback } from "@/lib/rag/search";
@@ -90,11 +86,10 @@ export async function runRagInquiry(params: RunInquiryParams): Promise<RagInquir
     )
     .join("\n\n");
 
-  const client = await getOpenAIClient();
-  const model = await getOpenAIChatModel();
-  const completion = await client.chat.completions.create({
+  const model = await getOpenAIChatModel("ragChat");
+  const completion = await createChatCompletion({
     model,
-    ...chatTemperature(model, 0),
+    temperature: 0,
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
       {

@@ -10,6 +10,8 @@ import { listOpenAIChatModelIds } from "@/lib/pipeline/openai-client";
 import {
   FALLBACK_OPENAI_CHAT_MODEL,
   isLikelyChatModelId,
+  OPENAI_CHAT_MODEL_SLOTS,
+  type OpenAIModelSlot,
 } from "@/lib/pipeline/openai-models";
 import { getPlatformSettings } from "@/lib/platform-settings";
 
@@ -24,23 +26,53 @@ function optionalString(value: FormDataEntryValue | null) {
   return String(value ?? "").trim();
 }
 
+function parseChatModelField(formData: FormData, name: string, fallback: string) {
+  const raw = optionalString(formData.get(name));
+  if (!raw) return fallback;
+  return isLikelyChatModelId(raw) ? raw : fallback;
+}
+
+const SLOT_FORM_NAMES: Record<OpenAIModelSlot, string> = {
+  dialogue: "openaiModelDialogue",
+  artifacts: "openaiModelArtifacts",
+  fast: "openaiModelFast",
+  pipeline: "openaiModelPipeline",
+  ragChat: "openaiModelRagChat",
+  help: "openaiModelHelp",
+};
+
 export async function saveApiCredentials(formData: FormData) {
   await requireAdmin();
 
   const openaiApiKey = optionalString(formData.get("openaiApiKey"));
   const airtableApiKey = optionalString(formData.get("airtableApiKey"));
-  const openaiModelRaw = optionalString(formData.get("openaiModel"));
-  const openaiModel = isLikelyChatModelId(openaiModelRaw)
-    ? openaiModelRaw
+
+  const current = await getPlatformSettings();
+  const fallbackModel = isLikelyChatModelId(current.openaiModel)
+    ? current.openaiModel
     : FALLBACK_OPENAI_CHAT_MODEL;
 
-  await getPlatformSettings();
+  const slotValues = Object.fromEntries(
+    OPENAI_CHAT_MODEL_SLOTS.map((slot) => [
+      SLOT_FORM_NAMES[slot],
+      parseChatModelField(formData, SLOT_FORM_NAMES[slot], fallbackModel),
+    ]),
+  ) as Record<(typeof SLOT_FORM_NAMES)[OpenAIModelSlot], string>;
+
+  // Keep openaiModel in sync with dialogue for any legacy single-model readers.
+  const openaiModel = slotValues.openaiModelDialogue || fallbackModel;
 
   await db
     .update(platformSettings)
     .set({
       openaiApiKey,
       openaiModel,
+      openaiModelDialogue: slotValues.openaiModelDialogue,
+      openaiModelArtifacts: slotValues.openaiModelArtifacts,
+      openaiModelFast: slotValues.openaiModelFast,
+      openaiModelPipeline: slotValues.openaiModelPipeline,
+      openaiModelRagChat: slotValues.openaiModelRagChat,
+      openaiModelHelp: slotValues.openaiModelHelp,
       airtableApiKey,
       updatedAt: new Date(),
     })

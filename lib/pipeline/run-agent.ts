@@ -4,9 +4,8 @@ import type { PostIntakeAgentKey } from "@/lib/pipeline/agent-keys";
 import { localeInstruction } from "@/lib/pipeline/locale";
 import { loadAgentPrompt } from "@/lib/pipeline/load-prompt";
 import {
-  chatTemperature,
+  createChatCompletion,
   getOpenAIChatModel,
-  getOpenAIClient,
   parseJsonFromModelResponse,
 } from "@/lib/pipeline/openai-client";
 import { agentOutputSchemas } from "@/lib/pipeline/schemas";
@@ -22,15 +21,14 @@ export async function runAgent<T extends PostIntakeAgentKey>(params: RunAgentPar
   type Output = z.infer<(typeof agentOutputSchemas)[T]>;
   const schema = agentOutputSchemas[params.agentKey];
   const systemPrompt = await loadAgentPrompt(params.agentKey, params.draftPrompt);
-  const client = await getOpenAIClient();
-  const model = await getOpenAIChatModel();
+  const model = await getOpenAIChatModel("pipeline");
   const localeSuffix = `\n\n${localeInstruction(params.targetLocale)}`;
 
   const callModel = async (extraInstruction?: string) => {
-    const completion = await client.chat.completions.create({
+    const completion = await createChatCompletion({
       model,
-      ...chatTemperature(model, 0),
-      response_format: { type: "json_object" },
+      temperature: 0,
+      responseFormat: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt },
         {
