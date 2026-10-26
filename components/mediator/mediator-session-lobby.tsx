@@ -85,7 +85,8 @@ export function MediatorSessionLobby({
   }, {
     watchUsers: true,
     partyUserIds,
-    pollIntervalMs: 5_000,
+    // Handshake clicks / schedule changes must show up without a full reload.
+    pollIntervalMs: 2_500,
   });
 
   const { msUntilStart, msUntilStartWindow } = useScheduledSessionClock(

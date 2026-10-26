@@ -141,33 +141,68 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
     (state.questionCandidates.party_b?.length ?? 0) > 0;
   const draftStatus = state.draftAgreement?.status ?? null;
   const agreementPublished = draftStatus === "published" || draftStatus === "accepted";
+  const phase = state.room.phase as MediationPhase | null;
+  const hasOptions = (state.options?.length ?? 0) > 0;
+  const partyAPendingReply = !!state.room.partyAPendingReply;
+  const partyBPendingReply = !!state.room.partyBPendingReply;
+  const partyAVote = state.room.partyAVote;
+  const partyBVote = state.room.partyBVote;
+  const partyACompromiseVote = state.room.partyACompromiseVote;
+  const partyBCompromiseVote = state.room.partyBCompromiseVote;
+  const partyAAccepted = !!state.room.partyAAgreementAccepted;
+  const partyBAccepted = !!state.room.partyBAgreementAccepted;
+  const hasCompromiseDraft = !!state.compromiseDraft;
+  const compromisePublished = !!state.compromisePublished;
+  const hasAgreementDraft = !!state.draftAgreement;
+  const dialogueLike = phase === "dialogue" || phase === "opening";
   const generatingCompromise =
-    state.room.phase === "voting_discrepancy" &&
-    !state.compromiseDraft &&
-    !state.compromisePublished;
+    phase === "voting_discrepancy" && !hasCompromiseDraft && !compromisePublished;
   const generatingAgreement =
-    state.room.phase === "agreement" && !state.draftAgreement && !agreementPublished;
+    phase === "agreement" && !hasAgreementDraft && !agreementPublished;
+  // Fast poll for generation, party waits, and mediator “ready to act” dock windows (SSE stalls on Vercel).
+  const isAwaitingUpdate =
+    generatingCandidates ||
+    generatingOptions ||
+    phase === "generating_options" ||
+    generatingCompromise ||
+    generatingAgreement ||
+    partyAPendingReply ||
+    partyBPendingReply ||
+    (dialogueLike && !partyAPendingReply && !partyBPendingReply) ||
+    (phase === "voting" && hasOptions && (!partyAVote || !partyBVote)) ||
+    (phase === "voting_discrepancy" && hasCompromiseDraft && !compromisePublished) ||
+    (phase === "voting_discrepancy" &&
+      compromisePublished &&
+      (partyACompromiseVote == null || partyBCompromiseVote == null)) ||
+    (phase === "voting_discrepancy" &&
+      compromisePublished &&
+      partyACompromiseVote != null &&
+      partyBCompromiseVote != null &&
+      !(partyACompromiseVote && partyBCompromiseVote)) ||
+    (phase === "agreement" && hasAgreementDraft && !agreementPublished) ||
+    (phase === "agreement" && agreementPublished && (!partyAAccepted || !partyBAccepted)) ||
+    (phase === "agreement" && agreementPublished && partyAAccepted && partyBAccepted);
 
   useModeBMediatorRoomWaitToasts({
-    phase: state.room.phase as MediationPhase | null,
-    partyAPendingReply: !!state.room.partyAPendingReply,
-    partyBPendingReply: !!state.room.partyBPendingReply,
+    phase,
+    partyAPendingReply,
+    partyBPendingReply,
     generatingCandidates,
     hasQuestionCandidates,
     generatingOptions,
-    hasOptions: (state.options?.length ?? 0) > 0,
-    partyAVote: state.room.partyAVote,
-    partyBVote: state.room.partyBVote,
+    hasOptions,
+    partyAVote,
+    partyBVote,
     generatingCompromise,
-    hasCompromiseDraft: !!state.compromiseDraft,
-    compromisePublished: !!state.compromisePublished,
-    partyACompromiseVote: state.room.partyACompromiseVote,
-    partyBCompromiseVote: state.room.partyBCompromiseVote,
+    hasCompromiseDraft,
+    compromisePublished,
+    partyACompromiseVote,
+    partyBCompromiseVote,
     generatingAgreement,
-    hasAgreementDraft: !!state.draftAgreement,
+    hasAgreementDraft,
     agreementPublished,
-    partyAAccepted: !!state.room.partyAAgreementAccepted,
-    partyBAccepted: !!state.room.partyBAgreementAccepted,
+    partyAAccepted,
+    partyBAccepted,
     enabled: !sessionEnded,
   });
 
@@ -184,11 +219,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
     void refresh();
   }, {
     watchUsers: false,
-    // Vercel SSE can stall while still "connected"; polls also resume after() LLM work.
-    pollIntervalMs:
-      generatingCandidates || generatingOptions || generatingCompromise || generatingAgreement
-        ? 2_500
-        : 4_000,
+    pollIntervalMs: isAwaitingUpdate ? 2_500 : 4_000,
   });
 
   // Re-resolve bilingual fields when UI locale changes.

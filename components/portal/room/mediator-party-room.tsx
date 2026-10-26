@@ -63,20 +63,33 @@ export function MediatorPartyRoom({
   const resultsSummary = state.resultsSummary;
   const awaitingCompromisePublish = !!state.room.awaitingCompromisePublish;
   const awaitingMediatorPublish = !!state.room.awaitingMediatorPublish;
+  const hasOptions = (state.options?.length ?? 0) > 0;
+  const hasCompromise = !!state.compromise;
+  const agreementPublished = !!state.room.agreementPublished;
+  const selfVote = state.room.selfVote;
+  const selfCompromiseVote = state.room.selfCompromiseVote;
+  const agreementAccepted = !!state.room.agreementAccepted;
+  // Mode A–style: fast poll while generating or while party must act (SSE often stalls on Vercel).
+  const isAwaitingUpdate =
+    phase === "generating_options" ||
+    awaitingCompromisePublish ||
+    awaitingMediatorPublish ||
+    (phase === "voting" && hasOptions && !selfVote) ||
+    (phase === "voting_discrepancy" && hasCompromise && selfCompromiseVote == null) ||
+    (phase === "agreement" && agreementPublished && !agreementAccepted);
 
   useRoomRealtime(state.room.id, () => {
     if (!review && !isSessionComplete) void refresh();
   }, {
     enabled: !review && !isSessionComplete,
     watchUsers: false,
-    // Safety net: Vercel SSE often misses after()-emitted room.change events.
-    pollIntervalMs: awaitingCompromisePublish || awaitingMediatorPublish ? 2_500 : 4_000,
+    pollIntervalMs: isAwaitingUpdate ? 2_500 : 4_000,
   });
 
   const flowStep = resolveRoomFlowStep(phase, review);
 
   const bothAccepted =
-    !!state.room.agreementAccepted && !!state.room.otherAgreementAccepted;
+    agreementAccepted && !!state.room.otherAgreementAccepted;
   const waitingForMediatorComplete =
     phase === "agreement" && bothAccepted && !isSessionComplete;
 
@@ -84,15 +97,15 @@ export function MediatorPartyRoom({
     phase,
     pendingQuestion: !!state.room.pendingQuestion,
     peerHasPendingQuestion: !!state.room.peerHasPendingQuestion,
-    hasOptions: (state.options?.length ?? 0) > 0,
-    hasCompromise: !!state.compromise,
-    agreementPublished: !!state.room.agreementPublished,
+    hasOptions,
+    hasCompromise,
+    agreementPublished,
     awaitingCompromisePublish,
     awaitingMediatorPublish,
-    selfVote: state.room.selfVote,
+    selfVote,
     peerHasVoted: !!state.room.peerHasVoted,
-    selfCompromiseVote: state.room.selfCompromiseVote,
-    agreementAccepted: !!state.room.agreementAccepted,
+    selfCompromiseVote,
+    agreementAccepted,
     otherAgreementAccepted: !!state.room.otherAgreementAccepted,
     waitingForMediatorComplete,
     enabled: !review && !isSessionComplete,
