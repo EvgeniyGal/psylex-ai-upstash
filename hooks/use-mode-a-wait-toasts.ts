@@ -8,11 +8,11 @@ import type { MediationPhase } from "@/lib/mediation/types";
 
 /** Orange — AI working / waiting on other party / saving. */
 export const modeAWaitToastClassName =
-  "!bg-amber-100 !text-amber-950 !border-amber-300/80 shadow-md [&_[data-icon]]:!text-amber-700";
+  "mode-a-toast-attention !bg-amber-100 !text-amber-950 !border-2 !border-amber-400 shadow-md [&_[data-icon]]:!text-amber-700";
 
 /** Green — user must act (new question, vote, start, accept). */
 export const modeAReadyToastClassName =
-  "!bg-emerald-100 !text-emerald-950 !border-emerald-300/80 shadow-md [&_[data-icon]]:!text-emerald-700";
+  "mode-a-toast-attention mode-a-toast-attention-ready !bg-emerald-100 !text-emerald-950 !border-2 !border-emerald-500 shadow-md [&_[data-icon]]:!text-emerald-700";
 
 const WAIT_CLASS = modeAWaitToastClassName;
 const READY_CLASS = modeAReadyToastClassName;

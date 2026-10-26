@@ -31,7 +31,7 @@ function SessionTimerToast({
   ended?: boolean;
 }) {
   return (
-    <div className="flex min-w-[280px] items-baseline gap-3 rounded-lg border border-law-line bg-law-fill px-4 py-3 shadow-md">
+    <div className="mode-a-toast-attention mode-a-toast-attention-timer flex min-w-[280px] items-baseline gap-3 rounded-lg border-2 border-law-line bg-law-fill px-4 py-3 shadow-md">
       <span className="font-display text-label-md uppercase tracking-wide text-on-surface-variant">
         {label}
       </span>
