@@ -282,6 +282,7 @@ export type AdminCopy = {
   scheduleDetailLegal: string;
   scheduleReady: string;
   scheduleNotReady: string;
+  scheduleGenerating: string;
   scheduleDisabledHint: string;
   scheduleStartRequiresReadyHint: string;
   tableScheduledTime: string;
@@ -692,6 +693,7 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     scheduleDetailLegal: "Legal analysis",
     scheduleReady: "Ready",
     scheduleNotReady: "Not ready",
+    scheduleGenerating: "Generating…",
     scheduleDisabledHint: "Both parties must finish tests, conflict questions, and AI analysis before scheduling.",
     scheduleStartRequiresReadyHint:
       "You can schedule now. Parties still need to finish tests, conflict questions, and AI analysis before the session can start.",
@@ -1194,6 +1196,7 @@ export const adminCopy: Record<Locale, AdminCopy> = {
     scheduleDetailLegal: "Правовий аналіз",
     scheduleReady: "Готово",
     scheduleNotReady: "Не готово",
+    scheduleGenerating: "Генерується…",
     scheduleDisabledHint: "Обидві сторони мають завершити тести, питання про конфлікт і AI-аналіз перед плануванням.",
     scheduleStartRequiresReadyHint:
       "Можна планувати зараз. Сторони все одно мають завершити тести, питання про конфлікт і AI-аналіз, перш ніж сесія зможе початися.",

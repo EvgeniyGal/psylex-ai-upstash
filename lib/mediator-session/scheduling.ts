@@ -12,6 +12,7 @@ import { notifyRoom } from "@/lib/realtime/notify";
 import { getSideReadiness, type SideReadiness } from "@/lib/dispute-intake";
 import {
   getPostIntakePipelineDetail,
+  isPostIntakePipelineRunning,
   type PostIntakePipelineDetail,
 } from "@/lib/pipeline/gate";
 import { getRoomSides } from "@/lib/room/helpers";
@@ -28,6 +29,8 @@ export type MediatorSchedulingReadiness = {
   partyAReady: boolean;
   partyBReady: boolean;
   pipelineComplete: boolean;
+  /** Both parties ready for pipeline and AI agents still running / incomplete. */
+  pipelineRunning: boolean;
   canSchedule: boolean;
   scheduledStartAt: string | null;
   mediationDurationMinutes: number;
@@ -103,12 +106,14 @@ export async function getMediatorSchedulingReadiness(
   const partyBReady = !!bReady?.mediationReady;
   const pipelineDetail = await getPostIntakePipelineDetail(roomId);
   const pipelineComplete = !!pipelineDetail?.complete;
+  const pipelineRunning = await isPostIntakePipelineRunning(roomId);
   const canSchedule = !room.mediationStartedAt;
 
   return {
     partyAReady,
     partyBReady,
     pipelineComplete,
+    pipelineRunning,
     canSchedule,
     scheduledStartAt: room.scheduledStartAt?.toISOString() ?? null,
     mediationDurationMinutes: room.mediationDurationMinutes ?? DEFAULT_SCHEDULE_DURATION_MINUTES,

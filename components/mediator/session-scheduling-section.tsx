@@ -43,16 +43,43 @@ type SessionSchedulingSectionProps = {
   partyUserIds?: string[];
 };
 
-function DetailRow({ label, ready }: { label: string; ready: boolean }) {
+type ReadinessStatus = "ready" | "generating" | "not_ready";
+
+function statusLabel(status: ReadinessStatus, admin: { scheduleReady: string; scheduleNotReady: string; scheduleGenerating: string }) {
+  if (status === "ready") return admin.scheduleReady;
+  if (status === "generating") return admin.scheduleGenerating;
+  return admin.scheduleNotReady;
+}
+
+function statusClassName(status: ReadinessStatus) {
+  if (status === "ready") return "font-semibold text-success";
+  if (status === "generating") return "inline-flex items-center gap-1.5 font-semibold text-tertiary";
+  return "font-semibold text-error";
+}
+
+function DetailRow({
+  label,
+  status,
+}: {
+  label: string;
+  status: ReadinessStatus;
+}) {
   const { admin } = useLocale();
   return (
     <div className="flex items-center justify-between gap-3 text-body-sm">
       <span className="text-on-surface-variant">{label}</span>
-      <span className={ready ? "font-semibold text-success" : "font-semibold text-error"}>
-        {ready ? admin.scheduleReady : admin.scheduleNotReady}
+      <span className={statusClassName(status)}>
+        {status === "generating" ? <Spinner size="sm" className="text-tertiary" /> : null}
+        {statusLabel(status, admin)}
       </span>
     </div>
   );
+}
+
+function readinessStatus(ready: boolean, generating: boolean): ReadinessStatus {
+  if (ready) return "ready";
+  if (generating) return "generating";
+  return "not_ready";
 }
 
 function PartyDetailChecklist({
@@ -71,20 +98,20 @@ function PartyDetailChecklist({
         <li key={key}>
           <DetailRow
             label={admin.activityLogTests[key] ?? key}
-            ready={forceReady || !!detail?.tests[key]}
+            status={readinessStatus(forceReady || !!detail?.tests[key], false)}
           />
         </li>
       ))}
       <li>
         <DetailRow
           label={admin.scheduleDetailPersonalBot}
-          ready={forceReady || !!detail?.personalBotReady}
+          status={readinessStatus(forceReady || !!detail?.personalBotReady, false)}
         />
       </li>
       <li>
         <DetailRow
           label={admin.scheduleDetailDisputeIntake}
-          ready={forceReady || !!detail?.disputeIntakeComplete}
+          status={readinessStatus(forceReady || !!detail?.disputeIntakeComplete, false)}
         />
       </li>
     </ul>
@@ -94,9 +121,11 @@ function PartyDetailChecklist({
 function PipelineDetailChecklist({
   detail,
   forceReady,
+  pipelineRunning,
 }: {
   detail: PostIntakePipelineDetail | null;
   forceReady: boolean;
+  pipelineRunning: boolean;
 }) {
   const { admin } = useLocale();
   if (!detail && !forceReady) return null;
@@ -132,7 +161,10 @@ function PipelineDetailChecklist({
     <ul className="mt-2 space-y-1 border-l border-outline-variant/30 pl-3">
       {items.map((item) => (
         <li key={item.label}>
-          <DetailRow label={item.label} ready={item.ready} />
+          <DetailRow
+            label={item.label}
+            status={readinessStatus(item.ready, pipelineRunning && !item.ready)}
+          />
         </li>
       ))}
     </ul>
@@ -163,6 +195,7 @@ export function SessionSchedulingSection({
   const [partyAReady, setPartyAReady] = useState(false);
   const [partyBReady, setPartyBReady] = useState(false);
   const [pipelineComplete, setPipelineComplete] = useState(false);
+  const [pipelineRunning, setPipelineRunning] = useState(false);
   const [canSchedule, setCanSchedule] = useState(false);
   const [started, setStarted] = useState(mediationStarted);
   const [complete, setComplete] = useState(sessionComplete);
@@ -183,6 +216,7 @@ export function SessionSchedulingSection({
         setPartyAReady(data.partyAReady);
         setPartyBReady(data.partyBReady);
         setPipelineComplete(data.pipelineComplete);
+        setPipelineRunning(data.pipelineRunning);
         setCanSchedule(data.canSchedule);
         setScheduledStartAt(data.scheduledStartAt);
         setDurationMinutes(normalizeDuration(data.mediationDurationMinutes));
@@ -216,7 +250,7 @@ export function SessionSchedulingSection({
     refreshReadiness();
   }, {
     enabled: true,
-    pollIntervalMs: 8_000,
+    pollIntervalMs: pipelineRunning ? 2_500 : 8_000,
     partyUserIds,
   });
 
@@ -241,11 +275,12 @@ export function SessionSchedulingSection({
     });
   };
 
-  const summaryRow = (label: string, ready: boolean) => (
+  const summaryRow = (label: string, status: ReadinessStatus) => (
     <div className="flex items-center justify-between gap-3 text-body-sm font-semibold">
       <span className="text-on-surface">{label}</span>
-      <span className={ready ? "text-success" : "text-error"}>
-        {ready ? admin.scheduleReady : admin.scheduleNotReady}
+      <span className={statusClassName(status)}>
+        {status === "generating" ? <Spinner size="sm" className="text-tertiary" /> : null}
+        {statusLabel(status, admin)}
       </span>
     </div>
   );
@@ -266,16 +301,32 @@ export function SessionSchedulingSection({
 
       <div className="space-y-4 rounded-md bg-surface-container-low/60 p-3">
         <div>
-          {summaryRow(admin.scheduleReadinessPartyA, complete || partyAReady)}
+          {summaryRow(
+            admin.scheduleReadinessPartyA,
+            readinessStatus(complete || partyAReady, false),
+          )}
           <PartyDetailChecklist detail={partyADetail} forceReady={complete} />
         </div>
         <div>
-          {summaryRow(admin.scheduleReadinessPartyB, complete || partyBReady)}
+          {summaryRow(
+            admin.scheduleReadinessPartyB,
+            readinessStatus(complete || partyBReady, false),
+          )}
           <PartyDetailChecklist detail={partyBDetail} forceReady={complete} />
         </div>
         <div>
-          {summaryRow(admin.scheduleReadinessPipeline, complete || pipelineComplete)}
-          <PipelineDetailChecklist detail={pipelineDetail} forceReady={complete} />
+          {summaryRow(
+            admin.scheduleReadinessPipeline,
+            readinessStatus(
+              complete || pipelineComplete,
+              !complete && !pipelineComplete && pipelineRunning,
+            ),
+          )}
+          <PipelineDetailChecklist
+            detail={pipelineDetail}
+            forceReady={complete}
+            pipelineRunning={!complete && pipelineRunning}
+          />
         </div>
       </div>
 
