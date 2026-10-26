@@ -26,32 +26,30 @@ function DockCard({ item }: { item: MediatorAttentionItem }) {
           "border-amber-400 bg-amber-100 text-amber-950",
       )}
     >
-      <div className="flex items-start gap-2">
-        {item.kind === "wait" ? (
-          <span className="mt-0.5 shrink-0 text-amber-700">
-            <ModeAToastSpinner />
-          </span>
-        ) : null}
-        <div className="min-w-0 flex-1">
-          {isTimer ? (
-            <>
-              <p className="font-display text-[10px] uppercase tracking-wide text-on-surface-variant">
-                {item.message}
-              </p>
-              <p
-                className={cn(
-                  "font-display text-xl font-semibold tabular-nums leading-tight",
-                  item.ended ? "text-error" : "text-law",
-                )}
-              >
-                {item.detail ?? "—"}
-              </p>
-            </>
-          ) : (
-            <p className="text-[12px] font-medium leading-snug">{item.message}</p>
-          )}
+      {isTimer ? (
+        <div className="w-full text-center">
+          <p className="font-display text-[10px] uppercase tracking-wide text-on-surface-variant">
+            {item.message}
+          </p>
+          <p
+            className={cn(
+              "font-display text-xl font-semibold tabular-nums leading-tight",
+              item.ended ? "text-error" : "text-law",
+            )}
+          >
+            {item.detail ?? "—"}
+          </p>
         </div>
-      </div>
+      ) : (
+        <div className="flex items-start gap-2">
+          {item.kind === "wait" ? (
+            <span className="mt-0.5 shrink-0 text-amber-700">
+              <ModeAToastSpinner />
+            </span>
+          ) : null}
+          <p className="min-w-0 flex-1 text-[12px] font-medium leading-snug">{item.message}</p>
+        </div>
+      )}
     </div>
   );
 }
