@@ -38,6 +38,10 @@ type SideListTab = "admin" | "mediator";
 type SideTableRow = SideListRow & {
   roleLabel: string;
   roleShort: string;
+  /** Rooms visible for the current admin/mediator tab (and search). */
+  visibleRooms: SideListRow["rooms"];
+  roomsLabel: string;
+  mediatorIds: string[];
   mediatorDisplay: string;
   testsCompleteCount: number;
 };
@@ -243,25 +247,75 @@ export function SidesContent({
   }, [globalFilter, mediatorFilter]);
 
   const tableRows = useMemo<SideTableRow[]>(() => {
-    return rows.map((row) => ({
-      ...row,
-      roleLabel: admin.roles[row.partyRole] ?? row.partyRole,
-      roleShort: row.partyRole === "party_a" ? "A" : "B",
-      mediatorDisplay: row.mediatorTitle ?? admin.unknownMediator,
-      testsCompleteCount: TEST_KEYS.reduce(
-        (count, key) => count + (row.tests[key].complete ? 1 : 0),
-        0,
-      ),
-    }));
+    return rows.map((row) => {
+      const mediatorTitles = [
+        ...new Set(
+          row.rooms
+            .map((room) => room.mediatorTitle)
+            .filter((title): title is string => !!title),
+        ),
+      ];
+      const mediatorIds = [
+        ...new Set(
+          row.rooms
+            .map((room) => room.roomCreatedByUserId)
+            .filter((id): id is string => !!id),
+        ),
+      ];
+      return {
+        ...row,
+        roleLabel: admin.roles[row.partyRole] ?? row.partyRole,
+        roleShort: row.partyRole === "party_a" ? "A" : "B",
+        visibleRooms: row.rooms,
+        roomsLabel: row.rooms.map((room) => room.roomTitle).join(", "),
+        mediatorIds,
+        mediatorDisplay:
+          mediatorTitles.length > 0 ? mediatorTitles.join(", ") : admin.unknownMediator,
+        testsCompleteCount: TEST_KEYS.reduce(
+          (count, key) => count + (row.tests[key].complete ? 1 : 0),
+          0,
+        ),
+      };
+    });
   }, [rows, admin.roles, admin.unknownMediator]);
 
   const tabBaseRows = useMemo(() => {
     if (!showTabs) return tableRows;
-    if (activeTab === "admin") {
-      return tableRows.filter((row) => !row.roomCreatedByUserId);
-    }
-    return tableRows.filter((row) => !!row.roomCreatedByUserId);
-  }, [tableRows, showTabs, activeTab]);
+
+    return tableRows
+      .map((row) => {
+        const visibleRooms =
+          activeTab === "admin"
+            ? row.rooms.filter((room) => !room.roomCreatedByUserId)
+            : row.rooms.filter((room) => !!room.roomCreatedByUserId);
+        if (visibleRooms.length === 0) return null;
+
+        const mediatorTitles = [
+          ...new Set(
+            visibleRooms
+              .map((room) => room.mediatorTitle)
+              .filter((title): title is string => !!title),
+          ),
+        ];
+        const mediatorIds = [
+          ...new Set(
+            visibleRooms
+              .map((room) => room.roomCreatedByUserId)
+              .filter((id): id is string => !!id),
+          ),
+        ];
+
+        return {
+          ...row,
+          visibleRooms,
+          roomsLabel: visibleRooms.map((room) => room.roomTitle).join(", "),
+          mediatorIds,
+          mediatorDisplay:
+            mediatorTitles.length > 0 ? mediatorTitles.join(", ") : admin.unknownMediator,
+        };
+      })
+      .filter((row): row is SideTableRow => row != null);
+  }, [tableRows, showTabs, activeTab, admin.unknownMediator]);
 
   const showMediatorColumn = showTabs && activeTab === "mediator";
 
@@ -269,13 +323,18 @@ export function SidesContent({
     if (!showMediatorColumn) return [];
     const byId = new Map<string, string>();
     for (const row of tabBaseRows) {
-      if (!row.roomCreatedByUserId) continue;
-      byId.set(row.roomCreatedByUserId, row.mediatorDisplay);
+      for (const room of row.visibleRooms) {
+        if (!room.roomCreatedByUserId) continue;
+        byId.set(
+          room.roomCreatedByUserId,
+          room.mediatorTitle ?? admin.unknownMediator,
+        );
+      }
     }
     return [...byId.entries()]
       .map(([id, title]) => ({ id, title }))
       .sort((a, b) => a.title.localeCompare(b.title));
-  }, [showMediatorColumn, tabBaseRows]);
+  }, [showMediatorColumn, tabBaseRows, admin.unknownMediator]);
 
   useEffect(() => {
     if (!mediatorFilter) return;
@@ -286,7 +345,7 @@ export function SidesContent({
 
   const tabRows = useMemo(() => {
     if (!showMediatorColumn || !mediatorFilter) return tabBaseRows;
-    return tabBaseRows.filter((row) => row.roomCreatedByUserId === mediatorFilter);
+    return tabBaseRows.filter((row) => row.mediatorIds.includes(mediatorFilter));
   }, [tabBaseRows, showMediatorColumn, mediatorFilter]);
 
   const openEdit = useCallback((row: SideTableRow) => {
@@ -397,11 +456,28 @@ export function SidesContent({
         ),
       },
       {
-        accessorKey: "roomTitle",
-        id: "room",
+        accessorKey: "roomsLabel",
+        id: "rooms",
         header: admin.sidesRoomColumn,
-        cell: ({ getValue }) => (
-          <span className="text-body-sm text-on-surface">{String(getValue() ?? "")}</span>
+        cell: ({ row }) => (
+          <ul className="flex min-w-[10rem] max-w-[16rem] flex-col gap-1">
+            {row.original.visibleRooms.map((room) => (
+              <li className="flex items-start gap-1.5 text-body-sm text-on-surface" key={room.roomId}>
+                <span
+                  className={cn(
+                    "mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded text-[10px] font-bold",
+                    room.partyRole === "party_a"
+                      ? "bg-primary/15 text-primary"
+                      : "bg-tertiary/15 text-tertiary",
+                  )}
+                  title={admin.roles[room.partyRole]}
+                >
+                  {room.partyRole === "party_a" ? "A" : "B"}
+                </span>
+                <span className="leading-snug">{room.roomTitle}</span>
+              </li>
+            ))}
+          </ul>
         ),
       },
       {
@@ -479,13 +555,15 @@ export function SidesContent({
         row.original.login,
         row.original.roleLabel,
         row.original.roleShort,
-        row.original.roomTitle,
+        row.original.roomsLabel,
         row.original.mediatorDisplay,
+        ...row.original.visibleRooms.map((room) => room.roomTitle),
       ]
         .join(" ")
         .toLowerCase();
       return haystack.includes(query);
     },
+    getRowId: (row) => row.userId,
   });
 
   const emptyMessage = () => {
