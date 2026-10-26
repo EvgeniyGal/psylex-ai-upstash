@@ -6,23 +6,23 @@ export type ProtectiveClause = {
   uk: string;
 };
 
-/** Standard protective clauses for neighbor / boundary / vegetation disputes. */
+/** Protective clauses for neighbor / boundary / vegetation disputes only — never auto-applied to unrelated cases. */
 export const PROTECTIVE_CLAUSES: ProtectiveClause[] = [
   {
     id: "moratorium_until_survey",
-    tags: ["boundary_vegetation", "default"],
+    tags: ["boundary_vegetation"],
     en: "Until the survey is completed and its results are accepted, neither party shall cut, prune, remove, transplant, or otherwise disturb the disputed tree or vegetation.",
     uk: "До завершення межевання і прийняття його результатів жодна зі сторін не має права зрубувати, обрізати, пересаджувати чи іншим чином турбувати спірне дерево чи рослинність.",
   },
   {
     id: "no_boundary_works_without_consent",
-    tags: ["boundary_vegetation", "default"],
+    tags: ["boundary_vegetation"],
     en: "Neither party shall plant trees or shrubs or construct structures near the shared boundary without the prior written consent of the other party.",
     uk: "Жодна зі сторін не садитиме дерева чи кущі та не зводитиме споруди біля спільної межі без попередньої письмової згоди іншої сторони.",
   },
   {
     id: "survey_binding",
-    tags: ["boundary_vegetation", "default"],
+    tags: ["boundary_vegetation"],
     en: "Both parties shall treat the independent survey results as binding for resolving the boundary location dispute between them.",
     uk: "Обидві сторони вважатимуть результати незалежного межевання обов’язковими для визначення спірної межі між ними.",
   },
@@ -38,10 +38,12 @@ export function protectiveClauseText(clause: ProtectiveClause, locale: "en" | "u
   return locale === "uk" ? clause.uk : clause.en;
 }
 
-export function suggestedProtectiveClauseIds(tags: string[] = ["default"]) {
+/** Suggest clauses whose tags intersect the inferred dispute tags. Empty tags → none. */
+export function suggestedProtectiveClauseIds(tags: string[] = []) {
+  if (tags.length === 0) return [];
   const set = new Set(tags);
   return PROTECTIVE_CLAUSES.filter((clause) =>
-    clause.tags.some((tag) => set.has(tag) || tag === "default"),
+    clause.tags.some((tag) => set.has(tag)),
   ).map((clause) => clause.id);
 }
 
@@ -53,7 +55,7 @@ export function inferDisputeTags(text: string | null | undefined): string[] {
       hay,
     )
   ) {
-    return ["boundary_vegetation", "default"];
+    return ["boundary_vegetation"];
   }
-  return ["default"];
+  return [];
 }
