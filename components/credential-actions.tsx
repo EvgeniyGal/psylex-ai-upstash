@@ -38,10 +38,21 @@ export function CredentialActions({
     setPending(true);
     try {
       const url = await generateMagicLinkAction(userId);
+      // Prefer the origin the admin is currently on (LAN IP vs localhost)
+      // so phones / other devices can open the link.
+      let shareUrl = url;
+      try {
+        const parsed = new URL(url);
+        parsed.protocol = window.location.protocol;
+        parsed.host = window.location.host;
+        shareUrl = parsed.toString();
+      } catch {
+        // keep server URL
+      }
 
       if (navigator.share) {
         try {
-          await navigator.share({ title: admin.magicLink, url });
+          await navigator.share({ title: admin.magicLink, url: shareUrl });
           toast.success(admin.magicLinkCopied);
           return;
         } catch {
@@ -49,7 +60,7 @@ export function CredentialActions({
         }
       }
 
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(shareUrl);
       toast.success(admin.magicLinkCopied);
     } catch {
       toast.error(admin.magicLinkFailed);

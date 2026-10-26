@@ -47,6 +47,11 @@ type Copy = {
   invalidLoginFormat: string;
   magicLinkMissingToken: string;
   magicLinkInvalid: string;
+  magicLinkUsed: string;
+  magicLinkExpired: string;
+  magicLinkContinueTitle: string;
+  magicLinkContinueBody: string;
+  magicLinkContinueButton: string;
 };
 
 export const copy: Record<Locale, Copy> = {
@@ -137,6 +142,11 @@ export const copy: Record<Locale, Copy> = {
     invalidLoginFormat: "Invalid login format",
     magicLinkMissingToken: "Magic link is missing a token.",
     magicLinkInvalid: "This magic link is invalid or has expired.",
+    magicLinkUsed: "This magic link was already used. Ask for a new one.",
+    magicLinkExpired: "This magic link has expired. Ask for a new one.",
+    magicLinkContinueTitle: "Continue to PsyLex",
+    magicLinkContinueBody: "Tap the button below to sign in with this magic link.",
+    magicLinkContinueButton: "Continue",
   },
   uk: {
     headline: "У спорі не повинно бути тих, хто програв",
@@ -225,5 +235,10 @@ export const copy: Record<Locale, Copy> = {
     invalidLoginFormat: "Невірний формат логіну",
     magicLinkMissingToken: "У magic-посиланні відсутній токен.",
     magicLinkInvalid: "Це magic-посилання недійсне або прострочене.",
+    magicLinkUsed: "Це magic-посилання вже використано. Попросіть нове.",
+    magicLinkExpired: "Термін дії magic-посилання закінчився. Попросіть нове.",
+    magicLinkContinueTitle: "Продовжити в PsyLex",
+    magicLinkContinueBody: "Натисніть кнопку нижче, щоб увійти за цим magic-посиланням.",
+    magicLinkContinueButton: "Продовжити",
   },
 };

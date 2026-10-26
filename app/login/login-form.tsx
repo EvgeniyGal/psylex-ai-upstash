@@ -20,6 +20,8 @@ export function LoginForm() {
     () => ({
       missing_magic_token: t.magicLinkMissingToken,
       invalid_magic_link: t.magicLinkInvalid,
+      magic_link_used: t.magicLinkUsed,
+      magic_link_expired: t.magicLinkExpired,
     }),
     [t],
   );
