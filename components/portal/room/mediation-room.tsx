@@ -27,6 +27,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
 import { useLocale } from "@/components/locale-provider";
+import { useModeARoomWaitToasts } from "@/hooks/use-mode-a-wait-toasts";
 import { useDeadlineRefresh, useRoomRealtime } from "@/hooks/use-room-realtime";
 import { fadeInUp } from "@/lib/motion";
 import type { MediationPhase } from "@/lib/mediation/types";
@@ -143,15 +144,19 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
   } | null;
 
   const onSendReply = () => {
-    if (!reply.trim()) return;
+    const text = reply.trim();
+    if (!text) return;
+    setReply("");
     startTransition(async () => {
       try {
-        const result = await sendDialogueReply(reply.trim());
-        setReply("");
+        const result = await sendDialogueReply(text);
         if (result.moderated) toast.message(t.mediationAttackRedirected);
         await refresh();
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t.mediationActionFailed);
+        setReply(text);
+        toast.error(
+          error instanceof Error ? error.message : t.modeAToastSendFailedRetry,
+        );
       }
     });
   };
@@ -232,6 +237,18 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
   const showOptionsPanel = state.options.length > 0 && (review || votesDiffer || state.room.phase === "voting");
   const showCompromisePanel = votesDiffer && !!state.compromise;
   const isCompromiseGenerating = votesDiffer && !state.compromise && !review;
+
+  useModeARoomWaitToasts({
+    phase: state.room.phase,
+    isAwaitingAgent,
+    isMyTurn,
+    questionReady,
+    hasOptions: state.options.length > 0,
+    hasCompromise: !!state.compromise,
+    hasDraftAgreement: !!draft,
+    isCompromiseGenerating,
+    enabled: !review && !isSessionComplete,
+  });
 
   const optionsPanel = showOptionsPanel ? (
     <MediationOptionsPanel

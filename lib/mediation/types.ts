@@ -19,7 +19,10 @@ export const MEDIATION_PHASES: MediationPhase[] = [
   "completed",
 ];
 
-export const REPLY_TIMEOUT_MS = 5 * 60_000;
+/** Per-question answer window for Mode A dialogue turns. */
+export const REPLY_TIMEOUT_MS = 15 * 60_000;
+/** Default live-session length for new Mode A (admin-created) rooms. */
+export const MODE_A_SESSION_DURATION_MINUTES = 120;
 export const MAX_DIALOGUE_ROUNDS = 3;
 
 export type MediationMessageKind =

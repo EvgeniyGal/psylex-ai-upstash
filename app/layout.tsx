@@ -71,7 +71,19 @@ export default function RootLayout({
             <ConditionalSiteFooter />
           </div>
         </AppProviders>
-        <Toaster closeButton duration={3500} richColors visibleToasts={3} />
+        <Toaster
+          closeButton
+          duration={3500}
+          offset={72}
+          position="top-left"
+          richColors
+          visibleToasts={3}
+          toastOptions={{
+            classNames: {
+              toast: "border shadow-lg",
+            },
+          }}
+        />
       </body>
     </html>
   );

@@ -12,6 +12,7 @@ import {
 import { PortalPageShell } from "@/components/portal/portal-page-shell";
 import { Spinner } from "@/components/ui/spinner";
 import { useLocale } from "@/components/locale-provider";
+import { useModeALobbyWaitToasts } from "@/hooks/use-mode-a-wait-toasts";
 import { useRoomRealtime } from "@/hooks/use-room-realtime";
 import { fadeInUp, scaleIn } from "@/lib/motion";
 import type { HandshakeStatusResponse } from "@/lib/mediation/handshake";
@@ -104,6 +105,11 @@ export function MediationLobby({
   });
   const [handshake, setHandshake] = useState<HandshakeStatusResponse | null>(null);
   const redirectingRef = useRef(false);
+
+  useModeALobbyWaitToasts({
+    pipelineRunning: lobby.pipelineRunning,
+    preparingRoom: lobby.preparingMediationRoom,
+  });
 
   const redirectToRoom = useCallback(() => {
     if (redirectingRef.current) return;

@@ -210,7 +210,8 @@ function buildAdminMediationState(
       activeParty: room.mediationActiveParty,
       isAwaitingAgent:
         room.mediationPhase === "generating_options" ||
-        (room.mediationPhase === "dialogue" && !room.mediationActiveParty) ||
+        (room.mediationPhase === "dialogue" &&
+          (!room.mediationActiveParty || !room.mediationTurnDeadlineAt)) ||
         (room.mediationPhase === "agreement" && !room.draftAgreement) ||
         (room.mediationPhase === "voting_discrepancy" && !room.compromiseOption),
       turnDeadlineAt: room.mediationTurnDeadlineAt?.toISOString() ?? null,

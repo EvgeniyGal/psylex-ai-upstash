@@ -14,6 +14,7 @@ import {
   mediationDialogueQuestionSchema,
   mediationOpeningSchema,
 } from "@/lib/mediation/schemas";
+import { scheduleMediationWork } from "@/lib/mediation/schedule-work";
 import { isMediatorFacilitatedRoom } from "@/lib/mediator-session/room-mode";
 import { logPipelineEvent } from "@/lib/pipeline/log-event";
 import { getRoomPartiesForPipeline, isPostIntakePipelineComplete } from "@/lib/pipeline/gate";
@@ -163,9 +164,7 @@ export async function prepareMediationOpening(roomId: string) {
 }
 
 export function tryPrepareMediationOpening(roomId: string) {
-  void prepareMediationOpening(roomId).catch((error) => {
-    console.error(`Mediation opening preparation failed for room ${roomId}:`, error);
-  });
+  scheduleMediationWork(`prepareMediationOpening:${roomId}`, () => prepareMediationOpening(roomId));
 }
 
 /** Awaitable entry point for server actions — survives request lifecycle better than fire-and-forget. */

@@ -1,9 +1,8 @@
+import { scheduleMediationWork } from "@/lib/mediation/schedule-work";
 import { runPostIntakePipeline } from "@/lib/pipeline/orchestrator";
 
 export function tryRunPostIntakePipeline(roomId: string) {
-  void runPostIntakePipeline(roomId).catch((error) => {
-    console.error(`Post-intake pipeline failed for room ${roomId}:`, error);
-  });
+  scheduleMediationWork(`postIntakePipeline:${roomId}`, () => runPostIntakePipeline(roomId));
 }
 
 /** Awaitable entry point for server actions — survives request lifecycle better than fire-and-forget. */

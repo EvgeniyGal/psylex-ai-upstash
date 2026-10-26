@@ -9,6 +9,10 @@ import { FlowReviewNext } from "@/components/portal/flow-review-next";
 import { PortalPageShell } from "@/components/portal/portal-page-shell";
 import { Spinner } from "@/components/ui/spinner";
 import { useLocale } from "@/components/locale-provider";
+import {
+  dismissModeATestsToast,
+  showModeATestsToast,
+} from "@/hooks/use-mode-a-wait-toasts";
 import { useUserRealtime } from "@/hooks/use-room-realtime";
 import { getRoleCopy } from "@/lib/portal-i18n";
 import { fadeInUp, scaleIn } from "@/lib/motion";
@@ -78,15 +82,25 @@ export function TestingDashboard({
   };
 
   const handleUpdateStatus = () => {
+    showModeATestsToast(t.modeAToastTestsSaving);
     startUpdateTransition(async () => {
-      await updateTestStatus();
-      router.refresh();
+      try {
+        await updateTestStatus();
+        router.refresh();
+      } finally {
+        dismissModeATestsToast();
+      }
     });
   };
 
   const handleNextStep = () => {
+    showModeATestsToast(t.modeAToastTestsSaving);
     startNextStepTransition(async () => {
-      await completeOnboarding();
+      try {
+        await completeOnboarding();
+      } finally {
+        dismissModeATestsToast();
+      }
     });
   };
 

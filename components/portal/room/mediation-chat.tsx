@@ -330,15 +330,26 @@ export function MediationChatComposer({
         value={value}
       />
       <motion.button
+        aria-busy={pending}
         aria-label={sendLabel}
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-party-a text-white transition-all hover:bg-party-a/90 disabled:cursor-not-allowed disabled:opacity-40"
+        className={cn(
+          "flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-party-a text-white transition-all hover:bg-party-a/90 disabled:cursor-not-allowed",
+          pending ? "opacity-100" : "disabled:opacity-40",
+        )}
         disabled={!canSend}
         onClick={onSend}
         type="button"
         whileHover={canSend ? { scale: 1.08 } : undefined}
         whileTap={canSend ? { scale: 0.92 } : undefined}
       >
-        <span className="material-symbols-outlined text-[22px]">send</span>
+        {pending ? (
+          <span
+            aria-hidden
+            className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white"
+          />
+        ) : (
+          <span className="material-symbols-outlined text-[22px]">send</span>
+        )}
       </motion.button>
       </div>
     </div>

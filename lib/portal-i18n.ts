@@ -155,6 +155,19 @@ type PortalCopy = {
   mediationHelpFormulateFailed: string;
   mediationAttackRedirected: string;
   mediationActionFailed: string;
+  modeAToastIntakeSubmitting: string;
+  modeAToastPipelineWorking: string;
+  modeAToastOpeningPreparing: string;
+  modeAToastGeneratingQuestion: string;
+  modeAToastGeneratingOptions: string;
+  modeAToastGeneratingCompromise: string;
+  modeAToastGeneratingAgreement: string;
+  modeAToastNewQuestion: string;
+  modeAToastOptionsReady: string;
+  modeAToastCompromiseReady: string;
+  modeAToastAgreementReady: string;
+  modeAToastTestsSaving: string;
+  modeAToastSendFailedRetry: string;
   mediationOptionsTitle: string;
   mediationOptionsReady: string;
   modeBSessionStarted: string;
@@ -330,7 +343,7 @@ export const portalCopy: Record<Locale, PortalCopy> = {
       "The opposite side is ready to start. Click Start Mediation to join the session together.",
     mediationHandshakeStarting: "Both sides are ready. Starting mediation…",
     mediationCountdownLabel: "Session time remaining",
-    mediationSessionEnded: "The 60-minute mediation session has ended.",
+    mediationSessionEnded: "The mediation session has ended.",
     mediationElapsedLabel: "Session time",
     modeBScheduledAt: "Scheduled session",
     modeBWaitingSchedule: "Waiting for the mediator to schedule the session.",
@@ -425,6 +438,25 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     mediationHelpFormulateFailed: "Could not rewrite. Try again.",
     mediationAttackRedirected: "Please focus on the substance of the dispute.",
     mediationActionFailed: "Action failed. Please try again.",
+    modeAToastIntakeSubmitting: "Saving your answers…",
+    modeAToastPipelineWorking:
+      "Analyzing your intake — this can take up to about 5–10 minutes.",
+    modeAToastOpeningPreparing:
+      "Preparing your mediation opening — usually under a couple of minutes.",
+    modeAToastGeneratingQuestion:
+      "Generating the next question — usually under 1–2 minutes.",
+    modeAToastGeneratingOptions:
+      "Generating solution options — this can take up to about 10 minutes.",
+    modeAToastGeneratingCompromise:
+      "Generating a compromise — this can take up to about 10 minutes.",
+    modeAToastGeneratingAgreement: "Preparing the draft agreement…",
+    modeAToastNewQuestion: "You have a new question — please answer.",
+    modeAToastOptionsReady: "Solution options are ready — please review and vote.",
+    modeAToastCompromiseReady: "A compromise is ready — please vote.",
+    modeAToastAgreementReady: "The draft agreement is ready — please review.",
+    modeAToastTestsSaving: "Saving your test progress…",
+    modeAToastSendFailedRetry:
+      "Could not send your reply. Your text was restored — please try again.",
     mediationOptionsTitle: "Solution options",
     mediationOptionsReady:
       "Solution options are ready. Please review and vote independently.",
@@ -619,7 +651,7 @@ export const portalCopy: Record<Locale, PortalCopy> = {
       "Інша сторона готова почати. Натисніть «Почати медіацію», щоб разом увійти в сесію.",
     mediationHandshakeStarting: "Обидві сторони готові. Запускаємо медіацію…",
     mediationCountdownLabel: "Час сесії",
-    mediationSessionEnded: "60-хвилинна сесія медіації завершилася.",
+    mediationSessionEnded: "Сесію медіації завершено.",
     mediationElapsedLabel: "Час сесії",
     modeBScheduledAt: "Запланована сесія",
     modeBWaitingSchedule: "Очікуємо, поки медіатор призначить час сесії.",
@@ -714,6 +746,25 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     mediationHelpFormulateFailed: "Не вдалося переписати. Спробуйте ще раз.",
     mediationAttackRedirected: "Будь ласка, зосередьтеся на суті спору.",
     mediationActionFailed: "Не вдалося виконати дію. Спробуйте ще раз.",
+    modeAToastIntakeSubmitting: "Зберігаємо ваші відповіді…",
+    modeAToastPipelineWorking:
+      "Аналізуємо анкету — це може зайняти приблизно до 5–10 хвилин.",
+    modeAToastOpeningPreparing:
+      "Готуємо вступ до медіації — зазвичай до кількох хвилин.",
+    modeAToastGeneratingQuestion:
+      "Готуємо наступне запитання — зазвичай до 1–2 хвилин.",
+    modeAToastGeneratingOptions:
+      "Формуємо варіанти рішення — це може зайняти приблизно до 10 хвилин.",
+    modeAToastGeneratingCompromise:
+      "Формуємо компроміс — це може зайняти приблизно до 10 хвилин.",
+    modeAToastGeneratingAgreement: "Готуємо проєкт угоди…",
+    modeAToastNewQuestion: "У вас нове запитання — будь ласка, дайте відповідь.",
+    modeAToastOptionsReady: "Варіанти рішення готові — перегляньте й проголосуйте.",
+    modeAToastCompromiseReady: "Компроміс готовий — будь ласка, проголосуйте.",
+    modeAToastAgreementReady: "Проєкт угоди готовий — будь ласка, перегляньте.",
+    modeAToastTestsSaving: "Зберігаємо прогрес тестів…",
+    modeAToastSendFailedRetry:
+      "Не вдалося надіслати відповідь. Текст відновлено — спробуйте ще раз.",
     mediationOptionsTitle: "Варіанти рішення",
     mediationOptionsReady:
       "Варіанти рішення готові. Перегляньте їх і проголосуйте незалежно.",

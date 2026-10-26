@@ -42,6 +42,7 @@ import { isMediatorFacilitatedRoom } from "@/lib/mediator-session/room-mode";
 import { logPipelineEvent } from "@/lib/pipeline/log-event";
 import { getRoomPartiesForPipeline, isPostIntakePipelineComplete } from "@/lib/pipeline/gate";
 import type { PartyRole } from "@/lib/participant-roles";
+import { scheduleMediationWork } from "@/lib/mediation/schedule-work";
 import { notifyRoom } from "@/lib/realtime/notify";
 
 type RoomRow = typeof rooms.$inferSelect;
@@ -134,11 +135,15 @@ async function clearTurn(roomId: string) {
   notifyRoom(roomId);
 }
 
-async function askDialogueQuestion(room: RoomRow, addressee: PartyRole) {
+async function askDialogueQuestion(
+  room: RoomRow,
+  addressee: PartyRole,
+  options?: { alreadyLocked?: boolean },
+) {
   if (await transitionIfBothReady(room.id, room)) return;
-  if (mediationAgentWork.has(room.id)) return;
 
   // Atomic DB-level claim: set activeParty only if no one else is generating.
+  // Allows re-entry when deadline is still null (resume after after() death mid-LLM).
   const [claimed] = await db
     .update(rooms)
     .set({
@@ -156,7 +161,11 @@ async function askDialogueQuestion(room: RoomRow, addressee: PartyRole) {
     .returning({ id: rooms.id });
   if (!claimed) return;
 
-  mediationAgentWork.add(room.id);
+  const ownsLock = !options?.alreadyLocked;
+  if (ownsLock) {
+    if (mediationAgentWork.has(room.id)) return;
+    mediationAgentWork.add(room.id);
+  }
   try {
     const { partyA, partyB } = await getRoomPartiesForPipeline(room.id);
     const addresseeUserId =
@@ -189,7 +198,7 @@ async function askDialogueQuestion(room: RoomRow, addressee: PartyRole) {
       .set({ mediationTurnDeadlineAt: new Date(Date.now() + REPLY_TIMEOUT_MS) })
       .where(eq(rooms.id, room.id));
   } finally {
-    mediationAgentWork.delete(room.id);
+    if (ownsLock) mediationAgentWork.delete(room.id);
   }
 }
 
@@ -216,13 +225,13 @@ export async function transitionToGeneratingOptions(roomId: string, reason: stri
   if (isMediatorFacilitatedRoom(room)) return;
 
   if (room.mediationPhase === "generating_options") {
-    await ensureOptionsPublished(roomId);
+    scheduleMediationWork(`ensureOptionsPublished:${roomId}`, () => ensureOptionsPublished(roomId));
     return;
   }
 
   await clearTurn(roomId);
   await setPhase(roomId, "generating_options", { reason });
-  await generateAndPublishOptions(roomId);
+  scheduleMediationWork(`generateAndPublishOptions:${roomId}`, () => generateAndPublishOptions(roomId));
 }
 
 async function ensureOptionsPublished(roomId: string) {
@@ -308,7 +317,10 @@ async function generateAndPublishOptions(roomId: string) {
   }
 }
 
-async function startDialogueRound(room: RoomRow) {
+async function startDialogueRound(
+  room: RoomRow,
+  options?: { alreadyLocked?: boolean },
+) {
   if (await transitionIfBothReady(room.id, room)) return;
 
   const round = room.mediationRound <= 0 ? 1 : room.mediationRound;
@@ -318,19 +330,40 @@ async function startDialogueRound(room: RoomRow) {
     .where(eq(rooms.id, room.id));
 
   const updated = { ...room, mediationRound: round, mediationPhase: "dialogue" as const };
-  await askDialogueQuestion(updated, "party_a");
+  await askDialogueQuestion(updated, "party_a", options);
 }
 
 async function afterPartyReply(room: RoomRow, party: PartyRole) {
+  if (mediationAgentWork.has(room.id)) return;
+  mediationAgentWork.add(room.id);
+  try {
+    await runAfterPartyReply(room, party);
+  } finally {
+    mediationAgentWork.delete(room.id);
+  }
+}
+
+async function runAfterPartyReply(room: RoomRow, party: PartyRole) {
   const fresh = (await loadRoom(room.id)) ?? room;
   if (await transitionIfBothReady(room.id, fresh)) return;
 
   if (party === "party_a") {
-    await askDialogueQuestion(fresh, "party_b");
+    await askDialogueQuestion(fresh, "party_b", { alreadyLocked: true });
     return;
   }
 
-  await postRoundSummary(fresh);
+  const messagesBeforeSummary = await listRoomMessages(room.id);
+  const lastParticipantIdx = messagesBeforeSummary.findLastIndex((m) => m.senderType === "participant");
+  const hasSummaryAfterLastReply =
+    lastParticipantIdx >= 0 &&
+    messagesBeforeSummary
+      .slice(lastParticipantIdx + 1)
+      .some((m) => m.messageKind === "mediation_summary");
+
+  if (!hasSummaryAfterLastReply) {
+    await postRoundSummary(fresh);
+  }
+
   const afterSummary = await loadRoom(room.id);
   if (!afterSummary) return;
 
@@ -346,13 +379,68 @@ async function afterPartyReply(room: RoomRow, party: PartyRole) {
     return;
   }
 
+  const messagesAfter = await listRoomMessages(room.id);
+  const lastSummaryIdx = messagesAfter.findLastIndex((m) => m.messageKind === "mediation_summary");
+  const hasQuestionAfterSummary =
+    lastSummaryIdx >= 0 &&
+    messagesAfter.slice(lastSummaryIdx + 1).some((m) => m.messageKind === "mediation_question");
+  if (hasQuestionAfterSummary) return;
+
+  // CAS bump so concurrent resume does not skip a round.
   await db
     .update(rooms)
     .set({ mediationRound: afterSummary.mediationRound + 1 })
-    .where(eq(rooms.id, room.id));
+    .where(
+      and(eq(rooms.id, room.id), eq(rooms.mediationRound, afterSummary.mediationRound)),
+    );
 
   const nextRound = await loadRoom(room.id);
-  if (nextRound) await startDialogueRound(nextRound);
+  if (nextRound) await startDialogueRound(nextRound, { alreadyLocked: true });
+}
+
+/** Resume dialogue after a reply when after() died before claiming the next turn. */
+async function resumeStuckDialogueContinuation(room: RoomRow) {
+  if (mediationAgentWork.has(room.id)) return;
+
+  const messages = await listRoomMessages(room.id);
+  const last = messages.at(-1);
+  if (!last) return;
+
+  if (last.senderType === "participant" && last.senderUserId) {
+    const { partyA, partyB } = await getRoomPartiesForPipeline(room.id);
+    const role: PartyRole | null =
+      last.senderUserId === partyA?.id
+        ? "party_a"
+        : last.senderUserId === partyB?.id
+          ? "party_b"
+          : null;
+    if (!role) return;
+    await afterPartyReply(room, role);
+    return;
+  }
+
+  // Died after round summary (or opening) before the next question was claimed.
+  if (last.messageKind === "mediation_summary" || last.messageKind === "mediation_opening") {
+    if (await transitionIfBothReady(room.id, room)) return;
+    if (isSessionExpired(room)) {
+      await transitionToGeneratingOptions(room.id, "timer_expired");
+      return;
+    }
+    if (last.messageKind === "mediation_opening") {
+      await askDialogueQuestion(room, "party_a");
+      return;
+    }
+    if (room.mediationRound >= MAX_DIALOGUE_ROUNDS) {
+      await transitionToGeneratingOptions(room.id, "rounds_complete");
+      return;
+    }
+    await db
+      .update(rooms)
+      .set({ mediationRound: room.mediationRound + 1 })
+      .where(and(eq(rooms.id, room.id), eq(rooms.mediationRound, room.mediationRound)));
+    const nextRound = await loadRoom(room.id);
+    if (nextRound) await startDialogueRound(nextRound);
+  }
 }
 
 async function activatePreparedSession(roomId: string) {
@@ -553,6 +641,22 @@ export async function tickMediationTimers(roomId: string) {
     return loadRoom(roomId);
   }
 
+  // Stuck dialogue generation: activeParty claimed, deadline not set yet (after() died mid-LLM).
+  if (
+    room.mediationPhase === "dialogue" &&
+    room.mediationActiveParty &&
+    !room.mediationTurnDeadlineAt
+  ) {
+    await askDialogueQuestion(room, room.mediationActiveParty as PartyRole);
+    return loadRoom(roomId);
+  }
+
+  // Reply saved and turn cleared, but continuation never claimed (after() died before askDialogueQuestion).
+  if (room.mediationPhase === "dialogue" && !room.mediationActiveParty) {
+    await resumeStuckDialogueContinuation(room);
+    return loadRoom(roomId);
+  }
+
   if (
     room.mediationPhase === "dialogue" &&
     room.mediationActiveParty &&
@@ -562,7 +666,11 @@ export async function tickMediationTimers(roomId: string) {
     const timedOutParty = room.mediationActiveParty as PartyRole;
     await clearTurn(roomId);
     const fresh = await loadRoom(roomId);
-    if (fresh) await afterPartyReply(fresh, timedOutParty);
+    if (fresh) {
+      scheduleMediationWork(`afterPartyReply:timeout:${roomId}`, () =>
+        afterPartyReply(fresh, timedOutParty),
+      );
+    }
   }
 
   if (bothReady(room) && isNegotiationPhase(room.mediationPhase)) {
@@ -622,7 +730,12 @@ export async function submitDialogueReply(userId: string, content: string) {
 
   await clearTurn(room.id);
   const fresh = await loadRoom(room.id);
-  if (fresh) await afterPartyReply(fresh, role);
+  if (fresh) {
+    scheduleMediationWork(`afterPartyReply:${room.id}:${role}`, async () => {
+      const current = (await loadRoom(room.id)) ?? fresh;
+      await afterPartyReply(current, role);
+    });
+  }
 
   return { moderated: false as const };
 }
@@ -639,7 +752,9 @@ export async function markReadyForOptions(userId: string) {
   }
 
   if (room.mediationPhase === "generating_options") {
-    await ensureOptionsPublished(participant.roomId);
+    scheduleMediationWork(`ensureOptionsPublished:${participant.roomId}`, () =>
+      ensureOptionsPublished(participant.roomId),
+    );
     return;
   }
 
@@ -701,10 +816,12 @@ export async function castVote(userId: string, optionId: string) {
       })
       .where(eq(rooms.id, room.id));
     notifyRoom(room.id);
-    await ensureDraftAgreement({
-      ...updated,
-      selectedOptionId: updated.partyAVoteOptionId,
-      mediationPhase: "agreement",
+    scheduleMediationWork(`ensureDraftAgreement:${room.id}`, async () => {
+      await ensureDraftAgreement({
+        ...updated,
+        selectedOptionId: updated.partyAVoteOptionId,
+        mediationPhase: "agreement",
+      });
     });
     return loadRoom(room.id);
   }
@@ -721,7 +838,9 @@ export async function castVote(userId: string, optionId: string) {
 
   const discrepancyRoom = await loadRoom(room.id);
   if (discrepancyRoom) {
-    await ensureCompromiseOption(discrepancyRoom);
+    scheduleMediationWork(`ensureCompromiseOption:${room.id}`, () =>
+      ensureCompromiseOption(discrepancyRoom),
+    );
   }
 
   return discrepancyRoom;
@@ -769,10 +888,12 @@ export async function castCompromiseVote(userId: string, accepted: boolean) {
       .where(eq(rooms.id, room.id));
     notifyRoom(room.id);
 
-    await ensureDraftAgreement({
-      ...updated,
-      selectedOptionId: compromise.id,
-      mediationPhase: "agreement",
+    scheduleMediationWork(`ensureDraftAgreement:${room.id}`, async () => {
+      await ensureDraftAgreement({
+        ...updated,
+        selectedOptionId: compromise.id,
+        mediationPhase: "agreement",
+      });
     });
     return loadRoom(room.id);
   }
@@ -1015,7 +1136,8 @@ export async function getMediationRoomState(userId: string) {
 
   const isAwaitingAgent =
     room!.mediationPhase === "generating_options" ||
-    (room!.mediationPhase === "dialogue" && !room!.mediationActiveParty) ||
+    (room!.mediationPhase === "dialogue" &&
+      (!room!.mediationActiveParty || !room!.mediationTurnDeadlineAt)) ||
     (room!.mediationPhase === "agreement" && !room!.draftAgreement) ||
     (room!.mediationPhase === "voting_discrepancy" && !room!.compromiseOption);
 

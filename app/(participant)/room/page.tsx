@@ -10,7 +10,7 @@ import { isMediatorFacilitatedRoom } from "@/lib/mediator-session/room-mode";
 import { getMediatorSessionRoomState } from "@/lib/mediator-session/orchestrator";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 type RoomPageProps = {
   searchParams: Promise<{ review?: string }>;

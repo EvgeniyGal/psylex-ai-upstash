@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { useFormStatus } from "react-dom";
 import { motion } from "framer-motion";
 import { submitDisputeIntake } from "@/app/dispute-intake/actions";
@@ -8,6 +9,10 @@ import { FlowReviewNext } from "@/components/portal/flow-review-next";
 import { PortalPageShell } from "@/components/portal/portal-page-shell";
 import { Spinner } from "@/components/ui/spinner";
 import { useLocale } from "@/components/locale-provider";
+import {
+  dismissModeAIntakeToast,
+  showModeAIntakeToast,
+} from "@/hooks/use-mode-a-wait-toasts";
 import { fadeInUp } from "@/lib/motion";
 
 const textareaClass =
@@ -16,8 +21,24 @@ const textareaClass =
 const readOnlyFieldClass =
   "w-full rounded-md border border-outline-variant/40 bg-surface-container px-4 py-3 font-sans text-body-md text-on-surface shadow-sm";
 
-function SubmitButton({ label, loadingLabel }: { label: string; loadingLabel: string }) {
+function SubmitButton({
+  label,
+  loadingLabel,
+  toastMessage,
+}: {
+  label: string;
+  loadingLabel: string;
+  toastMessage: string;
+}) {
   const { pending } = useFormStatus();
+
+  useEffect(() => {
+    if (pending) {
+      showModeAIntakeToast(toastMessage);
+      return () => dismissModeAIntakeToast();
+    }
+    dismissModeAIntakeToast();
+  }, [pending, toastMessage]);
 
   return (
     <button
@@ -136,7 +157,11 @@ export function DisputeIntakeForm({ review = false, answers }: DisputeIntakeForm
             </motion.label>
 
             <motion.div className="mt-4 flex justify-center" variants={fadeInUp}>
-              <SubmitButton label={t.disputeIntakeSubmit} loadingLabel={t.disputeIntakeSubmitting} />
+              <SubmitButton
+                label={t.disputeIntakeSubmit}
+                loadingLabel={t.disputeIntakeSubmitting}
+                toastMessage={t.modeAToastIntakeSubmitting}
+              />
             </motion.div>
           </motion.form>
         )}

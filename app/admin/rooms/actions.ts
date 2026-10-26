@@ -15,6 +15,7 @@ import { isPartyRole, type PartyRole } from "@/lib/participant-roles";
 import { isRoomJurisdiction } from "@/lib/room/jurisdiction";
 import { addRoomParticipant, searchPartyUsers } from "@/lib/room/helpers";
 import { isUsaSubJurisdiction, parseUsaSubJurisdiction } from "@/lib/rag/usa-jurisdictions";
+import { MODE_A_SESSION_DURATION_MINUTES } from "@/lib/mediation/types";
 import { notifyRoom, notifyUser } from "@/lib/realtime/notify";
 
 function required(value: FormDataEntryValue | null, field: string) {
@@ -77,6 +78,7 @@ export async function createRoom(formData: FormData) {
     throw new Error("Invalid US state or territory.");
   }
 
+  const isModeA = role !== "mediator";
   const [room] = await db
     .insert(rooms)
     .values({
@@ -85,6 +87,7 @@ export async function createRoom(formData: FormData) {
       jurisdiction: jurisdictionRaw,
       usaSubJurisdiction,
       createdByUserId: role === "mediator" ? userId : null,
+      ...(isModeA ? { mediationDurationMinutes: MODE_A_SESSION_DURATION_MINUTES } : {}),
     })
     .returning();
 
