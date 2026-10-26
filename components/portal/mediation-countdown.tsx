@@ -89,35 +89,28 @@ export function MediationCountdown({
     if (remainingMs === null) return;
 
     const toastChrome =
-      "!bg-transparent !border-0 !shadow-none !p-0 w-auto";
+      "!bg-transparent !border-0 !shadow-none !p-0 w-auto [&>[data-icon]]:!hidden [&_[data-icon]]:!hidden [&_.sonner-loading-wrapper]:!hidden";
 
-    if (remainingMs <= 0) {
-      toast.custom(
-        () => (
-          <SessionTimerToast ended label={t.mediationCountdownLabel} time={t.mediationSessionEnded} />
-        ),
-        {
-          id: SESSION_TIMER_TOAST_ID,
-          duration: 8000,
-          className: toastChrome,
-        },
-      );
-      return;
-    }
-
-    toast.custom(
-      () => (
+    const body =
+      remainingMs <= 0 ? (
+        <SessionTimerToast ended label={t.mediationCountdownLabel} time={t.mediationSessionEnded} />
+      ) : (
         <SessionTimerToast
           label={t.mediationCountdownLabel}
           time={formatRemaining(remainingMs)}
         />
-      ),
-      {
-        id: SESSION_TIMER_TOAST_ID,
-        duration: Infinity,
-        className: toastChrome,
-      },
-    );
+      );
+
+    // Prefer default toast + null icon so Sonner never attaches the loading spinner.
+    // Dedicated toaster keeps the session clock above wait/status toasts.
+    toast(body, {
+      id: SESSION_TIMER_TOAST_ID,
+      toasterId: "session-timer",
+      duration: remainingMs <= 0 ? 8000 : Infinity,
+      icon: null,
+      className: toastChrome,
+      unstyled: true,
+    });
   }, [remainingMs, sessionComplete, t.mediationCountdownLabel, t.mediationSessionEnded]);
 
   useEffect(() => {

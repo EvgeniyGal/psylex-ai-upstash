@@ -71,11 +71,18 @@ export default function RootLayout({
             <ConditionalSiteFooter />
           </div>
         </AppProviders>
+        {/* Session timer stays above all other toasts. */}
+        <Toaster
+          id="session-timer"
+          offset={{ top: 102, left: 20 }}
+          position="top-left"
+          visibleToasts={1}
+        />
         <Toaster
           closeButton
           duration={3500}
           expand
-          offset={102}
+          offset={{ top: 174, left: 20 }}
           position="top-left"
           richColors
           visibleToasts={5}
