@@ -139,12 +139,9 @@ export async function listSideMemberships(params?: {
     );
 
     if (mediatorScope) {
-      const inMediatorRooms = userRooms.some((room) => room.roomCreatedByUserId === mediatorScope);
-      const roomless = userRooms.length === 0;
-      // Mediator sees parties in their rooms, plus unassigned (roomless) parties they can reuse.
-      if (!inMediatorRooms && !roomless) continue;
+      // Mediators only see parties that belong to rooms they created (no roomless pool).
       const scopedRooms = userRooms.filter((room) => room.roomCreatedByUserId === mediatorScope);
-      if (!roomless && scopedRooms.length === 0) continue;
+      if (scopedRooms.length === 0) continue;
     }
 
     const completed = completionsByUser.get(party.userId) ?? new Map();
