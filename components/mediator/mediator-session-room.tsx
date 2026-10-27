@@ -21,6 +21,7 @@ import {
 import { MediationCountdown } from "@/components/portal/mediation-countdown";
 import { MediationCompromisePanel } from "@/components/portal/room/mediation-compromise-panel";
 import { MediationOptionsPanel } from "@/components/portal/room/mediation-options-panel";
+import { ModalOverlay } from "@/components/ui/modal";
 import { Spinner } from "@/components/ui/spinner";
 import { useLocale } from "@/components/locale-provider";
 import { useModeBMediatorRoomWaitToasts } from "@/hooks/use-mode-b-wait-toasts";
@@ -130,6 +131,7 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
   const [customText, setCustomText] = useState("");
   const [compromiseEdit, setCompromiseEdit] = useState<MediationOption | null>(null);
   const [draftEdit, setDraftEdit] = useState<DraftAgreement | null>(null);
+  const [confirmEndSessionOpen, setConfirmEndSessionOpen] = useState(false);
   const selectedParty: PartyRole =
     selectedAudience === "party_b" ? "party_b" : "party_a";
   const isPartyAudience = selectedAudience === "party_a" || selectedAudience === "party_b";
@@ -438,11 +440,15 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
   };
 
   const onEndSession = () => {
-    if (!window.confirm(admin.mediatorEndSessionConfirm)) return;
+    setConfirmEndSessionOpen(true);
+  };
+
+  const confirmEndSession = () => {
     startTransition(async () => {
       try {
         const next = await endMediatorSessionAction(roomId, locale);
         if (next) setState(next);
+        setConfirmEndSessionOpen(false);
       } catch {
         toast.error(admin.mediatorEndSessionError);
       }
@@ -994,6 +1000,57 @@ export function MediatorSessionRoom({ roomId, initialState }: MediatorSessionRoo
           ) : null}
         </aside>
       </div>
+
+      <ModalOverlay
+        onClose={() => {
+          if (!pending) setConfirmEndSessionOpen(false);
+        }}
+        open={confirmEndSessionOpen}
+        panelClassName="max-w-md"
+      >
+        <div
+          aria-labelledby="end-session-title"
+          aria-modal="true"
+          className="space-y-5 rounded-xl border border-error/30 bg-surface-container p-6 shadow-xl"
+          role="dialog"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="font-display text-headline-md text-error" id="end-session-title">
+                {admin.mediatorEndSession}
+              </h2>
+              <p className="mt-2 text-body-sm text-on-surface">{admin.mediatorEndSessionConfirm}</p>
+            </div>
+            <button
+              className="grid h-8 w-8 place-items-center rounded-full border border-hair text-on-surface-variant hover:text-on-surface disabled:opacity-50"
+              disabled={pending}
+              onClick={() => setConfirmEndSessionOpen(false)}
+              type="button"
+            >
+              <span className="material-symbols-outlined text-[18px]">close</span>
+            </button>
+          </div>
+          <div className="flex justify-end gap-3">
+            <button
+              className="rounded-lg border border-outline-variant/30 px-4 py-2 text-on-surface-variant hover:bg-surface-container-high"
+              disabled={pending}
+              onClick={() => setConfirmEndSessionOpen(false)}
+              type="button"
+            >
+              {admin.cancel}
+            </button>
+            <button
+              className="flex items-center gap-1.5 rounded-lg bg-error px-4 py-2 font-semibold text-white disabled:opacity-60"
+              disabled={pending}
+              onClick={confirmEndSession}
+              type="button"
+            >
+              {pending ? <Spinner className="text-white" size="sm" /> : null}
+              {admin.mediatorEndSession}
+            </button>
+          </div>
+        </div>
+      </ModalOverlay>
     </section>
   );
 }
