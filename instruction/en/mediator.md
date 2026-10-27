@@ -99,21 +99,38 @@ Click a row to open the room card.
 
 ## 5. Creating a room and access
 
-1. **New Room**.
-2. **Room details**: title, description; **Jurisdiction** (**Ukraine** or **United States** + for the US **State / territory / Federal**). Jurisdiction cannot be changed after creation.
-3. For **Party A** and **Party B**:
-   - **Create new participant** — **Title / Name**, **Description** (new login `psylex_…` and password); or
-   - **Add existing participant** — search by login or name (**only parties from your rooms**; roomless accounts and other mediators’ parties are hidden).
-4. **Create Room** / **Cancel**.
+Path: **Rooms** → **New Room** (or **Return to rooms**). Subtitle: set up the room and both sides; credentials are generated for **new** participants when you create the room.
 
-The same person cannot fill both slots in one room.
+### Room details
 
-### Giving parties access
+1. **Room title**, **Room description** (required).
+2. **Jurisdiction** — **Ukraine** or **United States** (+ help blurbs). For the US: required **State / territory / Federal**.
+3. Jurisdiction cannot be changed after creation.
+
+### Party A and Party B
+
+#### Create new participant
+
+**Title / Name**, **Description** → new login `psylex_…` and password.
+
+#### Add existing participant
+
+Reuse a party who already appears in **your** practice:
+
+1. Switch to **Add existing participant**.
+2. **Search by login or name…** — as a **mediator**, the pool is **only parties already in your rooms**. Roomless accounts and parties from **other mediators’** rooms are **hidden**.
+3. Selected card: `title (login)`, **Profile ready** / **Profile not ready**, badges **T1–T4** and **BP**.
+
+**Reuse rules:** tests, personal bot, and onboarding are reused; dispute intake is still required **for this new room**. The same person cannot fill both slots.
+
+### Finish and access
+
+**Cancel** / **Create Room** → room card (Mode B).
 
 On the room card under **Participants**:
 
 - **Copy Credentials** (login and password);
-- **Magic Link** — one-time link valid **72 hours** (auto sign-in / **Continue** without JS).
+- **Magic Link** — one-time, **72 hours** (auto sign-in / **Continue** without JS).
 
 Ask parties to complete onboarding and dispute intake using the [party instruction](./parties.md).
 
@@ -121,21 +138,52 @@ Ask parties to complete onboarding and dispute intake using the [party instructi
 
 ## 6. Sides
 
-Menu **Sides** — registry scoped to your practice.
+Menu **Sides** — party registry scoped to **your** rooms. Subtitle: review test/bot readiness and request selective retests.
 
-- You see parties that belong to **at least one of your rooms**.
+> No **Add** button here — parties appear via **New Room**. No **Copy Credentials** / **Magic Link** on Sides (use the room card). No Admin/Mediator tabs (unlike the admin console).
+
+### Scope
+
+- You see parties in **at least one of your rooms**.
 - Parties with **no room** are **hidden**.
-- Columns: title, login, role, rooms, tests (T1–T4), bot (BP), actions.
+- Parties that exist only in other mediators’ rooms are **not** listed.
 
-Actions:
+### Table
 
-- **Edit** title / description;
-- **Delete party** (with cascading room rules);
-- ⋮ menu: **Redo T1…T4**, **Redo all tests**, **Redo bot prompt**, **Redo all** (with confirmation) → **Retest requested.**
+**Search...**, sortable columns, pagination (**Rows per page** 10 / 25 / 50).
 
-Credentials (login/password/Magic Link) are copied from the **room card**, not from the Sides list.
+| Column | Meaning |
+|--------|---------|
+| **Title** | Name + description; click or **Edit** |
+| **Login** | `psylex_…` |
+| **Role** | **A** / **B** |
+| **Rooms** | Your rooms for this party (A/B badges) |
+| **Tests** | **T1–T4** chips (+ dates when available) |
+| **Bot prompt** | **BP** chip (+ date) |
+| **Actions** | Edit, Delete, ⋮ |
 
-Administrators see **all** parties (including roomless) in their console.
+### Edit
+
+**Edit side** modal: **Title** and **Description** required → **Save Changes** → **Side updated.** / **Could not update side.**
+
+### Delete party
+
+Confirm dialog means:
+
+- The party account is **removed**.
+- **Every room** that party belongs to is **deleted** (including your rooms they are in).
+- Other parties in those rooms are kept as free / roomless accounts.
+- **Cannot be undone.**
+
+**Ownership limit:** if the party also belongs to rooms you do **not** own, delete fails — ask an **administrator**. Success: **Party deleted.** Error: **Could not delete party.**
+
+### Redo (⋮)
+
+**Redo T1…T4**, **Redo all tests**, **Redo bot prompt**, **Redo all** — each with confirm: clears **local** progress; party must recomplete the external test for a **newer Airtable** record → **Retest requested.**
+
+**Redo all** ≈ room-card **Request profile update**.
+
+Administrators see **all** parties (including roomless) under their **Sides** menu — see [admin.md](./admin.md).
 
 ---
 
@@ -151,16 +199,20 @@ Administrators see **all** parties (including roomless) in their console.
 | **Participants** | Profile / tests, **Request profile update**, login/password, **Copy Credentials**, **Magic Link** |
 | **Delete room** | Two options (see below) |
 
-**Request profile update** clears tests, bot, and related data and asks the party to retake onboarding.
+### Request profile update
+
+Confirm → clears tests, bot, and related AI profiles; welcome/consent kept so the party returns to tests. Pending: **Profile update requested — waiting for retests.** Same idea as Sides **Redo all**.
 
 Readiness indicators: **Party A/B ready**, profile readiness, **AI analysis**. Incomplete pipeline steps may show **Generating…**.
 
-### Delete
+### Delete room
 
-- **Delete room only** — party accounts remain;
-- **Delete room and parties** — also deletes those party accounts (and related rooms per product rules).
+| Button | What happens |
+|--------|----------------|
+| **Delete room only** | Removes this room. Party accounts are **kept** (may become roomless). |
+| **Delete room and parties** | Deletes this room and those party accounts; **every other room** those parties are in is also deleted. Other people in related rooms stay as free accounts. Fails if a party also sits in rooms you do not own — ask admin. |
 
-Both require confirmation and cannot be undone.
+Both require confirmation and cannot be undone. Toast: **Room deleted.**
 
 ---
 

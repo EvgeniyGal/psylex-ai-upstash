@@ -32,7 +32,7 @@ The mode is set by whoever created the room:
 
 In the app, click **Help** to read these instructions, download PDF / DOCX, or ask the chat assistant.
 
-Administrators and mediators manage participants under **Sides** (mediators: own rooms only; admins: all parties, including roomless). Parties see **Party A** or **Party B** in the header, often with a case title (for example **Party A · Claimant**), and can open **My rooms**.
+Administrators and mediators manage participants under the **Sides** menu (edit, delete, retest; mediators: own rooms only; admins: all parties, including roomless). When creating a room they can **Create new participant** or **Add existing participant**. Parties see **Party A** or **Party B** in the header, often with a case title (for example **Party A · Claimant**), and can open **My rooms**.
 
 ---
 

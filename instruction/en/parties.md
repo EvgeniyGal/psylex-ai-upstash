@@ -376,3 +376,5 @@ Other messages: send-failure (text restored), email stub, focus on substance of 
 **Can the other party see my tests and dispute description?** No. The room shows only dialogue, options, and the agreement. Profiles are used by AI (and by the mediator in Mode B).
 
 **What should I do after the agreement?** Download the PDF and, if needed, consult an attorney.
+
+**I was added to another room with the same login.** Organizers can reuse your account (**Add existing participant**). Your tests and personal bot may already be ready; you still need to submit the **dispute description for that new room**, then continue lobby and mediation as usual.

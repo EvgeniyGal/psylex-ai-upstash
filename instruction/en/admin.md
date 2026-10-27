@@ -91,63 +91,147 @@ Controls: **Search...**, sorting, pagination. Click a row → room card. No lobb
 
 ## 5. Creating a Mode A room
 
-1. **New Room**.
-2. **Room details**: title, description; **Jurisdiction** (**Ukraine** / **United States** + for the US required **State / territory / Federal**).
-3. For **Party A** and **Party B**:
-   - **Create new participant** — title, description; or
-   - **Add existing participant** — search; prep badges for tests (T1–T4) and bot (BP) are shown.
-4. **Create Room**.
+Path: **Rooms** → **New Room** (or **Return to rooms** to go back). Subtitle: set up the room and both sides; credentials are generated when you create the room (for **new** participants).
 
-Jurisdiction is fixed permanently. The same person cannot fill both slots.
+### Room details
 
-After creation the room runs in **Mode A** (AI leads dialogue, **120-minute** session). Copy access and send it with the [party instruction](./parties.md).
+1. **Room title**, **Room description** (required).
+2. **Jurisdiction** — **Ukraine** (*Ukrainian law and legal practice*) or **United States** (*United States law and legal practice*). Help text explains that jurisdiction drives which laws apply.
+3. If United States: required **State / territory / Federal** (state/territory law or nationwide federal law).
+4. Jurisdiction is fixed permanently after creation.
 
-**Mode A vs Mode B:** admin **New Room** is always Mode A. Mode B is created by a mediator.
+### Party A and Party B
+
+For each slot, choose a mode:
+
+#### Create new participant
+
+- Fields: **Title / Name**, **Description** (required).
+- On create, the system generates a new login `psylex_…` and password.
+
+#### Add existing participant
+
+Use this to attach a returning party (reuse the same account in another room).
+
+1. Switch to **Add existing participant**.
+2. **Search by login or name…** — as an **admin**, the pool includes **all** party accounts: roomless parties, parties already in your rooms, and parties already in mediator rooms.
+3. Select a row. The selected card shows `title (login)` plus:
+   - **Profile ready** or **Profile not ready**;
+   - prep badges **T1–T4** (tests) and **BP** (bot prompt), green when ready / red when not.
+4. Empty search: **No participants found.**
+
+**Reuse rules:**
+
+- Tests, personal bot, and onboarding progress are **reused** (no new credentials for that person).
+- Dispute intake is **per room membership** — the party must still submit the dispute description for **this** new room.
+- The same person cannot fill both Party A and Party B in one room (server rejects it).
+
+### Finish
+
+**Cancel** or **Create Room**. On success you land on the room card. The room runs in **Mode A** (AI leads dialogue, **120-minute** session). Copy access and send the [party instruction](./parties.md).
+
+**Mode A vs Mode B:** admin **New Room** is always Mode A. Mode B rooms are created by mediators.
 
 ---
 
 ## 6. Sides
 
-Menu **Sides** — full registry.
+Menu **Sides** — the full party registry for administrators. Subtitle: review test and bot readiness and request selective retests.
 
-- Tabs **Admin rooms** / **Mediator rooms**; roomless parties appear on the Admin tab as **No rooms**.
-- On the mediators tab — **Mediator** filter (**All mediators**).
-- Columns: title, login, role, rooms, tests (T1–T4), bot (BP), actions.
+> There is **no Add** button on Sides. Parties appear when you create a room (new or existing participant). There are **no** **Copy Credentials** / **Magic Link** buttons here — those live on the **room card** or **mediator card**.
 
-Actions:
+### Tabs and filters
 
-- **Edit** → **Save Changes** → **Side updated.**
-- **Delete party** — with cascading room rules → **Party deleted.**
-- ⋮ menu: **Redo T1…T4**, **Redo all tests**, **Redo bot prompt**, **Redo all** → **Retest requested.**
+| Control | Behavior |
+|---------|----------|
+| **Admin rooms** | Parties linked to admin (Mode A) rooms; roomless parties show as **No rooms** |
+| **Mediator rooms** | Parties linked to mediator rooms; extra **Mediator** column |
+| **Mediator** filter | On the Mediator rooms tab only: **All mediators** or one mediator |
+| **Search...** | Title, description, login, role, rooms, mediator name |
+| Sort | Click column headers |
+| Pagination | **Rows per page** 10 / 25 / 50; **Previous** / **Next** |
 
-> The **Sides** page does **not** have **Copy Credentials** / **Magic Link**. Credentials live on the **room card** or **mediator card**.
+### Columns
 
-Mediators see only parties from their own rooms (no roomless) under their Sides menu.
+| Column | Meaning |
+|--------|---------|
+| **Title** | Name; description under the title (click title or **Edit** to change) |
+| **Login** | `psylex_…` |
+| **Role** | Badge **A** or **B** |
+| **Rooms** | Each membership with A/B badge + room title, or italic **No rooms** |
+| **Tests** | Chips **T1–T4** (green/red) with completion dates when available |
+| **Bot prompt** | Chip **BP** with date when available |
+| **Actions** | Edit, Delete, ⋮ redo menu |
+
+### Edit side
+
+1. **Edit** (or click the title) → modal **Edit side** (`login · role`).
+2. **Title** and **Description** are required. **Save Changes** stays disabled until something changed and fields are non-empty.
+3. Success: **Side updated.** Error: **Could not update side.**
+
+### Delete party
+
+**Delete party** opens a confirm dialog. Meaning:
+
+- The **party account is removed**.
+- **Every room** that party belongs to is **permanently deleted**.
+- Other parties who were only in those rooms are **kept** as free / roomless accounts (not deleted).
+- This **cannot be undone**.
+
+Success: **Party deleted.** Error: **Could not delete party.**
+
+As admin you can delete regardless of which mediator owns related rooms (mediators cannot — see [mediator.md](./mediator.md)).
+
+### Redo tests / bot (⋮ menu)
+
+| Action | Effect |
+|--------|--------|
+| **Redo T1** … **Redo T4** | Clears that local test result |
+| **Redo all tests** | Clears all four local tests |
+| **Redo bot prompt** | Clears the personal AI bot |
+| **Redo all** | Clears tests, bot, and related profile data (same idea as **Request profile update** on the room card) |
+
+Each action asks for confirmation: PsyLex clears **local** progress; the party must complete the external test again so Airtable has a **newer** completion record. Success: **Retest requested.** Error: **Could not request retest.**
+
+### Mediator view of Sides
+
+Mediators see the same actions under their own **Sides** menu, but only parties from **their rooms** (no roomless, no other mediators’ parties). Details: [mediator.md](./mediator.md).
 
 ---
 
 ## 7. Room card
 
-Available for **any** room.
+Available for **any** room (admin or mediator).
 
 | Block | Actions |
 |-------|---------|
 | Header | Title, date, **Jurisdiction** |
 | **Mediation details** | If a session has started — dialogue, votes, agreement, PDF |
-| **Party preparation** (Mode A) or **Mediation schedule** (Mode B) | Readiness checklist; Mode B also shows schedule (saving schedule is for the mediator) |
+| **Party preparation** (Mode A) | Readiness checklist (tests, bot, dispute, AI steps; may show **Generating…**) |
+| **Mediation schedule** (Mode B) | Date, duration, readiness; admin **can view and edit** schedule fields on the card (save/overlap rules still apply). Lobby / live-session links may appear. The **rooms list** still has no lobby buttons |
 | **Pipeline & mediation log** | Timeline |
 | **Room details** | Edit title/description → **Save Changes**; jurisdiction read-only |
-| **Participants** | Edit, login/password, **Copy Credentials**, **Magic Link**, **Request profile update** |
+| **Participants** | Edit name/description, login/password, **Copy Credentials**, **Magic Link**, **Request profile update** |
 | **Delete room** | Two modes (below) |
 
-Readiness indicators may show **Generating…** while AI analysis runs.
+### Request profile update
 
-### Delete
+On a party in **Participants**:
 
-- **Delete room only** — party accounts remain (may become roomless);
-- **Delete room and parties** — also deletes those party accounts (and related rooms per product rules).
+1. Confirm — clears tests, personal bot, and related AI profile data; welcome/consent stay so the party returns to the test step.
+2. Pending banner: **Profile update requested — waiting for retests.**
+3. Error: **Could not request profile update.**
 
-Confirmation required; cannot be undone. Toast: **Room deleted.**
+This overlaps with Sides ⋮ **Redo all**. Prefer the room card when you are already looking at one case; prefer Sides for selective T1–T4 / bot-only redo across many parties.
+
+### Delete room
+
+| Button | What happens |
+|--------|----------------|
+| **Delete room only** | Removes this room and memberships. Party accounts are **kept** (become free/roomless if they have no other rooms). |
+| **Delete room and parties** | Deletes this room **and** those party accounts. **Every other room** those parties participate in is also deleted. Other people who were only in those related rooms stay as free accounts. |
+
+Both require confirmation and cannot be undone. Toast: **Room deleted.** / **Could not delete the room.**
 
 ---
 
@@ -243,7 +327,12 @@ These are the links opened by **Open test** during onboarding. An empty or wrong
 
 ### Test agent
 
-Dry run (result is **not** written to a live room): select a participant or room → **Run test** → **Result**. If legal search finds nothing: the corresponding “no relevant legal information” message.
+Dry run (result is **not** written to a live room):
+
+- **Psychodynamic** / **Emotional Triggers** — select a **participant**;
+- **Interests** / **Legal Analysis** / **Mediation Agent** — select a **room**.
+
+The screen may preview personal bot prompt, dispute answers, jurisdiction, and response language. **Run test** → **Result**. If legal search finds nothing: the corresponding “no relevant legal information” message.
 
 ---
 
