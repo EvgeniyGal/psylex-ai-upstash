@@ -1,8 +1,8 @@
 # Instructions for Party A and Party B
 
-This guide is for dispute participants — **Party A** and **Party B**. The interface and steps are the same; the only differences are the role label in the header (**Party A** or **Party B**) and that in Mode A, Party A usually replies first.
+This guide is for dispute participants — **Party A** and **Party B**. The interface and steps are the same; the only differences are the role label in the header (**Party A** or **Party B**, often with your case title, for example **Party A · Claimant**) and that in Mode A, Party A usually replies first.
 
-> **Tip.** In the header, **Help** opens this instruction. The chat assistant in the corner of the screen answers questions from this text in the language you selected (**EN | UA**). PDF and DOCX downloads are available from the Help window.
+> **Tip.** In the header, **Help** opens this instruction. The chat assistant in the corner of the screen answers questions from this text in the language you selected (**EN | UA**). PDF and DOCX downloads are available from the Help window. Ask it about waits, voting, or Mode A/B if you need a quick reminder.
 
 If you are a mediator or an administrator, open [mediator.md](./mediator.md) or [admin.md](./admin.md).
 
@@ -57,11 +57,13 @@ If the details are wrong, you will see **Invalid credentials** or **Invalid logi
 
 ### Sign in with a Magic Link
 
-Open the link from the email or message. The system signs you in automatically and takes you to the next unfinished step.
+1. Open the link from the email or message.
+2. A confirmation page appears — click **Continue** to complete sign-in (the link is consumed only when you continue).
+3. The system takes you to the next unfinished step.
 
 > **The link is one-time** and valid for **72 hours**. If it has expired or already been used, you will see: **This magic link is invalid or has expired.** Ask for a new link or sign in with login and password.
 
-After sign-in, the system opens the screen you need: welcome, tests, dispute description, lobby, or mediation room. If you take part in more than one room, you first see **My rooms** and choose which case to continue.
+After sign-in, the system opens the screen you need: welcome, tests, dispute description, lobby, or mediation room. If you take part in more than one room, you first see **My rooms** and choose which case to continue. You can open **My rooms** again from the header while signed in as a party.
 
 Use **EN | UA** in the header for your interface language. In the session, messages from others appear in your language (marked **Translated**; you can show the original). Before sending, you can use **Help me phrase this** to clarify your draft without changing its meaning. Solution options and the results PDF follow your interface language.
 
@@ -83,10 +85,21 @@ You can move forward only after the current step is complete. Steps you have alr
 The header always shows:
 
 - the **PsyLex** name;
-- your role: **Party A** or **Party B**;
-- the **EN | UA** switcher;
-- the **Logout** button;
+- **My rooms** (when you have party access);
+- your role badge: **Party A** or **Party B**, often with your title (for example **Party A · Claimant**);
+- **Help**, the **EN | UA** switcher, and **Logout**;
 - the banner: **Legal information, not legal advice.**
+
+On the room page, the heading shows your role (and title) with the **room title** underneath.
+
+### Status notifications (toasters)
+
+During lobby and the live session, waits and actions appear as **toasters** (top-left), not as long banners in the page body:
+
+- **Amber** — wait (AI working, other party answering, generating options/compromise/agreement, waiting for the mediator);
+- **Green** — your turn to act (new question, options ready, compromise ready, agreement ready).
+
+You usually do not need to refresh the page; the room updates on its own.
 
 ---
 
@@ -263,17 +276,19 @@ Differences from Mode A:
 - the mediator sends questions — to you or to the other party;
 - you reply when the reply field is available (not necessarily strictly in turn, as in Mode A);
 - there is no **I am ready for solution options** button — the mediator publishes the options;
-- if the votes differ, a compromise appears only after the mediator publishes it: **Waiting for the mediator to publish a compromise option.**
+- if the votes differ, a compromise appears only after the mediator publishes it (amber toast: waiting for the mediator to publish a compromise);
+- a draft agreement appears for you only after the mediator **publishes** it (until then: waiting for the mediator to finalize the agreement).
 
-Notifications during the session:
+Typical toasters during the session:
 
-| Notification | Action |
-|--------------|--------|
-| **You have a new question from the mediator.** | Read it and send a reply |
-| **Solution options are ready to review.** | Choose an option |
-| **A compromise option is ready for your vote.** | Accept or reject |
-| **A draft agreement is ready for review.** | Click **I accept** if you agree |
-| **The mediation session has completed.** | Review the results |
+| Toast | Action |
+|-------|--------|
+| New question from the mediator | Read it and send a reply |
+| Solution options are ready | Choose an option |
+| Compromise is ready — please vote | Accept or reject |
+| Waiting for the other party to vote on the compromise | You already voted; wait for the other side |
+| Draft agreement ready / waiting for mediator to finalize | Review and **I accept**, or wait until publish |
+| Session completed | Review the results |
 
 Message at the start: **Mediator-facilitated session started. The mediator will guide the dialogue.**
 
@@ -299,18 +314,18 @@ Voting is **secret** until both parties have voted. Click **Select this option**
 
 ### Compromise
 
-You will see which option the other party chose, and a new compromise proposal.
+You will see which option the other party chose, and a new compromise proposal (in Mode B — only after the mediator publishes it).
 
 - **Accept compromise**
 - **Reject compromise**
 
-If **both** parties accept — move to the agreement. If at least one rejects — the session ends without mutual agreement: **No mutual agreement was reached in this session.**
+After you vote, a toast asks you to wait for the other party. If **both** parties accept — both move to waiting for the agreement draft (Mode B: until the mediator publishes). If at least one rejects — the session may end without mutual agreement (Mode A) or stay with the mediator to continue (Mode B).
 
 ### Draft agreement
 
 Screen: **Draft agreement**: text, terms, and a legal disclaimer.
 
-If you agree, click **I accept**. Then: **Waiting for the other party to accept.** When both parties have accepted: **Session completed**.
+In Mode B the draft appears only after the mediator publishes it. If you agree, click **I accept**. Then: **Waiting for the other party to accept.** When both parties have accepted: **Session completed** (Mode B may still wait for the mediator to complete the session).
 
 Acceptance on the platform records the parties’ voluntary choice. To give the document legal force, consult a licensed attorney — this is stated in the disclaimer on the agreement screen.
 
@@ -318,13 +333,13 @@ Acceptance on the platform records the parties’ voluntary choice. To give the 
 
 ## 11. Downloading results
 
-After completion, the **Download results** button is available. The **Mediation results** PDF may include:
+After completion, the **Download results** button is available. The **Mediation results** PDF includes numbered chapters such as:
 
-- a psychodynamic profile;
-- legal information and sources (the room’s jurisdiction);
-- the agreed solution, or a note that no agreement was reached.
+- legislation / legal information and sources (the room’s jurisdiction);
+- the agreed solution (or a note that no agreement was reached);
+- the draft agreement text and terms.
 
-The email field on this page is a stub for now: **Email delivery is coming soon. Use download for now.** Save the PDF yourself.
+It does **not** include a psychodynamic profile chapter. The email field on this page is a stub for now: **Email delivery is coming soon. Use download for now.** Save the PDF yourself.
 
 ---
 

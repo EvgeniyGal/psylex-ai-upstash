@@ -32,13 +32,15 @@ The mode is set by whoever created the room:
 
 In the app, click **Help** in the header or sidebar to read these instructions, download PDF / DOCX, or ask the chat assistant.
 
+Administrators and mediators manage party accounts under **Sides** in their consoles (see the matching instructions). Parties see their role in the header as **Party A** or **Party B**, often with their case title (for example **Party A · Claimant**).
+
 ---
 
 ## How to sign in
 
 1. Open the PsyLex home page and click **Login**, **Start on my own**, or **For Mediators →**.
 2. Enter the **login** (format `psylex_…`) and **password** sent by the administrator or mediator.
-3. Or open a **Magic Link** — a one-time link valid for **72 hours**. After it is used, it becomes invalid.
+3. Or open a **Magic Link** — a confirmation page appears; click **Continue** to sign in. The link is one-time and valid for **72 hours**. After it is used, it becomes invalid.
 
 > **Self-registration is not available.** An administrator (Mode A) or a mediator (Mode B) creates the account.
 
@@ -47,6 +49,8 @@ In the app, click **Help** in the header or sidebar to read these instructions, 
 ## Interface language
 
 The header or sidebar has an **EN | UA** switcher. The selected language is stored. Help, downloads, and chat-assistant replies use the same language.
+
+Ask the Help assistant about waits, Sides, schedule, or Mode A/B if you need a quick answer from these texts.
 
 ---
 
@@ -59,4 +63,4 @@ Sign in → Welcome → Consent → Tests → Dispute description
        → Voting → (compromise if needed) → Agreement
 ```
 
-Mediators and administrators have separate consoles for rooms, scheduling, and platform settings — see the matching instructions.
+Mediators and administrators have separate consoles for rooms, **Sides**, scheduling, and platform settings — see the matching instructions.

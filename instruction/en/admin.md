@@ -2,7 +2,7 @@
 
 This guide is for the **Admin** role. You operate the PsyLex platform: Mode A rooms, mediator and party accounts, integration keys, test links, AI agent prompts, the RAG legal corpus, and the Help knowledge base.
 
-> **Tip.** The **Help** button at the bottom of the sidebar opens all instructions (overview, parties, mediator, admin). The chat assistant replies in **EN | UA**. Help texts are edited under **Settings → Help**.
+> **Tip.** The **Help** button at the bottom of the sidebar opens all instructions (overview, parties, mediator, admin). The chat assistant replies in **EN | UA**. Help texts are edited under **Settings → Help**. Ask the Help assistant about waits, **Sides**, schedule, or Mode A/B if you need a quick reminder from these texts.
 
 Instructions for parties and mediators: [parties.md](./parties.md), [mediator.md](./mediator.md).
 
@@ -15,24 +15,26 @@ Instructions for parties and mediators: [parties.md](./parties.md), [mediator.md
 3. [Admin Console](#3-admin-console)
 4. [Negotiation rooms](#4-negotiation-rooms)
 5. [Creating a Mode A room](#5-creating-a-mode-a-room)
-6. [Room card](#6-room-card)
-7. [Credentials and Magic Link](#7-credentials-and-magic-link)
-8. [Mediators](#8-mediators)
-9. [Settings: API credentials](#9-settings-api-credentials)
-10. [Settings: tests](#10-settings-tests)
-11. [Settings: agent prompts](#11-settings-agent-prompts)
-12. [Settings: RAG](#12-settings-rag)
-13. [Settings: Help](#13-settings-help)
-14. [Watching analysis and mediation](#14-watching-analysis-and-mediation)
-15. [Language and logout](#15-language-and-logout)
-16. [Tips and typical situations](#16-tips-and-typical-situations)
+6. [Sides](#6-sides)
+7. [Room card](#7-room-card)
+8. [Credentials and Magic Link](#8-credentials-and-magic-link)
+9. [Mediators](#9-mediators)
+10. [Settings: API credentials](#10-settings-api-credentials)
+11. [Settings: tests](#11-settings-tests)
+12. [Settings: agent prompts](#12-settings-agent-prompts)
+13. [Settings: RAG](#13-settings-rag)
+14. [Settings: Help](#14-settings-help)
+15. [Watching analysis and mediation](#15-watching-analysis-and-mediation)
+16. [Language and logout](#16-language-and-logout)
+17. [Tips and typical situations](#17-tips-and-typical-situations)
 
 ---
 
 ## 1. What you can do
 
-- create **Mode A** rooms (self-guided party mediation with AI);
+- create **Mode A** rooms (self-guided party mediation with AI) and attach new or **existing** parties;
 - view **all** rooms: both yours (admin) and those created by mediators (Mode B);
+- manage **all** party accounts under **Sides** (including roomless / orphan accounts);
 - edit the room title and description and the parties, and delete rooms;
 - copy login/password and generate a **Magic Link** for parties and mediators;
 - maintain the mediator registry: add, edit, delete;
@@ -66,6 +68,7 @@ On the left, the label **Admin Console**. Menu:
 | Item | Where it goes |
 |------|----------------|
 | **Rooms** | List of all rooms |
+| **Sides** | All parties, including those without a room |
 | **Mediators** | Mediator registry |
 | **Settings** | API, tests, prompts, RAG, Help |
 
@@ -111,20 +114,34 @@ The admin list has no “Open pre-session lobby / Open live session” buttons �
    - **Room title**, **Room description**;
    - **Jurisdiction** — **Ukraine** or **United States**.
    - For the United States — required field **State / territory / Federal**.
-3. **Party A** and **Party B**: **Title / Name**, **Description**.
+3. For **Party A** and **Party B**, choose either:
+   - **Create new** — **Title / Name**, **Description** (new login `psylex_…` and password); or
+   - **Add existing** — search by login or title and attach a returning participant (tests and personal bot stay; they only fill dispute intake for this room).
 4. **Create Room**.
 
-Jurisdiction is fixed permanently: legal RAG search during analysis depends on it. You cannot change it later.
+Jurisdiction is fixed permanently: legal RAG search during analysis depends on it. You cannot change it later. The same person cannot fill both party slots in one room.
 
 After creation:
 
-- two users `party_a` and `party_b` appear with logins `psylex_…` and generated passwords;
+- party slots are filled with new or attached users (`party_a` / `party_b`);
 - the room runs in **Mode A** (AI leads the dialogue, without a live mediator);
 - you are on the room card — copy access and send it to the parties together with [their instruction](./parties.md).
 
+**Mode A vs Mode B:** admin **New Room** is always Mode A. Mode B rooms are created by mediators and appear under **Mediator rooms**.
+
 ---
 
-## 6. Room card
+## 6. Sides
+
+Menu item **Sides** — the full party registry.
+
+- Admins see **all** parties, including those with **no room** (roomless / orphan accounts).
+- Mediators see only parties from their own rooms (see [mediator.md](./mediator.md)).
+- Use **Sides** to open a party card, copy credentials, or find accounts to attach when creating a room.
+
+---
+
+## 7. Room card
 
 Available for **any** room (admin or mediator).
 
@@ -140,7 +157,7 @@ Available for **any** room (admin or mediator).
 
 ---
 
-## 7. Credentials and Magic Link
+## 8. Credentials and Magic Link
 
 On the room card or mediator card:
 
@@ -161,8 +178,9 @@ Send it to the party through a protected channel. The login always starts with `
 The **Magic Link** button creates a one-time `/auth/magic?token=…` link:
 
 - valid for **72 hours**;
-- after sign-in it becomes used;
-- the user lands immediately on their next step (onboarding, lobby, and so on).
+- the recipient opens a confirmation page and clicks **Continue** to complete sign-in (the link is consumed then);
+- after use it becomes invalid;
+- the user lands on their next step (onboarding, lobby, and so on).
 
 Success: **Magic link copied to clipboard** (or the system “share” dialog, if the browser supports it). Error: **Could not generate magic link**.
 
@@ -170,7 +188,7 @@ A Magic Link can be generated **only by an administrator**. The mediator copies 
 
 ---
 
-## 8. Mediators
+## 9. Mediators
 
 Menu **Mediators** → **Registry**.
 
@@ -200,7 +218,7 @@ The mediator’s first sign-in starts their onboarding (welcome, consent, tests)
 
 ---
 
-## 9. Settings: API credentials
+## 10. Settings: API credentials
 
 **Settings** → **Credentials** tab.
 
@@ -215,7 +233,7 @@ Without a valid OpenAI key, the pipeline after the dispute description and the m
 
 ---
 
-## 10. Settings: tests
+## 11. Settings: tests
 
 **Tests** tab. Four URLs for the external modules:
 
@@ -232,7 +250,7 @@ These are the links opened by **Open test** during party and mediator onboarding
 
 ---
 
-## 11. Settings: agent prompts
+## 12. Settings: agent prompts
 
 **Prompts** tab. Five agents (sub-tabs):
 
@@ -262,7 +280,7 @@ Use this before changing prompts in production, so you do not break live session
 
 ---
 
-## 12. Settings: RAG
+## 13. Settings: RAG
 
 **RAG** tab — the corpus of legal documents for hybrid search during legal analysis.
 
@@ -301,7 +319,7 @@ This is how you check whether the corpus answers typical questions before loadin
 
 ---
 
-## 13. Settings: Help
+## 14. Settings: Help
 
 **Help** tab. These are the texts that feed the Help window, the chat assistant, and PDF / DOCX files.
 
@@ -309,13 +327,14 @@ For each document (**Overview**, **Parties**, **Mediator**, **Admin**) and each 
 
 1. Edit the title and Markdown.
 2. **Save** — chat and Help immediately use the new text.
-3. If needed, **Reset to file** — restore the text from the `instruction/` repository.
+3. If needed, **Reset to file** — restore the text from the `instruction/` repository (use this after a deploy if the live DB still has an older edited copy).
+4. Regenerating PDF / DOCX exports for Help is done from the repository (`npm run help:docs`); after deploy, reset live overrides if admins had edited copies so production matches git.
 
 > **Do not confuse this with RAG.** The RAG tab is the legal corpus for dispute analysis. The **Help** tab is user instructions, not legislation.
 
 ---
 
-## 14. Watching analysis and mediation
+## 15. Watching analysis and mediation
 
 ### Pipeline & mediation log
 
@@ -323,7 +342,7 @@ On every room card. Event sources: **Milestone** and **Pipeline**.
 
 Typical stages: room created, test completed, onboarding completed, dispute intake submitted, profiles generated, legal analysis completed, post-intake pipeline completed, session started, agreement accepted, mediation completed.
 
-Pipeline: triggered / completed, agent started / completed / failed / skipped, mediation phase changed.
+Pipeline: triggered / completed, agent started / completed / failed / skipped, mediation phase changed. Incomplete readiness steps may show **Generating…** while AI analysis runs.
 
 Empty log: **No activity recorded yet.**
 
@@ -340,20 +359,20 @@ The button appears after the session starts. In the window:
 - **Agreement & results**;
 - **Download results**.
 
-The admin **does not** intervene in voting from this window — only observes and saves artifacts.
+The downloadable results PDF covers legislation / legal information, the agreed solution (or no-agreement note), and the agreement text — **without** a psychodynamic profile chapter. The admin **does not** intervene in voting from this window — only observes and saves artifacts.
 
 ---
 
-## 15. Language and logout
+## 16. Language and logout
 
 - **EN | UA** in the sidebar changes the language of the admin UI, the role in copied credentials, log labels, and RAG categories.
 - **Logout** → login page.
 
 ---
 
-## 16. Tips and typical situations
+## 17. Tips and typical situations
 
-**Mode A or B?** Admin **New Room** is always Mode A. Mode B appears when a mediator creates the room. Both types are visible on the matching tabs.
+**Mode A or B?** Admin **New Room** is always Mode A. Mode B appears when a mediator creates the room. Both types are visible on the matching tabs. Create-room can attach existing parties from **Sides**.
 
 **The parties cannot sign in.** Check the login `psylex_…`, send **Copy Credentials** or a new **Magic Link** (the old link may have expired after 72 hours or already been used).
 

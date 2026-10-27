@@ -2,7 +2,7 @@
 
 This guide is for the **Mediator** role. You run **Mode B**: you create a room for two parties, set the time, lead a live session with AI support, and accompany the parties toward an agreement.
 
-> **Tip.** Until onboarding (tests) is complete, **Help** in the header opens these instructions. After you enter the console, the **Help** button is in the sidebar. The chat assistant replies in **EN | UA**. You also see the instruction for parties.
+> **Tip.** Until onboarding (tests) is complete, **Help** in the header opens these instructions. After you enter the console, the **Help** button is in the sidebar. The chat assistant replies in **EN | UA**. You also see the instruction for parties. Ask it about waits, **Sides**, schedule, or Mode A/B if you need a quick reminder.
 
 If you are Party A/B, see [parties.md](./parties.md). If you are a platform administrator — [admin.md](./admin.md).
 
@@ -15,15 +15,16 @@ If you are Party A/B, see [parties.md](./parties.md). If you are a platform admi
 3. [Mediator Console](#3-mediator-console)
 4. [Negotiation rooms](#4-negotiation-rooms)
 5. [Creating a room and party access](#5-creating-a-room-and-party-access)
-6. [Room card](#6-room-card)
-7. [Session schedule](#7-session-schedule)
-8. [Calendar](#8-calendar)
-9. [Pre-session lobby](#9-pre-session-lobby)
-10. [Live session](#10-live-session)
-11. [Ending the session and results](#11-ending-the-session-and-results)
-12. [Language and logout](#12-language-and-logout)
-13. [Role limits](#13-role-limits)
-14. [Tips and typical situations](#14-tips-and-typical-situations)
+6. [Sides](#6-sides)
+7. [Room card](#7-room-card)
+8. [Session schedule](#8-session-schedule)
+9. [Calendar](#9-calendar)
+10. [Pre-session lobby](#10-pre-session-lobby)
+11. [Live session](#11-live-session)
+12. [Ending the session and results](#12-ending-the-session-and-results)
+13. [Language and logout](#13-language-and-logout)
+14. [Role limits](#14-role-limits)
+15. [Tips and typical situations](#15-tips-and-typical-situations)
 
 ---
 
@@ -33,6 +34,7 @@ In the Mediator Console you:
 
 - complete your own onboarding (welcome, consent, tests);
 - create **negotiation rooms** for Party A and Party B (Mode B);
+- manage party accounts under **Sides** (parties from **your rooms only**);
 - copy party login and password to send them access;
 - see whether the parties are ready (tests, dispute description, AI analysis);
 - schedule the date, time, and duration of the session;
@@ -75,8 +77,8 @@ On the left:
 - the **Mediator Console** label;
 - **Rooms** — a list of your rooms;
 - **Calendar** — session schedule;
-- the **EN | UA** switcher;
-- **Logout**.
+- **Sides** — parties that belong to your rooms;
+- **Help**, the **EN | UA** switcher, and **Logout**.
 
 The home path `/mediator` immediately redirects to **Rooms**.
 
@@ -136,9 +138,23 @@ On the room card, in the **Participants** block for each party:
 
 Ask the parties to complete welcome, consent, tests, and the dispute description using the [party instruction](./parties.md). Until they do, the room status stays **Not ready**.
 
+When you choose **Add existing**, the search lists only parties that already appear in **your** rooms — not roomless / orphan accounts and not parties from other mediators’ rooms.
+
 ---
 
-## 6. Room card
+## 6. Sides
+
+Menu item **Sides** — the party registry scoped to your practice.
+
+- You see parties that belong to **at least one of your rooms**.
+- Parties with **no room** (roomless / orphan accounts) are **hidden**.
+- Use the list to open a party card, review credentials, or reuse an existing party when creating a new room.
+
+Administrators see **all** parties (including roomless) under the same menu name in the Admin Console.
+
+---
+
+## 7. Room card
 
 Opens from the room list or from the calendar (**Open room**).
 
@@ -160,13 +176,13 @@ Indicators in the schedule:
 
 - **Party A ready** / **Party B ready** — **Ready** or **Not ready** (dispute intake + mediation readiness for this room);
 - Profile lines show **Profile ready** / **Not ready** with dates when available;
-- **AI analysis complete** — the post-intake pipeline (profiles, interests, legal analysis).
+- **AI analysis complete** — the post-intake pipeline (profiles, interests, legal analysis). Incomplete pipeline steps may show **Generating…** while AI analysis is running.
 
 Tip: you can schedule a time before full readiness, but the parties can **start the session** only when tests, the dispute description, and analysis are complete.
 
 ---
 
-## 7. Session schedule
+## 8. Session schedule
 
 In the **Mediation schedule** block:
 
@@ -193,7 +209,7 @@ When there is a schedule and preparation is ready:
 
 ---
 
-## 8. Calendar
+## 9. Calendar
 
 Menu item **Calendar** → **Session calendar**.
 
@@ -207,7 +223,7 @@ Menu item **Calendar** → **Session calendar**.
 
 ---
 
-## 9. Pre-session lobby
+## 10. Pre-session lobby
 
 **Open pre-session lobby** (from the room list or from the card).
 
@@ -232,9 +248,9 @@ If someone opens the lobby after mediation is complete, they are redirected to t
 
 ---
 
-## 10. Live session
+## 11. Live session
 
-The mediator console has three columns.
+The mediator console has three columns, plus an **attention dock** in the sidebar for waits, party actions, and the session timer.
 
 ### Left — **Party profiles**
 
@@ -244,7 +260,15 @@ Psychodynamic profiles of Party A and Party B. Use them to phrase questions neut
 
 You see the canonical text (the full picture). Types: **Notice**, **Opening**, **Question**, **Summary**, **Moderation**, **Nudge**, **Options**.
 
-The **Session time** timer shows how long the session has already been running (not the Mode A 60-minute countdown).
+The **Session time** timer shows how long the session has already been running (not the Mode A 60-minute countdown). The same timer appears in the attention dock.
+
+### Attention dock
+
+The sidebar dock surfaces what needs attention without flooding the feed:
+
+- waits (AI generating, party answering, publishing gates);
+- party actions that require your next step;
+- session elapsed time.
 
 ### Right — controls
 
@@ -294,11 +318,11 @@ Fields:
 - **Fulfillment likelihood**
 - **Risks if refused**
 
-Check neutrality and accuracy, edit if needed, click **Publish compromise for vote**. The parties vote **Accept compromise** / **Reject compromise**.
+Check neutrality and accuracy, edit if needed, click **Publish compromise for vote**. Both parties are notified and can vote **Accept compromise** / **Reject compromise**. After one party votes, they wait for the other; when both accept, they move toward the agreement phase (still gated on your publish).
 
 #### Agreement draft (publish gate)
 
-When votes match (or both accept a compromise), AI drafts a **third-person** shared agreement from the dialogue and the selected option. Parties see **Waiting for the mediator to finalize the agreement** until you publish.
+When votes match (or both accept a compromise), AI drafts a **third-person** shared agreement from the dialogue and the selected option. Parties see **Waiting for the mediator to finalize the agreement** until you publish. Both parties are notified when the phase moves to agreement / when you publish.
 
 On your console:
 
@@ -319,7 +343,7 @@ Your messages appear to parties as **Mediator: {your title}**. Custom messages s
 
 ---
 
-## 11. Ending the session and results
+## 12. Ending the session and results
 
 When the phase becomes **Agreement** or **Completed** (including after you use **End session**):
 
@@ -335,23 +359,24 @@ On the card, click **Mediation details**:
 - the agreement or the no-agreement outcome;
 - **Download results** (PDF).
 
-The email-send field is not active yet — save the PDF yourself.
+The results PDF chapters cover legislation / legal information, the agreed solution (or no-agreement note), and the agreement text. A psychodynamic profile chapter is **not** included in the agreement panel or the PDF. The email-send field is not active yet — save the PDF yourself.
 
 ---
 
-## 12. Language and logout
+## 13. Language and logout
 
 - **EN | UA** in the sidebar changes the language of the console, calendar, session labels, Help, and chat-assistant replies.
 - **Logout** returns you to the login page.
 
 ---
 
-## 13. Role limits
+## 14. Role limits
 
 | Capability | Mediator | Administrator |
 |------------|----------|----------------|
 | Own Mode B rooms | Yes | Sees all, **Mediator rooms** tab |
 | Mode A rooms | No | Yes |
+| **Sides** (party registry) | Own rooms only (no roomless) | All parties, including roomless |
 | Mediator registry | No | Yes |
 | Settings, prompts, RAG, API keys | No | Yes |
 | Edit room title / parties after creation | No (view) | Yes |
@@ -362,9 +387,11 @@ The email-send field is not active yet — save the PDF yourself.
 
 ---
 
-## 14. Tips and typical situations
+## 15. Tips and typical situations
 
-**The parties are not “Ready”.** Check the log: whether tests are passed, whether dispute intake was submitted, whether the pipeline finished. Send the parties a link to [their instruction](./parties.md).
+**The parties are not “Ready”.** Check the log: whether tests are passed, whether dispute intake was submitted, whether the pipeline finished. Schedule readiness may show **Generating…** while AI analysis runs. Send the parties a link to [their instruction](./parties.md).
+
+**I do not see a party under Sides.** Mediators only see parties from their own rooms. Roomless accounts and parties from other mediators’ rooms are hidden.
 
 **Can I schedule “ahead of time”?** Yes. But the lobby will not let you start until preparation is complete and the 10-minute window has opened.
 
