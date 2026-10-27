@@ -35,6 +35,7 @@ const WAIT_IDS = {
   newQuestion: "mode-a-new-question",
   optionsReady: "mode-a-options-ready",
   compromiseReady: "mode-a-compromise-ready",
+  waitingCompromiseVote: "mode-a-waiting-compromise-vote",
   agreementReady: "mode-a-agreement-ready",
 } as const;
 
@@ -121,6 +122,7 @@ export function useModeARoomWaitToasts(params: {
   isCompromiseGenerating: boolean;
   waitingOtherReady: boolean;
   waitingOtherAccept: boolean;
+  waitingOtherCompromiseVote: boolean;
   otherReadyForOptions: boolean;
   /** True until the viewer votes on options. */
   needsOptionsVote: boolean;
@@ -143,6 +145,7 @@ export function useModeARoomWaitToasts(params: {
     isCompromiseGenerating,
     waitingOtherReady,
     waitingOtherAccept,
+    waitingOtherCompromiseVote,
     otherReadyForOptions,
     needsOptionsVote,
     needsCompromiseVote,
@@ -226,6 +229,19 @@ export function useModeARoomWaitToasts(params: {
       t.mediationWaitingOtherAccept,
     );
   }, [enabled, waitingOtherAccept, t.mediationWaitingOtherAccept]);
+
+  useEffect(() => {
+    syncAttentionWait(
+      enabled,
+      waitingOtherCompromiseVote,
+      WAIT_IDS.waitingCompromiseVote,
+      t.modeBToastWaitingOtherCompromiseVote,
+    );
+  }, [
+    enabled,
+    waitingOtherCompromiseVote,
+    t.modeBToastWaitingOtherCompromiseVote,
+  ]);
 
   useEffect(() => {
     syncAttentionWait(enabled, optionsWait, WAIT_IDS.options, t.modeAToastGeneratingOptions);

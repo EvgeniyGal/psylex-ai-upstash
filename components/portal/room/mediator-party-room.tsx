@@ -68,6 +68,7 @@ export function MediatorPartyRoom({
   const agreementPublished = !!state.room.agreementPublished;
   const selfVote = state.room.selfVote;
   const selfCompromiseVote = state.room.selfCompromiseVote;
+  const otherCompromiseVote = state.room.otherCompromiseVote;
   const agreementAccepted = !!state.room.agreementAccepted;
   // Mode A–style: fast poll while generating or while party must act (SSE often stalls on Vercel).
   const isAwaitingUpdate =
@@ -76,6 +77,10 @@ export function MediatorPartyRoom({
     awaitingMediatorPublish ||
     (phase === "voting" && hasOptions && !selfVote) ||
     (phase === "voting_discrepancy" && hasCompromise && selfCompromiseVote == null) ||
+    (phase === "voting_discrepancy" &&
+      hasCompromise &&
+      selfCompromiseVote != null &&
+      otherCompromiseVote == null) ||
     (phase === "agreement" && agreementPublished && !agreementAccepted);
 
   useRoomRealtime(state.room.id, () => {
@@ -105,6 +110,7 @@ export function MediatorPartyRoom({
     selfVote,
     peerHasVoted: !!state.room.peerHasVoted,
     selfCompromiseVote,
+    otherCompromiseVote,
     agreementAccepted,
     otherAgreementAccepted: !!state.room.otherAgreementAccepted,
     waitingForMediatorComplete,

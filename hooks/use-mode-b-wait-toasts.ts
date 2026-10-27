@@ -28,6 +28,7 @@ const IDS = {
   waitingVote: "mode-b-waiting-vote",
   compromise: "mode-b-compromise",
   compromiseReady: "mode-b-compromise-ready",
+  waitingCompromiseVote: "mode-b-waiting-compromise-vote",
   agreement: "mode-b-agreement",
   agreementReady: "mode-b-agreement-ready",
   otherAccept: "mode-b-other-accept",
@@ -177,6 +178,7 @@ export function useModeBPartyRoomWaitToasts(params: {
   selfVote: string | null | undefined;
   peerHasVoted: boolean;
   selfCompromiseVote: boolean | null | undefined;
+  otherCompromiseVote: boolean | null | undefined;
   agreementAccepted: boolean;
   otherAgreementAccepted: boolean;
   waitingForMediatorComplete: boolean;
@@ -195,6 +197,7 @@ export function useModeBPartyRoomWaitToasts(params: {
     selfVote,
     peerHasVoted,
     selfCompromiseVote,
+    otherCompromiseVote,
     agreementAccepted,
     otherAgreementAccepted,
     waitingForMediatorComplete,
@@ -211,6 +214,11 @@ export function useModeBPartyRoomWaitToasts(params: {
   const compromiseWait = awaitingCompromisePublish;
   const needsCompromiseVote =
     phase === "voting_discrepancy" && hasCompromise && selfCompromiseVote == null;
+  const waitingOtherCompromiseVote =
+    phase === "voting_discrepancy" &&
+    hasCompromise &&
+    selfCompromiseVote != null &&
+    otherCompromiseVote == null;
   const agreementWait = awaitingMediatorPublish;
   const needsAgreementAccept =
     phase === "agreement" && agreementPublished && !agreementAccepted;
@@ -283,6 +291,19 @@ export function useModeBPartyRoomWaitToasts(params: {
       t.modeAToastCompromiseReady,
     );
   }, [enabled, needsCompromiseVote, t.modeAToastCompromiseReady]);
+
+  useEffect(() => {
+    syncAttentionWait(
+      enabled,
+      waitingOtherCompromiseVote,
+      IDS.waitingCompromiseVote,
+      t.modeBToastWaitingOtherCompromiseVote,
+    );
+  }, [
+    enabled,
+    waitingOtherCompromiseVote,
+    t.modeBToastWaitingOtherCompromiseVote,
+  ]);
 
   useEffect(() => {
     syncAttentionWait(

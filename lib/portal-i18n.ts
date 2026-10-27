@@ -97,6 +97,7 @@ type PortalCopy = {
   modeBToastWaitingSchedule: string;
   modeBToastWaitingMediatorQuestion: string;
   modeBToastWaitingOtherVote: string;
+  modeBToastWaitingOtherCompromiseVote: string;
   modeBToastMediatorWaitingPartyA: string;
   modeBToastMediatorWaitingPartyB: string;
   modeBToastMediatorReadyNext: string;
@@ -404,6 +405,8 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     modeBToastWaitingSchedule: "Waiting for the mediator to schedule the session.",
     modeBToastWaitingMediatorQuestion: "Waiting for the mediator’s next question.",
     modeBToastWaitingOtherVote: "Waiting for the other party to vote.",
+    modeBToastWaitingOtherCompromiseVote:
+      "Waiting for the other party to vote on the compromise.",
     modeBToastMediatorWaitingPartyA: "Waiting for Party A to answer.",
     modeBToastMediatorWaitingPartyB: "Waiting for Party B to answer.",
     modeBToastMediatorReadyNext: "Parties have replied — send the next question or generate options.",
@@ -738,6 +741,8 @@ export const portalCopy: Record<Locale, PortalCopy> = {
     modeBToastWaitingSchedule: "Очікуємо, поки медіатор призначить сесію.",
     modeBToastWaitingMediatorQuestion: "Очікуємо наступне запитання від медіатора.",
     modeBToastWaitingOtherVote: "Очікуємо голосування іншої сторони.",
+    modeBToastWaitingOtherCompromiseVote:
+      "Очікуємо голосування іншої сторони за компроміс.",
     modeBToastMediatorWaitingPartyA: "Очікуємо відповідь сторони A.",
     modeBToastMediatorWaitingPartyB: "Очікуємо відповідь сторони B.",
     modeBToastMediatorReadyNext:

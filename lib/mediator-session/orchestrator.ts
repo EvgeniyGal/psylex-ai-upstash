@@ -723,8 +723,9 @@ export async function castMediatorPartyVote(userId: string, optionId: string) {
         mediationPhase: "agreement",
       })
       .where(eq(rooms.id, room.id));
+    // Notify before LLM draft so both parties enter agreement-wait together.
+    notifyRoom(room.id);
     await ensureDraftAgreement(room.id, updated.partyAVoteOptionId);
-    // Parties are notified when the mediator publishes the draft.
     notifyRoom(room.id);
     return loadRoom(room.id);
   }
@@ -786,6 +787,8 @@ export async function castMediatorCompromiseVote(userId: string, accepted: boole
       })
       .where(eq(rooms.id, room.id));
 
+    // Notify before LLM draft so both parties leave compromise toasts together.
+    notifyRoom(room.id);
     await ensureDraftAgreement(room.id, compromise.id);
     notifyRoom(room.id);
     return loadRoom(room.id);

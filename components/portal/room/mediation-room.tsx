@@ -249,6 +249,16 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
     state.room.selfAccepted &&
     !state.room.otherAccepted
   );
+  const otherCompromiseVote =
+    viewerRole === "party_a"
+      ? state.room.partyBCompromiseVote
+      : state.room.partyACompromiseVote;
+  const waitingOtherCompromiseVote = !!(
+    state.room.phase === "voting_discrepancy" &&
+    state.compromise &&
+    state.room.selfCompromiseVote != null &&
+    otherCompromiseVote == null
+  );
   const otherReadyForOptions = !!(showReadyButton && state.room.otherReady);
 
   useModeARoomWaitToasts({
@@ -263,6 +273,7 @@ export function MediationRoom({ initialState, viewerRole, onPhaseChange, review 
     isCompromiseGenerating,
     waitingOtherReady,
     waitingOtherAccept,
+    waitingOtherCompromiseVote,
     otherReadyForOptions,
     needsOptionsVote: !state.room.selfVote,
     needsCompromiseVote: state.room.selfCompromiseVote == null,
