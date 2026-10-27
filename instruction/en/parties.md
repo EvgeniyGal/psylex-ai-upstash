@@ -1,8 +1,8 @@
 # Instructions for Party A and Party B
 
-This guide is for dispute participants — **Party A** and **Party B**. The interface and steps are the same; the only differences are the role label in the header (**Party A** or **Party B**, often with your case title, for example **Party A · Claimant**) and that in Mode A, Party A usually replies first.
+This guide is for dispute participants — **Party A** and **Party B**. The interface and steps are the same. The header shows your role (**Party A** or **Party B**), often with your case title (for example **Party A · Claimant**). In Mode A, Party A usually replies first.
 
-> **Tip.** In the header, **Help** opens this instruction. The chat assistant in the corner of the screen answers questions from this text in the language you selected (**EN | UA**). PDF and DOCX downloads are available from the Help window. Ask it about waits, voting, or Mode A/B if you need a quick reminder.
+> **Tip.** **Help** opens this instruction. The chat assistant in the corner answers from this text in **EN | UA**. PDF and DOCX downloads are available from the Help window. Ask about waits, voting, or Mode A/B.
 
 If you are a mediator or an administrator, open [mediator.md](./mediator.md) or [admin.md](./admin.md).
 
@@ -10,39 +10,42 @@ If you are a mediator or an administrator, open [mediator.md](./mediator.md) or 
 
 ## Contents
 
-1. [What you can do](#1-what-you-can-do)
-2. [Signing in](#2-signing-in)
-3. [Process stages](#3-process-stages)
-4. [Welcome and consent](#4-welcome-and-consent)
-5. [Psychological assessment](#5-psychological-assessment)
-6. [Describe your dispute](#6-describe-your-dispute)
-7. [Lobby before mediation](#7-lobby-before-mediation)
-8. [Mode A session (self-guided with AI)](#8-mode-a-session-self-guided-with-ai)
-9. [Mode B session (with a mediator)](#9-mode-b-session-with-a-mediator)
-10. [Voting, compromise, and agreement](#10-voting-compromise-and-agreement)
-11. [Downloading results](#11-downloading-results)
-12. [Language, logout, and reviewing earlier steps](#12-language-logout-and-reviewing-earlier-steps)
-13. [Tips and typical situations](#13-tips-and-typical-situations)
+1. [What you can and cannot do](#1-what-you-can-and-cannot-do)
+2. [Signing in and Magic Link](#2-signing-in-and-magic-link)
+3. [My rooms](#3-my-rooms)
+4. [Header, stages, and toasters](#4-header-stages-and-toasters)
+5. [Welcome and consent](#5-welcome-and-consent)
+6. [Psychological tests and AI bot](#6-psychological-tests-and-ai-bot)
+7. [Describe your dispute](#7-describe-your-dispute)
+8. [Lobby before mediation](#8-lobby-before-mediation)
+9. [Mode A session (self-guided with AI)](#9-mode-a-session-self-guided-with-ai)
+10. [Mode B session (with a mediator)](#10-mode-b-session-with-a-mediator)
+11. [Voting, compromise, and agreement](#11-voting-compromise-and-agreement)
+12. [Downloading results](#12-downloading-results)
+13. [Language, translation, and reviewing steps](#13-language-translation-and-reviewing-steps)
+14. [Toaster catalog](#14-toaster-catalog)
+15. [Tips and typical situations](#15-tips-and-typical-situations)
 
 ---
 
-## 1. What you can do
+## 1. What you can and cannot do
 
 As a party to the dispute you:
 
 - sign in with a login and password or a **Magic Link**;
-- complete welcome, consent, and four psychological tests;
+- choose a case under **My rooms** if you belong to more than one room;
+- complete welcome, consent, four psychological tests, and wait for **Personal AI Bot**;
 - describe the dispute in your own words;
 - wait until the other party is ready (and the mediator — in Mode B);
-- take part in the mediation session: answer questions, vote on solution options, accept or reject a compromise, and confirm the agreement;
-- download a PDF of the results;
-- switch the interface language with **EN | UA** and log out of the account.
+- take part in the session: answer questions, vote, accept or reject a compromise, confirm the agreement;
+- download the **Mediation results** PDF;
+- switch language with **EN | UA** and log out.
 
 > **You do not** create a room, set the session time, or manage the other party. That is done by the administrator (Mode A) or the mediator (Mode B).
 
 ---
 
-## 2. Signing in
+## 2. Signing in and Magic Link
 
 The room organizer sends you an account: a login, a password, or a **Magic Link**.
 
@@ -53,23 +56,39 @@ The room organizer sends you an account: a login, a password, or a **Magic Link*
 3. If needed, click **Show password**.
 4. Click **Sign in**.
 
-If the details are wrong, you will see **Invalid credentials** or **Invalid login format**. Check the login and contact the person who sent you access.
+If the details are wrong: **Invalid credentials** or **Invalid login format**.
 
 ### Sign in with a Magic Link
 
 1. Open the link from the email or message.
-2. A confirmation page appears — click **Continue** to complete sign-in (the link is consumed only when you continue).
+2. A confirmation page appears; in a normal browser, sign-in **completes automatically** (loading indicator). If JavaScript is disabled, click **Continue**.
 3. The system takes you to the next unfinished step.
 
-> **The link is one-time** and valid for **72 hours**. If it has expired or already been used, you will see: **This magic link is invalid or has expired.** Ask for a new link or sign in with login and password.
+> **The link is one-time** and valid for **72 hours**. If it has expired or already been used, you will see that the magic link is invalid or expired. Ask for a new link or sign in with login and password.
 
-After sign-in, the system opens the screen you need: welcome, tests, dispute description, lobby, or mediation room. If you take part in more than one room, you first see **My rooms** and choose which case to continue. You can open **My rooms** again from the header while signed in as a party.
-
-Use **EN | UA** in the header for your interface language. In the session, messages from others appear in your language (marked **Translated**; you can show the original). Before sending, you can use **Help me phrase this** to clarify your draft without changing its meaning. Solution options and the results PDF follow your interface language.
+A Magic Link can be generated by an **administrator** or by a **mediator** (for parties in their rooms).
 
 ---
 
-## 3. Process stages
+## 3. My rooms
+
+If you take part in more than one room, after sign-in you see **My rooms**. Choose which case to continue. **My rooms** is also available from the header.
+
+Row statuses:
+
+| Status | Meaning |
+|--------|---------|
+| **Completed** | Mediation finished |
+| **In session** | Live session in progress |
+| **Scheduled** | A schedule exists (Mode B) |
+| **Preparing** | Onboarding / analysis |
+| **Needs dispute intake** | Dispute description not submitted yet |
+
+Each row shows your role (**Party A** / **Party B**) and status.
+
+---
+
+## 4. Header, stages, and toasters
 
 On the left (or in the step navigation) you see six steps:
 
@@ -80,60 +99,48 @@ On the left (or in the step navigation) you see six steps:
 5. **Mediation**
 6. **Treaty**
 
-You can move forward only after the current step is complete. Steps you have already finished can be opened in review mode (see [section 12](#12-language-logout-and-reviewing-earlier-steps)).
+You can move forward only after the current step is complete. Finished steps open in review mode.
 
-The header always shows:
+The header shows:
 
 - the **PsyLex** name;
-- **My rooms** (when you have party access);
+- **My rooms**;
 - your role badge: **Party A** or **Party B**, often with your title (for example **Party A · Claimant**);
-- **Help**, the **EN | UA** switcher, and **Logout**;
+- **Help**, **EN | UA**, **Logout**;
 - the banner: **Legal information, not legal advice.**
 
 On the room page, the heading shows your role (and title) with the **room title** underneath.
 
-### Status notifications (toasters)
+### Status toasters
 
-During lobby and the live session, waits and actions appear as **toasters** (top-left), not as long banners in the page body:
+Waits and actions appear as **toasters** (top-left), not as long banners in the page body:
 
-- **Amber** — wait (AI working, other party answering, generating options/compromise/agreement, waiting for the mediator);
-- **Green** — your turn to act (new question, options ready, compromise ready, agreement ready).
+- **Amber** — wait (AI working, other party answering, waiting for the mediator to publish);
+- **Green** — your turn to act.
 
-You usually do not need to refresh the page; the room updates on its own.
+Separately, the countdown **Session time remaining** is shown. You usually do not need to refresh — the room updates on its own. Full catalog: [section 14](#14-toaster-catalog).
 
 ---
 
-## 4. Welcome and consent
+## 5. Welcome and consent
 
 ### Welcome
 
-Screen: **Welcome to the application**.
-
-It briefly explains that the tool helps you assess your psychological state and prepare for mediation. Your responses are **strictly confidential**.
-
-Click **Start Assessment**.
+Screen: **Welcome to the application**. Responses are **strictly confidential**. Click **Start Assessment**.
 
 ### Consent
 
-Screen: **Disclaimer & Consent** → the **Important Information** block.
+Screen: **Disclaimer & Consent** → **Important Information** (three points: not legal advice / not therapy; voluntary; confidential).
 
-Read the three points carefully:
-
-1. the service does not provide professional legal advice and is not a substitute for therapy;
-2. participation is voluntary — you may stop at any time;
-3. your responses are confidential and protected.
-
-Check the box:
-
-> **I have read and agree to the terms of participation.**
-
-Click **Proceed to Next Step**.
+Check: **I have read and agree to the terms of participation.**  
+Click **Proceed to Next Step** (while checking: **Checking test completion…**).  
+Footer: **Secure & Confidential Environment**.
 
 ---
 
-## 5. Psychological assessment
+## 6. Psychological tests and AI bot
 
-Screen: **Psychological Assessment**. You must complete **four modules** (each opens in a new tab):
+Screen: **Psychological Assessment**. Complete **four modules** (each opens in a new tab):
 
 | Module | Purpose |
 |--------|---------|
@@ -144,227 +151,228 @@ Screen: **Psychological Assessment**. You must complete **four modules** (each o
 
 ### How to complete the tests
 
-1. On the test card, click **Open test**.
+1. Click **Open test** on the card.
 2. Finish the questionnaire on the external page.
 3. Return to PsyLex and click **Update test status**.
-4. The status changes from **Not passed** to **Passed**.
+4. Status changes from **Not passed** to **Passed** (or **Pending completion**).
 
-> If the status does not update immediately — wait and click **Update test status** again. Processing after you submit a test can take **up to 30 minutes**.
+> Processing after you submit a test can take **up to two hours**. Wait and click **Update test status** again.
 
 ### Personal AI Bot
 
-The **Personal AI Bot** card appears after the tests:
+The **Personal AI Bot** card:
 
-- **Locked** — finish all four tests first;
-- **Pending** — the profile is being processed (up to 30 minutes);
+- until all tests are passed — available after tests (badge stays **Pending**);
+- **Pending** — profile processing (**up to two hours**);
 - **Ready** — you can continue.
 
-Click **Update bot status** if processing should already have finished. When the tests are passed and the bot status is **Ready**, click **Next Step**.
+Buttons: **Update bot status**, then **Next Step**.
+
+If a mediator or admin requested a profile update, you will see a banner asking you to retake the tests.
 
 ---
 
-## 6. Describe your dispute
+## 7. Describe your dispute
 
-Screen: **Describe your dispute**. Answer honestly and in your own words — the other party does not see your answers directly; AI uses them to prepare the session.
-
-Three questions:
+Screen: **Describe your dispute**. The other party does not see your answers directly; AI uses them to prepare the session.
 
 1. **Please describe the dispute in your own words.**
 2. **What is most important to you in this dispute?**
 3. **What outcome would you consider acceptable?**
 
-Click **Submit answers**. While the form is sending, the button shows **Submitting…**.
+**Submit answers** / **Submitting…**. While saving, you may see the toast **Saving your answers…**.
 
-After that you enter the **Mediation readiness** lobby. AI analysis (profiles, interests, legal information) starts when **both parties** have submitted the dispute description and their bots are ready. This can take several minutes.
+Then you enter the **Mediation readiness** lobby. AI analysis starts when **both parties** have submitted intake and their bots are ready (intake analysis toast, about 5–10 minutes).
 
 ---
 
-## 7. Lobby before mediation
-
-Screen: **Mediation readiness**. The layout depends on the room mode.
+## 8. Lobby before mediation
 
 ### Mode A — self-guided mediation with AI
 
-You see:
+You see **Your status** and **Opposite side**: **Ready for mediation** / **Not ready for mediation**.
 
-- **Your status** — **Ready for mediation** or **Not ready for mediation**;
-- **Opposite side** — the same indicator for the other party.
-
-The **Start Mediation** button becomes available when:
-
-1. both parties have finished onboarding and the dispute description;
-2. AI has finished analysis (**Our analysis agents are preparing your mediation session…**);
-3. the room has prepared opening messages.
-
-Possible prompts:
-
-| Message | What to do |
-|---------|------------|
-| The opposite side is not ready for mediation yet… | Wait until the other party completes tests and the dispute description |
-| Our analysis agents are preparing your mediation session… | Wait several minutes |
-| The mediation agent is preparing your opening messages… | Wait about a minute |
-| You clicked Start Mediation… | Wait until the other party clicks as well |
-| The opposite side is ready to start… | Click **Start Mediation** |
+**Start Mediation** becomes available when both parties are ready, AI analysis is complete, and opening messages are prepared. Long waits appear as toasters (see section 14), not as long body banners.
 
 The session starts only when **both** parties have clicked **Start Mediation**.
 
 ### Mode B — session with a mediator
 
-The mediator sets the date and time. Until then you see: **Waiting for the mediator to schedule the session.**
+Until a schedule exists: toast **Waiting for the mediator to schedule the session.**
 
-When the schedule is saved, **Scheduled session** appears, along with the notification **A mediation session has been scheduled.**
-
-The **Start Mediation** button opens **10 minutes** before the scheduled time. Until then you see a countdown: **Start becomes available in…**
+When the schedule is saved — **Scheduled session** and a countdown. **Start Mediation** opens **10 minutes** before the scheduled time (**Start becomes available in…**).
 
 The session starts when:
 
 1. Party A, Party B, **and** the mediator have clicked **Start Mediation**;
-2. the scheduled time has arrived (not earlier).
+2. the scheduled time has arrived **or** the mediator clicks **Start now** (after all three have already clicked start).
 
-The screen shows the click status of all three participants. If you have already clicked: **You clicked Start Mediation.** If everyone is ready before the clock: **Everyone is ready. Session starts at the scheduled time.**
-
-Notifications in Mode B:
-
-- **You can now click Start Mediation.**
-- **Another participant is ready to start.**
-- **The mediation session has started.**
+The screen shows click status for all three participants. If everyone is ready before the clock: everyone is ready; the session starts at the scheduled time, **or the mediator can start now**.
 
 ---
 
-## 8. Mode A session (self-guided with AI)
+## 9. Mode A session (self-guided with AI)
 
-Room: **Mediation room**. The phase is shown at the top.
+Room: **Mediation room**. Phase at the top:
 
 | Phase | What happens |
 |-------|----------------|
-| **Opening** | AI greets the parties and sets the frame for the session |
-| **Dialogue** | Up to three rounds of questions; the parties reply in turn |
+| **Opening** | AI greets the parties |
+| **Dialogue** | Up to **three** rounds; parties reply in turn |
 | **Generating options** | AI prepares solution options |
-| **Voting** | Each party chooses an option blindly (you cannot see which option the other party selected) |
-| **Second vote** | If the choices differ — a compromise proposal |
-| **Agreement** | A draft agreement for confirmation |
+| **Voting** | Blind choice of an option |
+| **Second vote** | Compromise if choices differ |
+| **Agreement** | Draft agreement |
 | **Completed** | Results and download |
 
 ### Timer
 
-**Session time remaining** is a **60-minute** countdown. When time runs out, the session ends automatically (the system moves to options if dialogue was still in progress).
+**Session time remaining** is a **120-minute** countdown. When time runs out, the session ends according to product rules (moves to options if dialogue was still in progress).
 
 ### Dialogue
 
 - Party A usually replies **first** in each round.
-- When it is your turn: **Your turn to reply**. There is a **Reply time** timer (about 5 minutes).
-- When it is the other party’s turn: **Other party is answering**.
-- Type your answer in **Type your substantive reply…** and click **Send reply**.
+- Your turn: **Your turn to reply**. **Reply time** timer — **15 minutes**.
+- Other party’s turn: **Other party is answering**.
+- Field **Type your substantive reply…** → **Send reply** (Enter also sends).
+- **Help me phrase this** / **Rewriting…** clarifies your draft without changing its meaning.
 
-Write about the substance of the dispute. If a reply sounds like a personal attack, the system may show: **Please focus on the substance of the dispute.**
-
-While AI prepares the next step: **The mediation agent is working on the next step. Please wait a moment.**
+If a reply sounds like a personal attack: **Please focus on the substance of the dispute.**
 
 ### Moving to options early
 
-During dialogue you can click **I am ready for solution options**. The move happens when **both** parties click this button. Otherwise dialogue continues for up to three rounds or until the 60 minutes end.
+**I am ready for solution options**. The move happens when **both** parties click. Otherwise dialogue continues for up to three rounds or until the timer ends.
 
 ---
 
-## 9. Mode B session (with a mediator)
+## 10. Mode B session (with a mediator)
 
-The **mediator** leads the session. AI suggests questions and options, but a person decides what to send to the parties.
+The **mediator** leads the session. AI assists them; a person decides what to send to the parties.
 
 Differences from Mode A:
 
-- the timer shows **elapsed** session time (**Session time**), not a 60-minute countdown;
+- the party timer is also a countdown **Session time remaining** for the duration the mediator set (30–240 minutes);
 - the mediator sends questions — to you or to the other party;
-- you reply when the reply field is available (not necessarily strictly in turn, as in Mode A);
-- there is no **I am ready for solution options** button — the mediator publishes the options;
-- if the votes differ, a compromise appears only after the mediator publishes it (amber toast: waiting for the mediator to publish a compromise);
-- a draft agreement appears for you only after the mediator **publishes** it (until then: waiting for the mediator to finalize the agreement).
-
-Typical toasters during the session:
-
-| Toast | Action |
-|-------|--------|
-| New question from the mediator | Read it and send a reply |
-| Solution options are ready | Choose an option |
-| Compromise is ready — please vote | Accept or reject |
-| Waiting for the other party to vote on the compromise | You already voted; wait for the other side |
-| Draft agreement ready / waiting for mediator to finalize | Review and **I accept**, or wait until publish |
-| Session completed | Review the results |
+- you reply when the reply field is available (not necessarily strictly in turn);
+- there is no **I am ready for solution options** — the mediator publishes options;
+- compromise and agreement appear only after the mediator **publishes** them;
+- after both parties accept the agreement, you may see a toast asking you to wait until the mediator **completes the session**.
 
 Message at the start: **Mediator-facilitated session started. The mediator will guide the dialogue.**
 
 ---
 
-## 10. Voting, compromise, and agreement
-
-This stage is shared by both modes (with publication nuances in Mode B).
+## 11. Voting, compromise, and agreement
 
 ### Solution options
 
-The **Solution options** block appears. Each option may include:
+**Solution options** block. Each option may include: a description for you, **Legal information (not advice)**, **Fulfillment likelihood**, **Risks if refused**.
 
-- a description adapted for you;
-- **Legal information (not advice)**;
-- **Fulfillment likelihood**;
-- **Risks if refused**.
+**Select this option** → **Your vote has been recorded. Waiting for the other party.** Voting is secret until both have voted.
 
-Voting is **secret** until both parties have voted. Click **Select this option**. After that: **Your vote has been recorded. Waiting for the other party.**
-
-- If both parties chose the **same** option → move to **Agreement**.
-- If the choices **differ** → **Second vote** phase (compromise).
+- Same choice → move to agreement (Mode B: after mediator publish).
+- Different choices → **Second vote** (compromise; Mode B: after publish).
 
 ### Compromise
 
-You will see which option the other party chose, and a new compromise proposal (in Mode B — only after the mediator publishes it).
+You see which option the other party chose and a compromise proposal.
 
 - **Accept compromise**
 - **Reject compromise**
 
-After you vote, a toast asks you to wait for the other party. If **both** parties accept — both move to waiting for the agreement draft (Mode B: until the mediator publishes). If at least one rejects — the session may end without mutual agreement (Mode A) or stay with the mediator to continue (Mode B).
+After you vote — a wait toast for the other party. If both accept — wait for the agreement draft. If at least one rejects — Mode A may end without agreement; Mode B may continue with the mediator.
 
 ### Draft agreement
 
-Screen: **Draft agreement**: text, terms, and a legal disclaimer.
+Screen: **Draft agreement** — text, terms, legal disclaimer. In Mode B the draft appears only after **Publish to parties**.
 
-In Mode B the draft appears only after the mediator publishes it. If you agree, click **I accept**. Then: **Waiting for the other party to accept.** When both parties have accepted: **Session completed** (Mode B may still wait for the mediator to complete the session).
+**I accept** → **Waiting for the other party to accept.** When both have accepted: **Session completed** (Mode B may still wait for the mediator to complete).
 
-Acceptance on the platform records the parties’ voluntary choice. To give the document legal force, consult a licensed attorney — this is stated in the disclaimer on the agreement screen.
-
----
-
-## 11. Downloading results
-
-After completion, the **Download results** button is available. The **Mediation results** PDF includes numbered chapters such as:
-
-- legislation / legal information and sources (the room’s jurisdiction);
-- the agreed solution (or a note that no agreement was reached);
-- the draft agreement text and terms.
-
-It does **not** include a psychodynamic profile chapter. The email field on this page is a stub for now: **Email delivery is coming soon. Use download for now.** Save the PDF yourself.
+Acceptance on the platform records the parties’ voluntary choice. For legal force, consult a licensed attorney — this is stated in the disclaimer.
 
 ---
 
-## 12. Language, logout, and reviewing earlier steps
+## 12. Downloading results
 
-- **EN | UA** in the header changes the interface language. Your answers are stored as you wrote them and are not translated automatically.
-- **Logout** ends the session. The next time you sign in, you return to the unfinished step.
-- Completed stages can be opened from the step navigation in review mode. Buttons: **Next** and **Back to current step**. Data cannot be edited in review.
+**Download results**. The **Mediation results** PDF includes:
+
+1. **Legislation** (legal information and sources);
+2. **Solution** (or a note that no agreement was reached);
+3. **Agreement** / **Terms**.
+
+It does **not** include a psychodynamic profile chapter. The email field is a stub: **Email delivery is coming soon. Use download for now.**
 
 ---
 
-## 13. Tips and typical situations
+## 13. Language, translation, and reviewing steps
 
-**I cannot sign in.** Check that the login starts with `psylex_`. If the Magic Link does not work, it may already have been used or 72 hours may have passed. Ask the organizer for new credentials.
+- **EN | UA** changes the interface language. Your answers are stored as you wrote them.
+- Others’ messages may show **Translated**; use **Show original** / **Hide original**.
+- **Help me phrase this** / **Rewriting…**; on failure: **Could not rewrite. Try again.**
+- Options, agreement, and PDF follow your interface language.
+- **Logout** ends the session; the next sign-in returns you to the unfinished step.
+- In review of finished steps: **Next** and **Back to current step** (editing is disabled).
 
-**I completed the test, but the status is “Not passed”.** Click **Update test status**. Wait: processing can take up to 30 minutes.
+---
 
-**The “Start Mediation” button is inactive (Mode A).** The other party is not ready yet, or AI is still analyzing the dispute / preparing the room. You do not need to refresh the page — the status updates on its own.
+## 14. Toaster catalog
 
-**The button is inactive (Mode B).** The mediator has not scheduled a time yet, or there are more than 10 minutes until start, or one of the three participants has not clicked start.
+### Mode A — lobby
 
-**The other party is slow to reply in Mode A.** Wait for their turn or the reply timer. Do not close the tab during your turn.
+| Kind | Message |
+|------|---------|
+| Wait | Analyzing your intake — this can take up to about 5–10 minutes. |
+| Wait | Preparing your mediation opening — usually under a couple of minutes. |
+| Wait | The opposite side is not ready for mediation yet… |
+| Wait | You clicked Start Mediation. Waiting for the opposite side… |
+| Ready | The opposite side is ready to start. Click Start Mediation… |
+| Wait | Both sides are ready. Starting mediation… |
 
-**The session ended without an agreement.** This is a normal outcome if the compromise was rejected or time ran out without mutual agreement. You can still download the PDF.
+### Mode A — room
 
-**Can the other party see my tests and dispute description?** No. The other party sees only what appears in the mediation room (questions, dialogue replies, options, the agreement). Psychological results are used by AI (and by the mediator in Mode B) to prepare the session.
+| Kind | Message |
+|------|---------|
+| Wait | Generating the next question… / The mediation agent is working on the next step… |
+| Wait | The other party is currently answering question. |
+| Wait | Waiting for the other party to click ready. |
+| Ready | The other party is also ready. |
+| Wait | Generating options / compromise / preparing the draft agreement… |
+| Ready | You have a new question — please answer. |
+| Ready | Solution options / compromise / draft agreement are ready. |
+| Wait | Waiting for the other party to vote / accept. |
 
-**What should I do after the agreement?** Download the PDF and, if needed, consult an attorney so the arrangement can be given legal force.
+### Mode B — lobby and room
+
+| Kind | Message |
+|------|---------|
+| Wait | Waiting for the mediator to schedule the session. |
+| Ready | You can now click Start Mediation. |
+| Wait / Ready | Start click waits, peer ready, session starting… |
+| Wait | Waiting for the mediator’s next question. |
+| Ready | You have a new question from the mediator. |
+| Wait | Waiting for the mediator to publish a compromise / finalize the agreement. |
+| Ready | A compromise / draft agreement is ready. |
+| Wait | Waiting for the other party to vote on the compromise / accept. |
+| Wait | Both parties have accepted. Waiting for the mediator to complete the session. |
+
+Other messages: send-failure (text restored), email stub, focus on substance of the dispute.
+
+---
+
+## 15. Tips and typical situations
+
+**I cannot sign in.** The login must start with `psylex_`. A Magic Link is one-time and valid 72 hours — ask the organizer for a new one.
+
+**I completed the test, but status is “Not passed”.** Click **Update test status**. Processing can take **up to two hours**.
+
+**“Start Mediation” is inactive (Mode A).** The other party is not ready yet, or AI is still analyzing / preparing the opening — check the toasters.
+
+**The button is inactive (Mode B).** No schedule yet, more than 10 minutes until start, or one of the three participants has not clicked start.
+
+**The other party is slow to reply (Mode A).** Wait for their turn or the **15-minute** reply timer. Do not close the tab during your turn.
+
+**The session ended without an agreement.** Normal if the compromise was rejected or time ran out. You can still download the PDF.
+
+**Can the other party see my tests and dispute description?** No. The room shows only dialogue, options, and the agreement. Profiles are used by AI (and by the mediator in Mode B).
+
+**What should I do after the agreement?** Download the PDF and, if needed, consult an attorney.

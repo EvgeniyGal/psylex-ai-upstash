@@ -11,4 +11,9 @@ In the product, **Help** and the chat assistant load these texts for the user’
 
 ### Deploy note (DB overrides)
 
-Live deployments may keep older Help text in the database if an admin previously edited and saved a document. After you update these markdown files and regenerate exports (`npm run help:docs` → `public/docs/{en,uk}/`), run **Settings → Help → Reset to file** for each changed document/locale (or re-seed) so production matches git. Until then, Help UI and the chat assistant continue to serve the DB copy.
+Live deployments may keep older Help text in the database if an admin previously edited and saved a document. After you update these markdown files and regenerate exports (`npm run help:docs` → `public/docs/{en,uk}/`):
+
+1. Deploy the new files (and regenerated PDF/DOCX).
+2. In production, open **Settings → Help** and click **Reset to bundled file** for each changed document and locale (or re-seed Help documents).
+
+Until reset, Help UI and the chat assistant continue to serve the DB copy, not the files in git.

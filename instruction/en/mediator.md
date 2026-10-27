@@ -2,371 +2,307 @@
 
 This guide is for the **Mediator** role. You run **Mode B**: you create a room for two parties, set the time, lead a live session with AI support, and accompany the parties toward an agreement.
 
-> **Tip.** Until onboarding (tests) is complete, **Help** in the header opens these instructions. After you enter the console, the **Help** button is in the sidebar. The chat assistant replies in **EN | UA**. You also see the instruction for parties. Ask it about waits, **Sides**, schedule, or Mode A/B if you need a quick reminder.
+> **Tip.** Until onboarding is complete, **Help** in the header opens these instructions. In the console, **Help** is in the sidebar. The chat assistant replies in **EN | UA**. You also see the party instruction. Ask about waits, **Sides**, schedule, or Mode A/B.
 
-If you are Party A/B, see [parties.md](./parties.md). If you are a platform administrator — [admin.md](./admin.md).
+If you are Party A/B — [parties.md](./parties.md). If you are a platform administrator — [admin.md](./admin.md).
 
 ---
 
 ## Contents
 
-1. [What you can do](#1-what-you-can-do)
-2. [Sign-in and first-time setup](#2-sign-in-and-first-time-setup)
+1. [What you can and cannot do](#1-what-you-can-and-cannot-do)
+2. [Sign-in and onboarding](#2-sign-in-and-onboarding)
 3. [Mediator Console](#3-mediator-console)
 4. [Negotiation rooms](#4-negotiation-rooms)
-5. [Creating a room and party access](#5-creating-a-room-and-party-access)
+5. [Creating a room and access](#5-creating-a-room-and-access)
 6. [Sides](#6-sides)
 7. [Room card](#7-room-card)
 8. [Session schedule](#8-session-schedule)
 9. [Calendar](#9-calendar)
 10. [Pre-session lobby](#10-pre-session-lobby)
 11. [Live session](#11-live-session)
-12. [Ending the session and results](#12-ending-the-session-and-results)
+12. [Ending and results](#12-ending-and-results)
 13. [Language and logout](#13-language-and-logout)
 14. [Role limits](#14-role-limits)
 15. [Tips and typical situations](#15-tips-and-typical-situations)
 
 ---
 
-## 1. What you can do
+## 1. What you can and cannot do
 
 In the Mediator Console you:
 
 - complete your own onboarding (welcome, consent, tests);
-- create **negotiation rooms** for Party A and Party B (Mode B);
-- manage party accounts under **Sides** (parties from **your rooms only**);
-- copy party login and password to send them access;
-- see whether the parties are ready (tests, dispute description, AI analysis);
-- schedule the date, time, and duration of the session;
-- manage the schedule in **Calendar** (view, reschedule, change duration);
-- open the **lobby** and start the session together with the parties;
-- in the live session, review party profiles, generate or write questions, send them to the parties, generate solution options, edit and publish a compromise, edit and publish the agreement draft;
-- review the preparation log, mediation details, and download results;
-- delete your own rooms.
+- create **negotiation rooms** (Mode B);
+- manage parties under **Sides** (from **your rooms only**);
+- copy login/password and generate a **Magic Link** for parties in your rooms;
+- schedule date, time, and duration; manage the schedule in **Calendar**;
+- open the **lobby** and start the session (including **Start now** when everyone is ready);
+- in the live session, work with profiles, questions, options, compromise, and agreement;
+- finish with **Complete session**;
+- review the log and results PDF; delete your own rooms.
 
-> **You do not** manage the registry of other mediators, API keys, agent prompts, or the RAG legal corpus — that is the administrator. Mode A rooms (created by an admin) do not belong to you and are not shown in the console.
+> **You do not** manage the registry of other mediators, API keys, agent prompts, or the RAG corpus — that is the administrator. Mode A (admin) rooms are not shown in your console.
 
 ---
 
-## 2. Sign-in and first-time setup
+## 2. Sign-in and onboarding
 
-The **administrator** creates the account under **Mediators**. You receive a login `psylex_…` and a password (or a Magic Link from the admin).
+The **administrator** creates the account under **Mediators**. You receive a login `psylex_…` and a password (or a Magic Link).
 
-1. Open the **Login** page.
+1. Open **Login**.
 2. Enter login and password.
-3. After a successful sign-in, if onboarding is not finished, the system takes you through the same steps as the parties, but with mediator copy.
-
-### Mediator onboarding
+3. If onboarding is not finished — the same steps as parties, with mediator copy.
 
 | Step | Screen | Action |
 |------|--------|--------|
 | Welcome | **Welcome, Mediator** | **Begin Mediator Setup** |
-| Consent | **Disclaimer & Consent** | Read the terms, check the box, **Proceed to Next Step** |
-| Tests | **Mediator Assessment** | Complete four modules, wait for **Personal AI Bot** → **Ready**, click **Next Step** |
+| Consent | **Disclaimer & Consent** | Check the box + **Proceed to Next Step** |
+| Tests | **Mediator Assessment** | Four modules → **Personal AI Bot** → **Ready** → **Next Step** |
 
-The four tests are the same as for parties: **What is my personality type**, **Face to face with fear**, **Character traits**, **Personality conflicts**. After each one, return to PsyLex and click **Update test status**. Processing can take up to two hours.
-
-After onboarding, **Mediator Console** → **Rooms** opens.
+Test processing can take **up to two hours**. After onboarding, **Mediator Console** → **Rooms** opens.
 
 ---
 
 ## 3. Mediator Console
 
-On the left:
+Left nav (order):
 
-- the **Mediator Console** label;
-- **Rooms** — a list of your rooms;
-- **Calendar** — session schedule;
-- **Sides** — parties that belong to your rooms;
-- **Help**, the **EN | UA** switcher, and **Logout**.
+1. **Rooms** — your rooms;
+2. **Sides** — parties from your rooms;
+3. **Calendar** — session schedule;
+4. **Help**, **EN | UA**, **Logout**.
 
-The home path `/mediator` immediately redirects to **Rooms**.
+Above Help in the sidebar during lobby / live session, the **attention dock** shows waits, party readiness, and the session timer.
+
+Path `/mediator` redirects to **Rooms**.
 
 ---
 
 ## 4. Negotiation rooms
 
-Page: **Negotiation Rooms**. Only rooms that **you** created appear here.
+Page: **Negotiation Rooms**. Only rooms **you** created.
 
-Table columns:
+Columns: **Room title**, **Room description**, **Jurisdiction**, **Scheduled time**, **Status** (**Not ready** / **Ready** / **Complete**), **Session**.
 
-- **Room title**, **Room description**, **Jurisdiction**;
-- **Scheduled time**;
-- **Status**: **Not ready** / **Ready** / **Complete**;
-- **Session** — an action that depends on state.
-
-Search: the **Search...** field. The **New Room** button creates a new case.
-
-### Preparation statuses
-
-| Status | Meaning |
-|--------|---------|
-| **Not ready** | The parties are still completing tests / the dispute description, or AI analysis is not finished |
-| **Ready** | Both parties are ready, analysis is complete — you can run the session (after scheduling) |
-| **Complete** | Mediation is finished |
+Search: **Search...**. Button **New Room**.
 
 In the **Session** column:
 
-- **Open pre-session lobby** — if there is a schedule and preparation is ready, and the session has not started;
-- **Open live session** — if the session is already in progress;
-- after completion, actions lead to the room card, not the live console.
+- **Open pre-session lobby** — schedule exists, prep ready, session not started;
+- **Open live session** — session already in progress;
+- after completion — room card only.
 
 Click a row to open the room card.
 
 ---
 
-## 5. Creating a room and party access
+## 5. Creating a room and access
 
-1. Click **New Room**.
-2. Fill in **Room details**:
-   - **Room title**, **Room description**;
-   - **Jurisdiction**: **Ukraine** (*Ukrainian law and legal practice*) or **United States** (*United States law and legal practice*).
-   - For the United States you must select **State / territory / Federal**. Jurisdiction determines which legal sources AI will retrieve. It cannot be changed after creation.
-3. For **Party A** and **Party B**, choose either:
-   - **Create new** — enter **Title / Name** and **Description** (a new login `psylex_…` and password are generated); or
-   - **Add existing** — search by login or title and attach a returning participant (their tests and personal bot stay; they only fill dispute intake for this room).
-4. Click **Create Room** (or **Cancel**).
+1. **New Room**.
+2. **Room details**: title, description; **Jurisdiction** (**Ukraine** or **United States** + for the US **State / territory / Federal**). Jurisdiction cannot be changed after creation.
+3. For **Party A** and **Party B**:
+   - **Create new participant** — **Title / Name**, **Description** (new login `psylex_…` and password); or
+   - **Add existing participant** — search by login or name (**only parties from your rooms**; roomless accounts and other mediators’ parties are hidden).
+4. **Create Room** / **Cancel**.
 
-The same person cannot fill both party slots in one room. You land on the room card.
+The same person cannot fill both slots in one room.
 
-### How to give parties access
+### Giving parties access
 
-On the room card, in the **Participants** block for each party:
+On the room card under **Participants**:
 
-- copy **Login** and **Password** with **Copy Credentials** and send them to the party through a secure channel;
-- the **Magic Link** button may be on the screen, but creating a link is available **only to the administrator**. If you need a one-time 72-hour link — ask the admin to generate it from the room card in the Admin Console.
+- **Copy Credentials** (login and password);
+- **Magic Link** — one-time link valid **72 hours** (auto sign-in / **Continue** without JS).
 
-Ask the parties to complete welcome, consent, tests, and the dispute description using the [party instruction](./parties.md). Until they do, the room status stays **Not ready**.
-
-When you choose **Add existing**, the search lists only parties that already appear in **your** rooms — not roomless / orphan accounts and not parties from other mediators’ rooms.
+Ask parties to complete onboarding and dispute intake using the [party instruction](./parties.md).
 
 ---
 
 ## 6. Sides
 
-Menu item **Sides** — the party registry scoped to your practice.
+Menu **Sides** — registry scoped to your practice.
 
 - You see parties that belong to **at least one of your rooms**.
-- Parties with **no room** (roomless / orphan accounts) are **hidden**.
-- Use the list to open a party card, review credentials, or reuse an existing party when creating a new room.
+- Parties with **no room** are **hidden**.
+- Columns: title, login, role, rooms, tests (T1–T4), bot (BP), actions.
 
-Administrators see **all** parties (including roomless) under the same menu name in the Admin Console.
+Actions:
+
+- **Edit** title / description;
+- **Delete party** (with cascading room rules);
+- ⋮ menu: **Redo T1…T4**, **Redo all tests**, **Redo bot prompt**, **Redo all** (with confirmation) → **Retest requested.**
+
+Credentials (login/password/Magic Link) are copied from the **room card**, not from the Sides list.
+
+Administrators see **all** parties (including roomless) in their console.
 
 ---
 
 ## 7. Room card
 
-Opens from the room list or from the calendar (**Open room**).
-
-On the card:
-
 | Block | What the mediator can do |
 |-------|--------------------------|
-| Header | Title, creation date, jurisdiction |
-| **Mediation details** | After the session starts — dialogue, votes, agreement, **Download results** |
-| **Mediation schedule** | Date, time, duration, readiness indicators, links to the lobby / live session |
-| **Pipeline & mediation log** | Timeline: tests, dispute intake, AI agents, start and completion |
-| **Room details** | Title and description **view only** (cannot be edited after creation) |
-| **Participants** | Party details, profile readiness (profile ready date + tests date), **Request profile update**, login/password, **Copy Credentials** |
-| **Delete Room** | Removes the room and memberships only. Party accounts stay for reuse. This cannot be undone |
+| Header | Title, date, jurisdiction |
+| **Mediation details** | After start — dialogue, votes, agreement, **Download results** |
+| **Mediation schedule** | Date, time, duration, readiness, lobby / session links |
+| **Pipeline & mediation log** | Timeline of preparation and the session |
+| **Room details** | Title and description **view only** |
+| **Participants** | Profile / tests, **Request profile update**, login/password, **Copy Credentials**, **Magic Link** |
+| **Delete room** | Two options (see below) |
 
-**Request profile update** clears the participant’s tests, personal bot prompt, and related profile data and asks them to retake onboarding. Use it when tests are outdated; confirm before sending.
+**Request profile update** clears tests, bot, and related data and asks the party to retake onboarding.
 
-Indicators in the schedule:
+Readiness indicators: **Party A/B ready**, profile readiness, **AI analysis**. Incomplete pipeline steps may show **Generating…**.
 
-- **Party A ready** / **Party B ready** — **Ready** or **Not ready** (dispute intake + mediation readiness for this room);
-- Profile lines show **Profile ready** / **Not ready** with dates when available;
-- **AI analysis complete** — the post-intake pipeline (profiles, interests, legal analysis). Incomplete pipeline steps may show **Generating…** while AI analysis is running.
+### Delete
 
-Tip: you can schedule a time before full readiness, but the parties can **start the session** only when tests, the dispute description, and analysis are complete.
+- **Delete room only** — party accounts remain;
+- **Delete room and parties** — also deletes those party accounts (and related rooms per product rules).
+
+Both require confirmation and cannot be undone.
 
 ---
 
 ## 8. Session schedule
 
-In the **Mediation schedule** block:
+In **Mediation schedule**:
 
-1. Choose **Date**, **Hour**, and **Minutes** (5-minute steps).
-2. Choose **Duration**: 30 minutes, 1 hour, then in 30-minute steps up to 4 hours.
-3. The time must be in the future.
-4. Click **Save schedule**. You will see confirmation **Schedule saved**.
+1. **Date**, **Hour**, **Minutes** (5-minute steps).
+2. **Duration**: 30 minutes … 4 hours (30-minute steps).
+3. Time must be in the future.
+4. **Save schedule** → **Schedule saved**.
 
-The parties receive the notification **A mediation session has been scheduled.** If you change a time that is already saved, previous **Start Mediation** clicks are reset — all three participants must click again.
+Parties are notified that a session was scheduled. Changing the time resets **Start Mediation** clicks — all three must click again.
 
-A participant may belong to several rooms, but **cannot** have two overlapping scheduled or live sessions. If save fails with an overlap message, pick another time (or wait until their other session ends).
+Overlapping schedules for one participant are rejected — pick another time.
 
-### Language in the live session
-
-Your **EN | UA** switcher sets the language you write and read. Party messages are translated to each viewer’s language (**Translated** + show original). Use **Help me phrase this** on question drafts before sending. Solution options and agreement text are generated for each party’s language when they differ.
-
-You can change the schedule until the session starts. After start, the fields are locked.
-
-When there is a schedule and preparation is ready:
-
-- **Open pre-session lobby**
-- after start — **Open live session**
-- after the finale — the **Mediation completed** mark
+You can change the schedule until the session starts. After start, fields lock. Links: **Open pre-session lobby** / **Open live session** / completed mark.
 
 ---
 
 ## 9. Calendar
 
-Menu item **Calendar** → **Session calendar**.
+**Calendar** → **Session calendar**.
 
-- Views: **Today**, **Day**, **Week**, **Month** (in English, the week starts on Sunday).
-- The calendar shows your scheduled sessions.
-- On the right: **Upcoming sessions** and **Rooms without a schedule** (the **Schedule** button opens the room card).
-- Click a session to view and change the schedule.
-- Drag an event to reschedule; resize it to adjust duration; then save.
-- If the session is already **Started**, the schedule cannot be changed.
-- **Open room** leads to the card.
+- Views: **Today**, **Day**, **Week**, **Month** (week starts Sunday in EN).
+- Right: **Upcoming sessions** and **Rooms without a schedule** (**Schedule** → room card).
+- Drag to move / resize duration, then save.
+- If the session is **Started**, the schedule cannot be changed.
+- **Open room**; lobby / live session links may also appear.
 
 ---
 
 ## 10. Pre-session lobby
 
-**Open pre-session lobby** (from the room list or from the card).
+**Open pre-session lobby**.
 
 ### When you can start
 
-- both parties have finished tests and the dispute description;
+- both parties finished tests and dispute intake;
 - AI analysis is complete;
 - a schedule is saved;
 - it is now **no earlier than 10 minutes** before the scheduled start.
 
 ### How to start
 
-1. Enter the lobby ahead of time (ideally before the 10-minute window).
-2. When the button is active, click **Start Mediation**.
-3. Wait until Party A and Party B click as well. The statuses of all three participants are visible on the screen.
-4. If everyone clicked before the clock: **Everyone is ready. Session starts at the scheduled time.**
-5. At the scheduled moment the system opens the live session.
+1. Enter the lobby ahead of time.
+2. Click **Start Mediation** when the button is active.
+3. Wait until Party A and Party B click as well. Statuses of all three are visible.
+4. If everyone clicked before the clock: everyone is ready; the session starts at the scheduled time, **or you can click Start now**.
+5. **Start now** is available only when all three have already clicked start and the clock has not yet arrived — it starts the session immediately.
+6. At the scheduled moment the system opens the live session automatically.
 
-The session **does not** start before the scheduled time, even if everyone has already clicked start.
-
-If someone opens the lobby after mediation is complete, they are redirected to the room card.
+After mediation completes, the lobby redirects to the room card.
 
 ---
 
 ## 11. Live session
 
-The mediator console has three columns, plus an **attention dock** in the sidebar for waits, party actions, and the session timer.
+Console: three columns + **attention dock** in the sidebar. Header: **Return to rooms**, **Complete session** (with confirmation).
 
-### Left — **Party profiles**
+Timer **Session time remaining** — countdown for the scheduled duration (also in the dock).
 
-Psychodynamic profiles of Party A and Party B. Use them to phrase questions neutrally and with risks in mind, but do not read sensitive wording to the parties “head-on” if that could escalate the conflict.
+### Left — party profiles
+
+Psychodynamic profiles of Party A and B. Use them for neutral questions; do not read sensitive wording “head-on” to the parties.
 
 ### Center — message feed
 
-You see the canonical text (the full picture). Types: **Notice**, **Opening**, **Question**, **Summary**, **Moderation**, **Nudge**, **Options**.
-
-The **Session time** timer shows how long the session has already been running (not the Mode A 60-minute countdown). The same timer appears in the attention dock.
+Canonical text. Types: notice, opening, question, summary, moderation, nudge, options. **Translated** badge + show original.
 
 ### Attention dock
 
-The sidebar dock surfaces what needs attention without flooding the feed:
+Example states:
 
-- waits (AI generating, party answering, publishing gates);
-- party actions that require your next step;
-- session elapsed time.
+| Kind | Example |
+|------|---------|
+| Wait | Waiting for Party A / B to answer |
+| Ready | Parties have replied — send the next question or generate options |
+| Wait | Generating question suggestions / options / compromise / agreement… |
+| Ready | Question suggestions / compromise draft / agreement draft ready |
+| Wait | Waiting for parties to vote |
+| Ready | Both rejected the compromise / both accepted — you can complete the session |
+| Flash | Party voted / replied / accepted or rejected |
 
 ### Right — controls
 
-The **Party A** / **Party B** switcher sets who receives the next question.
+#### Audience
+
+- **Both** — shared channel;
+- **Party A** / **Party B** — caucus.
+
+AI question generate/send is available only when Party A or B is selected (not **Both**). Custom messages work for all audiences.
 
 #### Questions from AI
 
-1. Click **Generate question options** (available in the opening/dialogue phases, until solution options have been generated).
-2. Choose one of the three candidates in the **Question candidates** block.
-3. If needed, click **Edit question**.
-4. Click **Send to party**.
-
-The party receives the question and the notification **You have a new question from the mediator.**
+1. **Generate question options**
+2. Choose a candidate under **Question candidates**
+3. Optionally **Edit question** / **Help me phrase this**
+4. **Send to party**
 
 #### Your own question
 
-The **Your question** field is text from you, without AI. Send it with **Send to party**. The system rejects empty text. Sending your own question **does not** clear the generated AI candidates — you can use them later.
-
-The parties reply in their room. You see the replies in the feed.
+**Your question** → **Send to party**. Empty text is rejected. AI candidates are not cleared.
 
 #### Solution options
 
-When the dialogue has produced enough material (this is your professional judgment; the parties have no separate “ready” button):
-
-1. Click **Generate solution options**.
-2. The system moves to voting; the parties receive **Solution options are ready to review.**
-
-The parties then vote on their own. If the votes match — the system prepares a **draft agreement** for you to edit. If they differ — **vote discrepancy**.
+**Generate solution options** when dialogue has enough material. Parties vote on their own.
 
 #### Vote discrepancy
 
-When votes differ, you can:
-
-1. **Propose / edit compromise** — wait for the AI draft if needed, edit fields, then **Publish compromise for vote**.
-2. **Return to dialogue** — clears votes and options (chat history stays) so you can continue the conversation and generate options again.
-3. **End without agreement** — closes the session; the outcome is recorded in the activity log.
+1. **Propose / edit compromise** → fields → **Publish compromise for vote**
+2. **Return to dialogue** — clears votes and options (chat stays)
+3. Use **Complete session** in the header if needed
 
 #### Compromise
 
-AI prepares a draft, but the parties **do not** see it until you publish it.
+Parties **do not** see the draft until you publish. After publish both are notified; after one votes — wait for the other.
 
-Fields:
+#### Agreement draft
 
-- **Canonical description (mediator view)**
-- **Text for Party A** / **Text for Party B**
-- **Legal information (not advice)**
-- **Fulfillment likelihood**
-- **Risks if refused**
+When votes match (or both accept a compromise): parties see waiting-for-finalize until you publish.
 
-Check neutrality and accuracy, edit if needed, click **Publish compromise for vote**. Both parties are notified and can vote **Accept compromise** / **Reject compromise**. After one party votes, they wait for the other; when both accept, they move toward the agreement phase (still gated on your publish).
-
-#### Agreement draft (publish gate)
-
-When votes match (or both accept a compromise), AI drafts a **third-person** shared agreement from the dialogue and the selected option. Parties see **Waiting for the mediator to finalize the agreement** until you publish. Both parties are notified when the phase moves to agreement / when you publish.
-
-On your console:
-
-1. Edit **title**, **shared narrative**, and **obligations** (each with an optional **deadline**). Obligations are case-specific from the dialogue — add, edit, or remove as needed.
-2. **Save draft**, then **Publish to parties**.
-3. Parties review the same document and click **I accept**. Mutual accept finalizes the session.
-
-The session normally ends when the parties accept the agreement or reject the compromise (no mutual agreement). You can also click **End without agreement** on the live console (with confirmation) to close early.
-
-### Audience tabs (shared vs caucus)
-
-On the live console, choose who receives your message:
-
-- **Both** — shared channel; both parties see the message and each other’s replies.
-- **Party A** / **Party B** — caucus; only that side (and you) see the Q&A.
-
-Your messages appear to parties as **Mediator: {your title}**. Custom messages stay available in every phase, including Voting. Solution options and both parties’ votes are shown on your console.
+1. Edit **title**, **shared narrative**, **obligations** (+ deadlines); **Add obligation** / **Remove**
+2. **Save draft** → **Publish to parties**
+3. Parties click **I accept**. After mutual accept, finish with **Complete session** if the session has not already closed.
 
 ---
 
-## 12. Ending the session and results
+## 12. Ending and results
 
-When the phase becomes **Agreement** or **Completed** (including after you use **End session**):
+After **Complete session** or agreement finale: **Session finished. Returning to room details…** → room card.
 
-1. The console shows **Session finished. Returning to room details…**
-2. After a few seconds the room card opens.
-3. If you open the live session or lobby again — you go straight to the room card.
+**Mediation details**: dialogue, options and votes, compromise, agreement or no-agreement outcome, **Download results**.
 
-On the card, click **Mediation details**:
-
-- dialogue of both parties;
-- options and votes;
-- compromise votes;
-- the agreement or the no-agreement outcome;
-- **Download results** (PDF).
-
-The results PDF chapters cover legislation / legal information, the agreed solution (or no-agreement note), and the agreement text. A psychodynamic profile chapter is **not** included in the agreement panel or the PDF. The email-send field is not active yet — save the PDF yourself.
+PDF: **Legislation** → **Solution** → **Agreement** / **Terms**. No psychodynamic chapter. Email is a stub.
 
 ---
 
 ## 13. Language and logout
 
-- **EN | UA** in the sidebar changes the language of the console, calendar, session labels, Help, and chat-assistant replies.
-- **Logout** returns you to the login page.
+- **EN | UA** changes console, calendar, session labels, Help, and chat.
+- **Logout** → login page.
 
 ---
 
@@ -374,35 +310,31 @@ The results PDF chapters cover legislation / legal information, the agreed solut
 
 | Capability | Mediator | Administrator |
 |------------|----------|----------------|
-| Own Mode B rooms | Yes | Sees all, **Mediator rooms** tab |
+| Own Mode B rooms | Yes | Sees all |
 | Mode A rooms | No | Yes |
-| **Sides** (party registry) | Own rooms only (no roomless) | All parties, including roomless |
+| **Sides** | Own rooms only (no roomless) | All, including roomless |
 | Mediator registry | No | Yes |
-| Settings, prompts, RAG, API keys | No | Yes |
-| Edit room title / parties after creation | No (view) | Yes |
-| Copy party login and password | Yes | Yes |
-| Generate Magic Link | No (admin required) | Yes |
-| Calendar and live session | Yes | Schedule on a mediator room card — view only |
-| Delete own room | Yes | Can delete any room |
+| Settings, prompts, RAG, API | No | Yes |
+| Edit room title after creation | No (view) | Yes |
+| Copy login/password | Yes | Yes |
+| **Magic Link** for own parties | Yes | Yes (anyone) |
+| Calendar and live session | Yes | Schedule on card mostly view |
+| Delete own room | Yes (two modes) | Any room |
 
 ---
 
 ## 15. Tips and typical situations
 
-**The parties are not “Ready”.** Check the log: whether tests are passed, whether dispute intake was submitted, whether the pipeline finished. Schedule readiness may show **Generating…** while AI analysis runs. Send the parties a link to [their instruction](./parties.md).
+**Parties are not “Ready”.** Check the log and indicators (**Generating…**). Send the [party instruction](./parties.md).
 
-**I do not see a party under Sides.** Mediators only see parties from their own rooms. Roomless accounts and parties from other mediators’ rooms are hidden.
+**I do not see a party under Sides.** Only your rooms; roomless and other mediators’ parties are hidden.
 
-**Can I schedule “ahead of time”?** Yes. But the lobby will not let you start until preparation is complete and the 10-minute window has opened.
+**We rescheduled — parties “disappeared” from start.** Start clicks were reset — tell them the new time.
 
-**We rescheduled — the parties “disappeared” from start.** That is expected: start clicks were reset. Tell the parties the new time.
+**Magic Link.** Generate from the room card for your parties; 72 hours, one-time.
 
-**I cannot see a room.** You only see your own. Admin rooms (Mode A) are not in the Mediator Console.
+**Parties are waiting for compromise / agreement.** Remember to **Publish…** after reviewing the draft.
 
-**Magic Link is not created.** Contact the administrator.
+**Both accepted the agreement.** Click **Complete session** if needed.
 
-**The parties are waiting for a compromise.** Do not forget **Publish compromise for vote** after you review the draft — otherwise they will see the waiting-for-publication state.
-
-**The parties are waiting for the agreement.** After matching votes, edit the draft and click **Publish to parties** — they cannot accept until you publish.
-
-**Neutrality.** You facilitate communication; you do not represent either party. PsyLex does not replace your professional judgment, legal advice, or therapy. Legal blocks in the options are information from sources, not advice.
+**Neutrality.** You facilitate communication; you do not represent either party. Legal blocks are information from sources, not advice.

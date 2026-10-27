@@ -1,8 +1,8 @@
 # Instructions for the administrator
 
-This guide is for the **Admin** role. You operate the PsyLex platform: Mode A rooms, mediator and party accounts, integration keys, test links, AI agent prompts, the RAG legal corpus, and the Help knowledge base.
+This guide is for the **Admin** role. You operate the PsyLex platform: Mode A rooms, the **Sides** and mediator registries, integration keys, OpenAI chat models by workload, test URLs, AI agent prompts, the RAG legal corpus, and Help texts.
 
-> **Tip.** The **Help** button at the bottom of the sidebar opens all instructions (overview, parties, mediator, admin). The chat assistant replies in **EN | UA**. Help texts are edited under **Settings → Help**. Ask the Help assistant about waits, **Sides**, schedule, or Mode A/B if you need a quick reminder from these texts.
+> **Tip.** **Help** at the bottom of the sidebar opens all instructions. The chat assistant replies in **EN | UA**. Texts are edited under **Settings → Help**. Ask about **Sides**, Mode A/B, or resetting Help to the bundled file.
 
 Instructions for parties and mediators: [parties.md](./parties.md), [mediator.md](./mediator.md).
 
@@ -10,7 +10,7 @@ Instructions for parties and mediators: [parties.md](./parties.md), [mediator.md
 
 ## Contents
 
-1. [What you can do](#1-what-you-can-do)
+1. [What you can and cannot do](#1-what-you-can-and-cannot-do)
 2. [Signing in](#2-signing-in)
 3. [Admin Console](#3-admin-console)
 4. [Negotiation rooms](#4-negotiation-rooms)
@@ -19,7 +19,7 @@ Instructions for parties and mediators: [parties.md](./parties.md), [mediator.md
 7. [Room card](#7-room-card)
 8. [Credentials and Magic Link](#8-credentials-and-magic-link)
 9. [Mediators](#9-mediators)
-10. [Settings: API credentials](#10-settings-api-credentials)
+10. [Settings: API credentials and models](#10-settings-api-credentials-and-models)
 11. [Settings: tests](#11-settings-tests)
 12. [Settings: agent prompts](#12-settings-agent-prompts)
 13. [Settings: RAG](#13-settings-rag)
@@ -30,130 +30,124 @@ Instructions for parties and mediators: [parties.md](./parties.md), [mediator.md
 
 ---
 
-## 1. What you can do
+## 1. What you can and cannot do
 
-- create **Mode A** rooms (self-guided party mediation with AI) and attach new or **existing** parties;
-- view **all** rooms: both yours (admin) and those created by mediators (Mode B);
-- manage **all** party accounts under **Sides** (including roomless / orphan accounts);
-- edit the room title and description and the parties, and delete rooms;
+- create **Mode A** rooms and attach new or **existing** parties;
+- view **all** rooms (admin and mediator);
+- manage **all** parties under **Sides** (including roomless): edit, delete, request retests;
+- edit room title/description and parties; delete rooms (two modes);
 - copy login/password and generate a **Magic Link** for parties and mediators;
-- maintain the mediator registry: add, edit, delete;
-- store **OpenAI** and **Airtable** keys;
-- set URLs for the external psychological tests;
-- edit system prompts for the five AI agents and run test runs (without writing to a live room);
-- upload, update, reprocess, and delete RAG legal documents by jurisdiction and category; check search with a test inquiry;
-- edit Help texts (Markdown) for all roles and languages — they feed the Help window, the chat assistant, and PDF / DOCX files;
-- read the pipeline log and (after start) mediation details, and download the results PDF.
+- maintain the mediator registry;
+- store **OpenAI** and **Airtable** keys and assign **chat models by workload**;
+- set test URLs; edit prompts for five agents and run dry-run tests;
+- manage RAG; edit Help Markdown for Help UI, chat, and PDF/DOCX;
+- read the pipeline log and mediation details; download the results PDF.
 
-You **do not** run a live Mode B session and **do not** have a calendar in the admin menu. Schedule and session console live in the Mediator Console. On a mediator’s room card you see the schedule in view-only form.
+You **do not** run a live Mode B session and **do not** have a calendar in the admin menu. Schedule and session console live in the Mediator Console. The top-bar notifications icon is decorative for now.
 
 ---
 
 ## 2. Signing in
 
-1. Open **/login** (**Login** on the home page).
-2. Enter the administrator login (format `psylex_…`) and password.
-3. Click **Sign in**.
+1. Open **/login** (**Login**).
+2. Enter the administrator login (`psylex_…`) and password.
+3. **Sign in** → **Negotiation Rooms**. Party onboarding is not shown for an admin.
 
-After sign-in, **Negotiation Rooms** opens. Party onboarding (welcome, tests) is not shown for an admin.
-
-If the session expired or the role is different — the system returns you to sign-in. Users with a party or mediator role cannot enter the Admin Console.
+Users with a party or mediator role cannot enter the Admin Console.
 
 ---
 
 ## 3. Admin Console
 
-On the left, the label **Admin Console**. Menu:
+Left: **Admin Console**. Menu (order):
 
 | Item | Where it goes |
 |------|----------------|
 | **Rooms** | List of all rooms |
-| **Sides** | All parties, including those without a room |
+| **Sides** | All parties, including roomless |
 | **Mediators** | Mediator registry |
-| **Settings** | API, tests, prompts, RAG, Help |
+| **Settings** | API, models, tests, prompts, RAG, Help |
 
-Also: **Help**, **EN | UA**, and **Logout**. The content-area heading is **Mediation Portal**.
-
-The **Help** button at the bottom of the sidebar opens the instructions and PDF / DOCX downloads. The notifications icon in the top bar is decorative for now.
+Also: **Help**, **EN | UA**, **Logout**. Content heading: **Mediation Portal**.
 
 ---
 
 ## 4. Negotiation rooms
 
-Two tabs:
+Tabs:
 
 | Tab | What it is |
 |-----|------------|
-| **Admin rooms** | Mode A: rooms you created (`createdByUserId` empty) |
+| **Admin rooms** | Mode A: rooms you created |
 | **Mediator rooms** | Mode B: rooms created by mediators |
 
-The **New Room** button is only on the admin rooms tab. Mediator rooms are created in the Mediator Console.
+**New Room** only on the admin rooms tab.
 
-### Table
+Columns: title, description, jurisdiction, status (**Ready** / **Not ready** / **Complete**). On the mediators tab also: mediator name, **Scheduled time**.
 
-Shared columns: **Room title**, **Room description**, **Jurisdiction**, **Status** (**Ready** / **Not ready** / **Complete**).
-
-On the mediators tab, additionally: the mediator’s name and **Scheduled time**.
-
-List controls: **Search...**, sorting, **Rows per page**, **Page N of M**, **Previous** / **Next**. Click a row to open the card.
-
-Empty states:
-
-- **No admin rooms yet. Create a room to generate participant credentials.**
-- **No mediator rooms yet.**
-- **No rooms match your search.**
-
-The admin list has no “Open pre-session lobby / Open live session” buttons — that is the mediator interface.
+Controls: **Search...**, sorting, pagination. Click a row → room card. No lobby / live session buttons on the admin list.
 
 ---
 
 ## 5. Creating a Mode A room
 
 1. **New Room**.
-2. **Room details**:
-   - **Room title**, **Room description**;
-   - **Jurisdiction** — **Ukraine** or **United States**.
-   - For the United States — required field **State / territory / Federal**.
-3. For **Party A** and **Party B**, choose either:
-   - **Create new** — **Title / Name**, **Description** (new login `psylex_…` and password); or
-   - **Add existing** — search by login or title and attach a returning participant (tests and personal bot stay; they only fill dispute intake for this room).
+2. **Room details**: title, description; **Jurisdiction** (**Ukraine** / **United States** + for the US required **State / territory / Federal**).
+3. For **Party A** and **Party B**:
+   - **Create new participant** — title, description; or
+   - **Add existing participant** — search; prep badges for tests (T1–T4) and bot (BP) are shown.
 4. **Create Room**.
 
-Jurisdiction is fixed permanently: legal RAG search during analysis depends on it. You cannot change it later. The same person cannot fill both party slots in one room.
+Jurisdiction is fixed permanently. The same person cannot fill both slots.
 
-After creation:
+After creation the room runs in **Mode A** (AI leads dialogue, **120-minute** session). Copy access and send it with the [party instruction](./parties.md).
 
-- party slots are filled with new or attached users (`party_a` / `party_b`);
-- the room runs in **Mode A** (AI leads the dialogue, without a live mediator);
-- you are on the room card — copy access and send it to the parties together with [their instruction](./parties.md).
-
-**Mode A vs Mode B:** admin **New Room** is always Mode A. Mode B rooms are created by mediators and appear under **Mediator rooms**.
+**Mode A vs Mode B:** admin **New Room** is always Mode A. Mode B is created by a mediator.
 
 ---
 
 ## 6. Sides
 
-Menu item **Sides** — the full party registry.
+Menu **Sides** — full registry.
 
-- Admins see **all** parties, including those with **no room** (roomless / orphan accounts).
-- Mediators see only parties from their own rooms (see [mediator.md](./mediator.md)).
-- Use **Sides** to open a party card, copy credentials, or find accounts to attach when creating a room.
+- Tabs **Admin rooms** / **Mediator rooms**; roomless parties appear on the Admin tab as **No rooms**.
+- On the mediators tab — **Mediator** filter (**All mediators**).
+- Columns: title, login, role, rooms, tests (T1–T4), bot (BP), actions.
+
+Actions:
+
+- **Edit** → **Save Changes** → **Side updated.**
+- **Delete party** — with cascading room rules → **Party deleted.**
+- ⋮ menu: **Redo T1…T4**, **Redo all tests**, **Redo bot prompt**, **Redo all** → **Retest requested.**
+
+> The **Sides** page does **not** have **Copy Credentials** / **Magic Link**. Credentials live on the **room card** or **mediator card**.
+
+Mediators see only parties from their own rooms (no roomless) under their Sides menu.
 
 ---
 
 ## 7. Room card
 
-Available for **any** room (admin or mediator).
+Available for **any** room.
 
-| Block | Administrator actions |
-|-------|------------------------|
-| Header | Title, creation date, **Jurisdiction: …** |
-| **Mediation details** | If a session has already started — a modal with dialogue, votes, agreement, PDF |
-| **Mediation schedule** | Only for mediator rooms, **view** (date, duration; no save and no lobby entry) |
-| **Pipeline & mediation log** | Timeline of preparation and the session |
-| **Room details** | Edit title and description → **Save Changes**. Jurisdiction is read-only |
-| **Participants** | Party A, Party B, and if present — the mediator. Edit name/description, login, password, **Copy Credentials**, **Magic Link** |
-| **Delete Room** | Confirmation **Delete this room and all its participants? This cannot be undone.** |
+| Block | Actions |
+|-------|---------|
+| Header | Title, date, **Jurisdiction** |
+| **Mediation details** | If a session has started — dialogue, votes, agreement, PDF |
+| **Party preparation** (Mode A) or **Mediation schedule** (Mode B) | Readiness checklist; Mode B also shows schedule (saving schedule is for the mediator) |
+| **Pipeline & mediation log** | Timeline |
+| **Room details** | Edit title/description → **Save Changes**; jurisdiction read-only |
+| **Participants** | Edit, login/password, **Copy Credentials**, **Magic Link**, **Request profile update** |
+| **Delete room** | Two modes (below) |
+
+Readiness indicators may show **Generating…** while AI analysis runs.
+
+### Delete
+
+- **Delete room only** — party accounts remain (may become roomless);
+- **Delete room and parties** — also deletes those party accounts (and related rooms per product rules).
+
+Confirmation required; cannot be undone. Toast: **Room deleted.**
 
 ---
 
@@ -163,174 +157,126 @@ On the room card or mediator card:
 
 ### Copy Credentials
 
-The **Copy Credentials** button puts text like this on the clipboard:
-
-```
-Role: Party A
-Login: psylex_…
-Password: …
-```
-
-Send it to the party through a protected channel. The login always starts with `psylex_`.
+**Copy Credentials** puts role, login, and password on the clipboard. Send through a protected channel. Login always starts with `psylex_`.
 
 ### Magic Link
 
-The **Magic Link** button creates a one-time `/auth/magic?token=…` link:
+**Magic Link** creates a one-time `/auth/magic?token=…` link:
 
 - valid for **72 hours**;
-- the recipient opens a confirmation page and clicks **Continue** to complete sign-in (the link is consumed then);
-- after use it becomes invalid;
-- the user lands on their next step (onboarding, lobby, and so on).
+- the recipient signs in **automatically** (or **Continue** without JS);
+- becomes invalid after use.
 
-Success: **Magic link copied to clipboard** (or the system “share” dialog, if the browser supports it). Error: **Could not generate magic link**.
+Success: **Magic link copied to clipboard** (or the system share dialog). Error: **Could not generate magic link**.
 
-A Magic Link can be generated **only by an administrator**. The mediator copies login/password, but you create the link.
+A Magic Link can be generated by an **administrator** (anyone) and by a **mediator** (parties in their own rooms).
 
 ---
 
 ## 9. Mediators
 
-Menu **Mediators** → **Registry**.
+**Mediators** → **Registry**.
 
-A mediator is a separate account, not “tied” to one room at creation time. After sign-in the mediator creates their own Mode B rooms.
+A mediator is a separate account; after sign-in they create their own Mode B rooms.
 
-### List
+- List: **Title**, **Description**, **Copy Credentials**; **Add Mediator**.
+- Create: title, description → auto login/password → detail card.
+- Card: edit → **Save Changes**; **Copy Credentials**; **Magic Link**; **Delete mediator**.
 
-Table: **Title**, **Description**, **Actions** (**Copy Credentials**). Search, sorting, pagination. Click a row — mediator card. Button **Add Mediator**.
-
-Empty list: **No mediators yet. Create your first mediator to generate credentials.**
-
-### Adding
-
-1. **Add Mediator**.
-2. **Title / Name**, **Description**.
-3. **Add Mediator** again.
-
-Login and password are generated automatically. The card opens — copy access or a **Magic Link** and send it together with the [mediator instruction](./mediator.md).
-
-The mediator’s first sign-in starts their onboarding (welcome, consent, tests). Until onboarding is complete, the rooms console is not available to them.
-
-### Mediator card
-
-- edit name and description → **Save Changes**;
-- login, password, **Copy Credentials**, **Magic Link**;
-- **Delete mediator** with confirmation (this cannot be undone).
+First sign-in starts mediator onboarding. Until it completes, the rooms console is unavailable. Send the [mediator instruction](./mediator.md).
 
 ---
 
-## 10. Settings: API credentials
+## 10. Settings: API credentials and models
 
-**Settings** → **Credentials** tab.
+**Settings** → **Credentials**.
 
-Fields:
+- **OpenAI API key** — analysis, mediation, generation;
+- **Airtable API key** — external test completion status;
+- **Show key** / **Hide key**.
 
-- **OpenAI API key** — required for analysis agents, mediation, question and option generation;
-- **Airtable API key** — for integration with the external tests (completion status).
+### Chat models by workload
 
-Buttons **Show key** / **Hide key**. **Save** → **Settings saved**.
+Section **Chat models by workload**. Empty slots fall back to the previous single-model setting. **Refresh models** / **Loading models…**.
 
-Without a valid OpenAI key, the pipeline after the dispute description and the mediation session cannot run.
+| Slot | Purpose |
+|------|---------|
+| **Dialogue** | Opening, live questions, summaries, moderation, phrase helper |
+| **Artifacts** | Options, compromise, draft agreement |
+| **Fast** | Translation and language detection |
+| **Pipeline** | Post-intake agents and legal analysis |
+| **RAG chat** | Legal search query planning and inquiry answers |
+| **Help** | In-product help chat widget |
+
+**Save** → **Settings saved**.
+
+Without a valid OpenAI key, the pipeline and session cannot run.
 
 ---
 
 ## 11. Settings: tests
 
-**Tests** tab. Four URLs for the external modules:
+**Tests** tab. Four **Test URL** fields:
 
-| Field in admin | What the participant sees |
-|----------------|---------------------------|
-| **What is my personality type** | The same module |
-| **Face to face with fear** | In the portal: **Face to face with fear** |
-| **Character traits** | Character traits |
-| **Personality conflicts** | Personality conflicts |
+- **What is my personality type**
+- **Face to face with fear**
+- **Character traits**
+- **Personality conflicts**
 
-Each field is **Test URL**. **Save**.
-
-These are the links opened by **Open test** during party and mediator onboarding. If a URL is empty or wrong, the participant cannot complete the module and will not reach the dispute description / Mediator Console.
+These are the links opened by **Open test** during onboarding. An empty or wrong URL blocks the participant.
 
 ---
 
 ## 12. Settings: agent prompts
 
-**Prompts** tab. Five agents (sub-tabs):
+**Prompts** tab. Five agents:
 
-| Agent | Role in the process |
-|-------|---------------------|
-| **Psychodynamic** | Personality profile after tests / bot |
-| **Interests** | What truly matters to the parties from the dispute intake |
+| Agent | Role |
+|-------|------|
+| **Psychodynamic** | Profile after tests / bot |
+| **Interests** | What matters from dispute intake |
 | **Emotional Triggers** | Escalation risks |
-| **Legal Analysis** | Norms from RAG for the room’s jurisdiction (not legal advice) |
-| **Mediation Agent** | Opening, dialogue, options, compromise in the session |
+| **Legal Analysis** | Norms from RAG (not legal advice) |
+| **Mediation Agent** | Opening, dialogue, options, compromise |
 
-For each:
-
-1. Edit the **System prompt**.
-2. **Save** → **Agent prompt saved**.
+**System prompt** → **Save** → **Agent prompt saved**.
 
 ### Test agent
 
-The **Test agent** block runs a **dry** run: the result is **not** written to a live room.
-
-- for psychodynamic / triggers — select a participant;
-- for interests / legal analysis / mediation — select a room.
-
-The screen shows input data (**Personal bot prompt**, **Dispute answers**, **Jurisdiction**, **Response language**). **Run test** → **Result** (structured output). If legal search found nothing: **No relevant legal information found**.
-
-Use this before changing prompts in production, so you do not break live sessions.
+Dry run (result is **not** written to a live room): select a participant or room → **Run test** → **Result**. If legal search finds nothing: the corresponding “no relevant legal information” message.
 
 ---
 
 ## 13. Settings: RAG
 
-**RAG** tab — the corpus of legal documents for hybrid search during legal analysis.
+**RAG** tab — corpus for hybrid search during legal analysis.
 
-### Jurisdictions
+- Sub-tabs **Ukraine** / **United States** (US: state / Federal).
+- Category filter (Labor, Family, …).
+- **Upload document**: name, source URL, category, file TXT/PDF/DOCX.
+- Statuses: **Pending**, **Processing**, **Ready**, **Failed**.
+- On the card: edit, **Reprocess**, **Delete**.
+- **Test inquiry** (+ prepared queries, citations).
 
-Sub-tabs **Ukraine** and **United States**. United States documents are additionally tied to a state / territory or **Federal** jurisdiction. Federal documents are included in search for every state.
+Rooms use only documents with status **Ready**. Do not invent a norm if no fragment was found.
 
-### Categories
-
-Filter: **All categories**, or
-
-- Labor, Family, Contract, Property, Consumer, Corporate, Insurance, ODR / International.
-
-### Upload
-
-1. **Upload document**.
-2. **Document name**, **Source URL**, **Category**, and for the United States — jurisdiction.
-3. File **TXT, PDF, or DOCX** — **Choose file**.
-4. **Upload**. Indexing runs: **Uploading document…** / text extraction.
-
-Document statuses: **Pending**, **Processing**, **Ready**, **Failed**.
-
-On the document card: editing, **Reprocess**, **Delete** (with confirmation about indexed chunks).
-
-Legal analysis in rooms uses only documents with status **Ready** for the matching jurisdiction. If there is no relevant fragment, the system should say that a provision was not found — not invent a norm.
-
-### Test inquiry
-
-**Test inquiry** block:
-
-- enter a question;
-- if needed, choose one document or **Search entire jurisdiction**;
-- **Run inquiry**.
-
-This is how you check whether the corpus answers typical questions before loading it into live rooms.
+> The Credentials hint may mention embeddings on the RAG tab; a dedicated embedding-model UI may not be present — follow the buttons actually shown on screen.
 
 ---
 
 ## 14. Settings: Help
 
-**Help** tab. These are the texts that feed the Help window, the chat assistant, and PDF / DOCX files.
+**Help** tab. Texts that feed the Help window, chat assistant, and PDF/DOCX files.
 
-For each document (**Overview**, **Parties**, **Mediator**, **Admin**) and each language (**EN**, **UA**):
+For each document (**Overview**, **Parties**, **Mediator**, **Admin**) and language (**EN**, **UA**):
 
-1. Edit the title and Markdown.
+1. Title and Markdown.
 2. **Save** — chat and Help immediately use the new text.
-3. If needed, **Reset to file** — restore the text from the `instruction/` repository (use this after a deploy if the live DB still has an older edited copy).
-4. Regenerating PDF / DOCX exports for Help is done from the repository (`npm run help:docs`); after deploy, reset live overrides if admins had edited copies so production matches git.
+3. **Reset to bundled file** — restore from `instruction/` in the repository.
 
-> **Do not confuse this with RAG.** The RAG tab is the legal corpus for dispute analysis. The **Help** tab is user instructions, not legislation.
+After deploying updated markdown in git: if the live DB still has older edited copies, run **Reset to bundled file** for each changed document/locale (or re-seed) so production matches the repository. PDF/DOCX exports are refreshed with `npm run help:docs` in the repo.
+
+> **Do not confuse this with RAG.** RAG is the legal corpus. **Help** is user instructions.
 
 ---
 
@@ -338,52 +284,46 @@ For each document (**Overview**, **Parties**, **Mediator**, **Admin**) and each 
 
 ### Pipeline & mediation log
 
-On every room card. Event sources: **Milestone** and **Pipeline**.
+On every room card. Sources: **Milestone** and **Pipeline**. Typical events: room created, tests, intake, agents, session start, votes, compromise/agreement published, completion, agent failures.
 
-Typical stages: room created, test completed, onboarding completed, dispute intake submitted, profiles generated, legal analysis completed, post-intake pipeline completed, session started, agreement accepted, mediation completed.
-
-Pipeline: triggered / completed, agent started / completed / failed / skipped, mediation phase changed. Incomplete readiness steps may show **Generating…** while AI analysis runs.
-
-Empty log: **No activity recorded yet.**
-
-If a room is “stuck” at **Not ready** — look in the log for which agent shows **Agent failed**, and check the OpenAI key, RAG, and prompts.
+If a room is stuck at **Not ready** — look for **Agent failed**; check the OpenAI key, RAG, and prompts.
 
 ### Mediation details
 
-The button appears after the session starts. In the window:
+After the session starts:
 
-- current **Phase** and round;
-- **Mediation dialogue** in two columns (the parties);
+- **Phase** and round;
+- **Mediation dialogue** (two columns; show original of translations);
 - **Solution options & votes**;
-- compromise vote (**Accepted** / **Rejected** / **No vote**);
+- compromise (**Accepted** / **Rejected** / **No vote**);
 - **Agreement & results**;
 - **Download results**.
 
-The downloadable results PDF covers legislation / legal information, the agreed solution (or no-agreement note), and the agreement text — **without** a psychodynamic profile chapter. The admin **does not** intervene in voting from this window — only observes and saves artifacts.
+PDF: **Legislation** → **Solution** → **Agreement** (no psychodynamic). Email is a stub. The admin does **not** intervene in voting from this window.
 
 ---
 
 ## 16. Language and logout
 
-- **EN | UA** in the sidebar changes the language of the admin UI, the role in copied credentials, log labels, and RAG categories.
+- **EN | UA** changes the admin UI, roles in copied credentials, log labels, and RAG categories.
 - **Logout** → login page.
 
 ---
 
 ## 17. Tips and typical situations
 
-**Mode A or B?** Admin **New Room** is always Mode A. Mode B appears when a mediator creates the room. Both types are visible on the matching tabs. Create-room can attach existing parties from **Sides**.
+**Mode A or B?** Admin **New Room** is always A. Mode B is created by a mediator. Both types appear on the matching tabs.
 
-**The parties cannot sign in.** Check the login `psylex_…`, send **Copy Credentials** or a new **Magic Link** (the old link may have expired after 72 hours or already been used).
+**Parties cannot sign in.** Check `psylex_…`, send **Copy Credentials** or a new **Magic Link** (72 hours / one-time).
 
-**Tests are not counted.** Check the **Tests** tab (URLs) and the **Airtable** key. Ask the participant to click **Update test status**; processing can take up to two hours.
+**Tests are not counted.** **Tests** tab (URLs) and **Airtable** key. Participant: **Update test status** (up to two hours).
 
-**The pipeline does not finish.** Log → agent error. Common causes: no OpenAI key, empty RAG for the room’s jurisdiction, a prompt failure. Fix the settings; for an already created room the parties may need to wait for reprocessing, or you may need a new room — depending on the nature of the failure.
+**Pipeline does not finish.** Log → agent error. Common causes: no OpenAI key, empty RAG, prompt/model failure.
 
-**A mediator asks for a Magic Link.** Generate it from the room card (for parties) or from the mediator card (for the mediator). Link generation is not available in the Mediator Console.
+**A mediator asks for a Magic Link.** They can generate it themselves for their parties; you can also generate from the room or mediator card.
 
-**You need to look at a mediator’s session.** Open **Mediator rooms** → card → log and **Mediation details**. Only the mediator opens the live console and calendar.
+**You need to look at a mediator’s session.** **Mediator rooms** → card → log and **Mediation details**. Only the mediator opens the live console.
 
-**Deletion.** Deleting a room removes the room and the party participants. Deleting a mediator removes the mediator account. Both actions are irreversible.
+**Deletion.** Choose between “room only” and “room and parties”. Actions are irreversible.
 
-**Legal ethics.** Do not delete RAG sources without replacing them; every legal statement in the product must rest on an uploaded source. The platform deliberately does not give “legal advice” — this is built into the banners for parties and into the legal agent prompts.
+**Legal ethics.** Do not delete RAG sources without replacing them. The platform deliberately does not give “legal advice”.
